@@ -1,1 +1,12 @@
--r requirements/prod.txt
+# Vercel's Python build doesn't support pip's "-r" include syntax, so this must
+# stay a flat mirror of requirements/base.txt — update both together.
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+alembic
+pydantic
+pydantic-settings
+bcrypt
+pyjwt
+python-multipart
