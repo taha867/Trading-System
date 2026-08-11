@@ -1,7 +1,7 @@
-from typing import Annotated, Type, TypeVar
+from typing import Annotated, Sequence, Type, TypeVar
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,12 +26,40 @@ def build_crud_router(
     update_schema: Type[UpdateT],
     prefix: str,
     tags: list[str],
+    exact_filters: Sequence[str] = (),
+    search_filters: Sequence[str] = (),
 ) -> APIRouter:
     assert hasattr(model, "is_active"), (
         f"{model.__name__} must declare `is_active` to be used with the generic CRUD factory"
     )
 
     router = APIRouter(prefix=prefix, tags=tags)
+
+    # Filtering happens in the database, not by fetching a page and scanning it in
+    # JS — a list already past the 100-row page cap (Items, for one) would silently
+    # miss matches under client-side filtering. `exact_filters` are FK/id columns
+    # matched by equality (dropdown-driven); `search_filters` are free-text columns
+    # matched case-insensitively as a substring (a search box, not a dropdown).
+    #
+    # Built as one Pydantic model extending PaginationParams — not a second,
+    # separate `Annotated[..., Query()]` parameter — because FastAPI 0.141 doesn't
+    # flatten two independent Query-model parameters on the same endpoint (the
+    # second one starts erroring "field required" even though every field on it is
+    # optional). One combined model is also just the correct shape: page/page_size
+    # and the filters all live in the same query string together.
+    filter_fields = {name: (int | None, None) for name in exact_filters}
+    filter_fields.update({name: (str | None, None) for name in search_filters})
+    ListParams = create_model(f"{model.__name__}ListParams", __base__=PaginationParams, **filter_fields)
+
+    def _apply_filters(stmt, params: BaseModel):
+        values = params.model_dump(exclude_none=True)
+        for name in exact_filters:
+            if name in values:
+                stmt = stmt.where(getattr(model, name) == values[name])
+        for name in search_filters:
+            if name in values:
+                stmt = stmt.where(getattr(model, name).ilike(f"%{values[name]}%"))
+        return stmt
 
     async def _get_active_or_404(db: AsyncSession, item_id: int) -> ModelT:
         item = await db.get(model, item_id)
@@ -41,29 +69,25 @@ def build_crud_router(
 
     @router.get("", response_model=PaginatedResponse[read_schema])
     async def list_items(
-        pagination: Annotated[PaginationParams, Query()],
+        params: Annotated[ListParams, Query()],
         db: Annotated[AsyncSession, Depends(get_db)],
         _current_user: Annotated[User, Depends(get_current_user)],
     ):
-        offset = (pagination.page - 1) * pagination.page_size
+        offset = (params.page - 1) * params.page_size
 
-        total = await db.scalar(
-            select(func.count()).select_from(model).where(model.is_active.is_(True))
-        )
-        result = await db.execute(
-            select(model)
-            .where(model.is_active.is_(True))
-            .order_by(model.id)
-            .offset(offset)
-            .limit(pagination.page_size)
-        )
+        base_condition = model.is_active.is_(True)
+        count_stmt = _apply_filters(select(func.count()).select_from(model).where(base_condition), params)
+        total = await db.scalar(count_stmt)
+
+        list_stmt = _apply_filters(select(model).where(base_condition), params)
+        result = await db.execute(list_stmt.order_by(model.id).offset(offset).limit(params.page_size))
         items = result.scalars().all()
 
         return PaginatedResponse[read_schema](
             items=items,
             total=total or 0,
-            page=pagination.page,
-            page_size=pagination.page_size,
+            page=params.page,
+            page_size=params.page_size,
         )
 
     @router.post("", response_model=read_schema, status_code=201)

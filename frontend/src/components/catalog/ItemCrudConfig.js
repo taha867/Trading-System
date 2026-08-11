@@ -33,6 +33,26 @@ export function useItemCrudConfig() {
     ],
     createSchema: itemCreateSchema,
     updateSchema: itemUpdateSchema,
+    filters: [
+      {
+        key: 'category_id',
+        label: 'Category',
+        component: 'select',
+        options: categories.map((c) => ({ value: String(c.id), label: c.name })),
+      },
+      {
+        key: 'model_id',
+        label: 'Model',
+        component: 'select',
+        options: models.map((m) => ({ value: String(m.id), label: m.name })),
+      },
+      {
+        key: 'variant',
+        label: 'Variant',
+        component: 'search',
+        placeholder: 'Search variant…',
+      },
+    ],
     fields: [
       {
         name: 'category_id',

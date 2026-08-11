@@ -31,6 +31,14 @@ export function useModelCrudConfig() {
     ],
     createSchema: modelCreateSchema,
     updateSchema: modelUpdateSchema,
+    filters: [
+      {
+        key: 'brand_id',
+        label: 'Brand',
+        component: 'select',
+        options: brands.map((b) => ({ value: String(b.id), label: b.name })),
+      },
+    ],
     fields: [
       {
         name: 'brand_id',

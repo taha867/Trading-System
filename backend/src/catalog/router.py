@@ -46,6 +46,7 @@ router.include_router(
         update_schema=ModelUpdate,
         prefix="/models",
         tags=["catalog"],
+        exact_filters=["brand_id"],
     )
 )
 router.include_router(
@@ -56,5 +57,7 @@ router.include_router(
         update_schema=ItemUpdate,
         prefix="/items",
         tags=["catalog"],
+        exact_filters=["category_id", "model_id"],
+        search_filters=["variant"],
     )
 )

@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { Plus, Pencil, Trash2, Loader2, Inbox } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, Pencil, Trash2, Loader2, Inbox, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { InputGroup, InputGroupInput, InputGroupAddon } from '@/components/ui/input-group';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
 import { PaginationControls } from '@/components/common/PaginationControls';
@@ -8,18 +10,114 @@ import { ConfirmDeleteDialog } from '@/components/common/ConfirmDeleteDialog';
 import { CrudDrawer } from '@/components/common/CrudDrawer';
 
 const DEFAULT_PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 300;
+// Radix Select can't represent "no selection" as an empty-string item value —
+// this sentinel stands in for "All" in the UI and is stripped back to undefined
+// before it ever reaches the query string.
+const ALL_VALUE = '__all__';
 
 function formatCell(value) {
   if (value === null || value === undefined || value === '') return '—';
   return String(value);
 }
 
+// A search-component filter fires on every keystroke locally but is debounced
+// before it ever becomes a query param — typing "privacy" should cost one network
+// request, not seven.
+function useDebouncedValue(value, delayMs) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
+
+function SearchFilter({ filter, value, onChange }) {
+  const [draft, setDraft] = useState(value);
+  const debounced = useDebouncedValue(draft, SEARCH_DEBOUNCE_MS);
+
+  useEffect(() => {
+    onChange(debounced);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only fire when the debounced value itself changes
+  }, [debounced]);
+
+  return (
+    <InputGroup className="w-full sm:w-56">
+      <InputGroupInput
+        placeholder={filter.placeholder ?? `Search ${filter.label.toLowerCase()}…`}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        aria-label={filter.label}
+      />
+      <InputGroupAddon>
+        <Search className="size-4 text-muted-foreground" />
+      </InputGroupAddon>
+      {draft && (
+        <InputGroupAddon align="inline-end">
+          <button
+            type="button"
+            onClick={() => setDraft('')}
+            aria-label={`Clear ${filter.label} filter`}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+        </InputGroupAddon>
+      )}
+    </InputGroup>
+  );
+}
+
+function SelectFilter({ filter, value, onChange }) {
+  return (
+    <Select value={value || ALL_VALUE} onValueChange={(v) => onChange(v === ALL_VALUE ? '' : v)}>
+      <SelectTrigger className="w-full sm:w-48" aria-label={filter.label}>
+        <SelectValue placeholder={filter.placeholder ?? `All ${filter.label.toLowerCase()}`} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL_VALUE}>All {filter.label.toLowerCase()}</SelectItem>
+        {filter.options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function CrudTableFilters({ filters, values, onChange }) {
+  if (!filters?.length) return null;
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      {filters.map((filter) => {
+        const FilterControl = filter.component === 'search' ? SearchFilter : SelectFilter;
+        return (
+          <FilterControl
+            key={filter.key}
+            filter={filter}
+            value={values[filter.key] ?? ''}
+            onChange={(next) => onChange(filter.key, next)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export function CrudTable({ config, title, description, icon: Icon, addLabel = 'Add', entityLabel = 'record' }) {
   const [page, setPage] = useState(1);
+  const [filterValues, setFilterValues] = useState({});
   const [drawerState, setDrawerState] = useState(null); // { mode: 'create' | 'edit', row? }
   const [deleteRow, setDeleteRow] = useState(null);
 
-  const { data, isLoading, isError } = config.useList({ page, page_size: DEFAULT_PAGE_SIZE });
+  const handleFilterChange = (key, value) => {
+    setFilterValues((prev) => ({ ...prev, [key]: value }));
+    setPage(1); // a changed filter can only invalidate the current page, not extend it
+  };
+
+  const { data, isLoading, isError } = config.useList({ page, page_size: DEFAULT_PAGE_SIZE, ...filterValues });
   const deleteMutation = config.useDelete();
 
   const items = data?.items ?? [];
@@ -49,6 +147,7 @@ export function CrudTable({ config, title, description, icon: Icon, addLabel = '
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
+        <CrudTableFilters filters={config.filters} values={filterValues} onChange={handleFilterChange} />
         <div className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>
