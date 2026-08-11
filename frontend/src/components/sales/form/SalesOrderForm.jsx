@@ -7,8 +7,6 @@ import { salesOrderCreateSchema } from '@/validations/salesSchemas';
 import { useCreateSalesOrder } from '@/hooks/salesHooks/salesMutations';
 import { useCustomerParties } from '@/hooks/partyHooks/partyQueries';
 import { useItems } from '@/hooks/catalogHooks/itemQueries';
-import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
-import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { useStockLots } from '@/hooks/inventoryHooks/inventoryQueries';
 import { toMoney, computeSaleAmount, formatPKR } from '@/utils/currencyUtils';
 
@@ -19,19 +17,15 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 export function SalesOrderForm({ onSuccess }) {
   const { customers } = useCustomerParties();
   const { data: itemsData } = useItems(LOOKUP_PAGE);
-  const { data: categoriesData } = useCategories(LOOKUP_PAGE);
-  const { data: modelsData } = useModels(LOOKUP_PAGE);
   // Informational only — never validated against in Yup (phase-4-frontend spec §2,
   // decision 3): stock is live, shared, external state that can change between
   // typing and submit. The authoritative check is the backend's own InsufficientStock
   // 422, already toasted generically by fetchClient on submit failure.
   const { data: stockLotsData } = useStockLots({ page: 1, page_size: 100 });
 
-  const categoryNameById = Object.fromEntries((categoriesData?.items ?? []).map((c) => [c.id, c.name]));
-  const modelNameById = Object.fromEntries((modelsData?.items ?? []).map((m) => [m.id, m.name]));
   const itemOptions = (itemsData?.items ?? []).map((item) => ({
     value: String(item.id),
-    label: `${modelNameById[item.model_id] ?? '?'} · ${categoryNameById[item.category_id] ?? '?'} — ${item.sku}${item.variant ? ` (${item.variant})` : ''}`,
+    label: item.sku,
   }));
   const customerOptions = customers.map((p) => ({ value: String(p.id), label: p.name }));
   const availableByItemId = (stockLotsData?.items ?? []).reduce((acc, lot) => {
