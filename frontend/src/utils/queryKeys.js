@@ -21,6 +21,12 @@ export const categoryKeys = {
   list: (params) => [...categoryKeys.lists(), params],
 };
 
+export const brandKeys = {
+  all: ['brands'],
+  lists: () => [...brandKeys.all, 'list'],
+  list: (params) => [...brandKeys.lists(), params],
+};
+
 export const modelKeys = {
   all: ['models'],
   lists: () => [...modelKeys.all, 'list'],

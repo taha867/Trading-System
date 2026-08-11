@@ -1,12 +1,27 @@
 import { useSearchParams } from 'react-router-dom';
-import { Tag, Smartphone, Package } from 'lucide-react';
+import { Tag, Building2, Smartphone, Package } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { CrudTable } from '@/components/common/CrudTable';
 import { categoryCrudConfig } from '@/components/catalog/CategoryCrudConfig';
-import { modelCrudConfig } from '@/components/catalog/ModelCrudConfig';
+import { brandCrudConfig } from '@/components/catalog/BrandCrudConfig';
+import { useModelCrudConfig } from '@/components/catalog/ModelCrudConfig';
 import { useItemCrudConfig } from '@/components/catalog/ItemCrudConfig';
 
 const DEFAULT_TAB = 'categories';
+
+function ModelsTab() {
+  const config = useModelCrudConfig();
+  return (
+    <CrudTable
+      config={config}
+      title="Models"
+      description="iPhone 13, Galaxy A54 — each belongs to a brand. Priority is set here and drives Phase 8's reorder ranking."
+      icon={Smartphone}
+      addLabel="Add model"
+      entityLabel="model"
+    />
+  );
+}
 
 function ItemsTab() {
   const config = useItemCrudConfig();
@@ -31,7 +46,7 @@ export function CatalogContainer() {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Catalog</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Categories, models, and items — what you buy and sell, nothing hard-coded.
+          Categories, brands, models, and items — what you buy and sell, nothing hard-coded.
         </p>
       </div>
 
@@ -41,6 +56,10 @@ export function CatalogContainer() {
             <TabsTrigger value="categories">
               <Tag className="size-4" />
               Categories
+            </TabsTrigger>
+            <TabsTrigger value="brands">
+              <Building2 className="size-4" />
+              Brands
             </TabsTrigger>
             <TabsTrigger value="models">
               <Smartphone className="size-4" />
@@ -62,15 +81,18 @@ export function CatalogContainer() {
             entityLabel="category"
           />
         </TabsContent>
-        <TabsContent value="models" className="pt-4">
+        <TabsContent value="brands" className="pt-4">
           <CrudTable
-            config={modelCrudConfig}
-            title="Models"
-            description="iPhone 13, Galaxy A54 — priority is set here and drives Phase 8's reorder ranking."
-            icon={Smartphone}
-            addLabel="Add model"
-            entityLabel="model"
+            config={brandCrudConfig}
+            title="Brands"
+            description="iPhone, Samsung — the phone brand a model belongs to."
+            icon={Building2}
+            addLabel="Add brand"
+            entityLabel="brand"
           />
+        </TabsContent>
+        <TabsContent value="models" className="pt-4">
+          <ModelsTab />
         </TabsContent>
         <TabsContent value="items" className="pt-4">
           <ItemsTab />

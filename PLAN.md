@@ -82,6 +82,7 @@ erDiagram
     string roles
   }
   CATEGORY { int id string name }
+  BRAND { int id string name }
   MODEL { int id string name int priority }
   ITEM { int id string sku }
   PURCHASE_ORDER { int id date order_date string status }
@@ -98,6 +99,7 @@ erDiagram
   PARTY ||--o{ SALES_ORDER : buys
   PARTY ||--o{ CARGO_SHIPMENT : handles
   CATEGORY ||--o{ ITEM : classifies
+  BRAND ||--o{ MODEL : has
   MODEL ||--o{ ITEM : fits
   PURCHASE_ORDER ||--o{ PURCHASE_ORDER_LINE : contains
   ITEM ||--o{ PURCHASE_ORDER_LINE : ordered_as
@@ -128,9 +130,9 @@ erDiagram
 ### Phase 1 — Catalog & China purchasing
 *Done when: record a real PO in RMB*
 
-**Build:** Category CRUD (Cover, Protector, Charger, …). Model CRUD (iPhone 13, Galaxy A54, …) with a `priority` field left for Phase 8. Item CRUD (Category + Model + variant = SKU). China vendor as a `Party` with role `china_vendor`. Purchase order screen: pick vendor, add lines with qty + RMB rate, page shows the PKR total using that day's `ExchangeRate`.
+**Build:** Category CRUD (Cover, Protector, Charger, …) — the accessory type, independent of device. Brand CRUD (iPhone, Samsung, …). Model CRUD (iPhone 13, Galaxy A54, …), each belonging to a Brand, with a `priority` field left for Phase 8. Item CRUD (Category + Model + variant = SKU — e.g. "Silicone Cover, iPhone 13, Black"). China vendor as a `Party` with role `china_vendor`. Purchase order screen: pick vendor, add lines with qty + RMB rate, page shows the PKR total using that day's `ExchangeRate`.
 
-**Entities:** `Category`, `Model`, `Item`, `Party(china_vendor)`, `PurchaseOrder`, `PurchaseOrderLine`
+**Entities:** `Category`, `Brand`, `Model`, `Item`, `Party(china_vendor)`, `PurchaseOrder`, `PurchaseOrderLine`
 
 **Done when:** you can create a PO against a real vendor, in RMB, and see the PKR cost per line and total — solves "how will we buy stock and at what rate."
 

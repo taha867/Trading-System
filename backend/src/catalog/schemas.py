@@ -18,7 +18,23 @@ class CategoryUpdate(BaseModel):
     name: Annotated[str, Field(max_length=120)] | None = None
 
 
+class BrandCreate(BaseModel):
+    name: Annotated[str, Field(max_length=120)]
+
+
+class BrandRead(BrandCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    is_active: bool
+
+
+class BrandUpdate(BaseModel):
+    name: Annotated[str, Field(max_length=120)] | None = None
+
+
 class ModelCreate(BaseModel):
+    brand_id: int
     name: Annotated[str, Field(max_length=120)]
 
 
@@ -31,6 +47,7 @@ class ModelRead(ModelCreate):
 
 
 class ModelUpdate(BaseModel):
+    brand_id: int | None = None
     name: Annotated[str, Field(max_length=120)] | None = None
     priority: int | None = None
 

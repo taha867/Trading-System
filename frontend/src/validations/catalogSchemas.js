@@ -5,13 +5,20 @@ export const categoryCreateSchema = object({
 });
 export const categoryUpdateSchema = categoryCreateSchema.partial();
 
+export const brandCreateSchema = object({
+  name: string().required('Name is required').max(120),
+});
+export const brandUpdateSchema = brandCreateSchema.partial();
+
 export const modelCreateSchema = object({
+  brand_id: number().typeError('Select a brand').required('Select a brand'),
   name: string().required('Name is required').max(120),
 });
 // ModelUpdate is a genuinely different field set from ModelCreate (adds `priority`,
 // which Create doesn't accept at all) — written directly rather than derived via
 // .partial(), since .partial() only relaxes required-ness, it can't add a field.
 export const modelUpdateSchema = object({
+  brand_id: number().typeError('Select a brand'),
   name: string().max(120),
   priority: number().typeError('Priority must be a number').integer('Priority must be a whole number'),
 });

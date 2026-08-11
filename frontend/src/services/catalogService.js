@@ -20,6 +20,25 @@ export async function deleteCategory(id) {
   await fetchClient.delete(`/catalog/categories/${id}`);
 }
 
+export async function listBrands(params) {
+  const { data } = await fetchClient.get(`/catalog/brands${buildQueryString(params)}`);
+  return data;
+}
+
+export async function createBrand(payload) {
+  const { data } = await fetchClient.post('/catalog/brands', payload);
+  return data;
+}
+
+export async function updateBrand({ id, ...payload }) {
+  const { data } = await fetchClient.put(`/catalog/brands/${id}`, payload);
+  return data;
+}
+
+export async function deleteBrand(id) {
+  await fetchClient.delete(`/catalog/brands/${id}`);
+}
+
 export async function listModels(params) {
   const { data } = await fetchClient.get(`/catalog/models${buildQueryString(params)}`);
   return data;

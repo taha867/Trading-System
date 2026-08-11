@@ -1,7 +1,10 @@
 from fastapi import APIRouter
 
-from src.catalog.models import Category, Item, Model
+from src.catalog.models import Brand, Category, Item, Model
 from src.catalog.schemas import (
+    BrandCreate,
+    BrandRead,
+    BrandUpdate,
     CategoryCreate,
     CategoryRead,
     CategoryUpdate,
@@ -22,6 +25,16 @@ router.include_router(
         read_schema=CategoryRead,
         update_schema=CategoryUpdate,
         prefix="/categories",
+        tags=["catalog"],
+    )
+)
+router.include_router(
+    build_crud_router(
+        model=Brand,
+        create_schema=BrandCreate,
+        read_schema=BrandRead,
+        update_schema=BrandUpdate,
+        prefix="/brands",
         tags=["catalog"],
     )
 )
