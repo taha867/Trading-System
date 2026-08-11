@@ -6,6 +6,8 @@ import { FormField } from '@/components/custom';
 import { Button } from '@/components/ui/button';
 import { TOAST_MESSAGES } from '@/utils/constants';
 
+const AUTH_INPUT_CLASSNAME = 'border-transparent bg-muted/60 focus-visible:bg-background';
+
 // No password-reset flow exists on the backend yet — validates for real, submits nowhere.
 export function ForgotPasswordForm() {
   const {
@@ -27,7 +29,13 @@ export function ForgotPasswordForm() {
         name="username"
         control={control}
         render={({ field }) => (
-          <FormField {...field} label="Username" error={errors.username?.message} autoComplete="username" />
+          <FormField
+            {...field}
+            label="Username"
+            error={errors.username?.message}
+            autoComplete="username"
+            className={AUTH_INPUT_CLASSNAME}
+          />
         )}
       />
       <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 w-full">

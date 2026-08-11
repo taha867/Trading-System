@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
+import { StatCard } from '@/components/common/StatCard';
 import { useBalanceStatement } from '@/hooks/reportingHooks/reportingQueries';
 
 // Same sign convention + labeling PartyStatement.jsx already established for
@@ -15,22 +16,6 @@ function balanceLabel(value) {
   if (num > 0) return 'Owes us';
   if (num < 0) return 'We owe them';
   return 'Settled';
-}
-
-function SummaryTile({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border p-4">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Icon className="size-4.5" />
-      </span>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-semibold text-foreground">
-          <CurrencyAmount value={value} />
-        </p>
-      </div>
-    </div>
-  );
 }
 
 export function BalanceStatement() {
@@ -62,10 +47,10 @@ export function BalanceStatement() {
         {!isLoading && !isError && data && (
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <SummaryTile icon={Wallet} label="Cash on hand" value={data.total_cash_pkr} />
-              <SummaryTile icon={Users2} label="Net receivable" value={data.total_receivable_pkr - data.total_payable_pkr} />
-              <SummaryTile icon={Boxes} label="Inventory value" value={data.inventory_value_pkr} />
-              <SummaryTile icon={Landmark} label="Net position" value={data.net_position_pkr} />
+              <StatCard icon={Wallet} label="Cash on hand" value={data.total_cash_pkr} />
+              <StatCard icon={Users2} label="Net receivable" value={data.total_receivable_pkr - data.total_payable_pkr} />
+              <StatCard icon={Boxes} label="Inventory value" value={data.inventory_value_pkr} />
+              <StatCard icon={Landmark} label="Net position" value={data.net_position_pkr} />
             </div>
             <p className="text-xs text-muted-foreground">As of {data.as_of}</p>
 

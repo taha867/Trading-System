@@ -13,7 +13,7 @@ export function PurchaseOrderDetailContainer() {
   const { data: order, isLoading, isError } = usePurchaseOrder(isValidId ? id : undefined);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Purchase Order</h1>

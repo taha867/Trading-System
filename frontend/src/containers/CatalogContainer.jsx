@@ -27,7 +27,7 @@ export function CatalogContainer() {
   const tab = searchParams.get('tab') || DEFAULT_TAB;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Catalog</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -36,20 +36,22 @@ export function CatalogContainer() {
       </div>
 
       <Tabs value={tab} onValueChange={(value) => setSearchParams({ tab: value })}>
-        <TabsList>
-          <TabsTrigger value="categories">
-            <Tag className="size-4" />
-            Categories
-          </TabsTrigger>
-          <TabsTrigger value="models">
-            <Smartphone className="size-4" />
-            Models
-          </TabsTrigger>
-          <TabsTrigger value="items">
-            <Package className="size-4" />
-            Items
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList>
+            <TabsTrigger value="categories">
+              <Tag className="size-4" />
+              Categories
+            </TabsTrigger>
+            <TabsTrigger value="models">
+              <Smartphone className="size-4" />
+              Models
+            </TabsTrigger>
+            <TabsTrigger value="items">
+              <Package className="size-4" />
+              Items
+            </TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="categories" className="pt-4">
           <CrudTable
             config={categoryCrudConfig}

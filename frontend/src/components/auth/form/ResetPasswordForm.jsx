@@ -2,9 +2,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import toast from 'react-hot-toast';
 import { resetPasswordSchema } from '@/validations/authSchemas';
-import { FormField } from '@/components/custom';
+import { PasswordField } from '@/components/custom';
 import { Button } from '@/components/ui/button';
 import { TOAST_MESSAGES } from '@/utils/constants';
+
+const AUTH_INPUT_CLASSNAME = 'border-transparent bg-muted/60 focus-visible:bg-background';
 
 // No password-reset flow exists on the backend yet — validates for real, submits nowhere.
 export function ResetPasswordForm() {
@@ -27,12 +29,12 @@ export function ResetPasswordForm() {
         name="password"
         control={control}
         render={({ field }) => (
-          <FormField
+          <PasswordField
             {...field}
-            type="password"
             label="New password"
             error={errors.password?.message}
             autoComplete="new-password"
+            className={AUTH_INPUT_CLASSNAME}
           />
         )}
       />
@@ -40,12 +42,12 @@ export function ResetPasswordForm() {
         name="confirmPassword"
         control={control}
         render={({ field }) => (
-          <FormField
+          <PasswordField
             {...field}
-            type="password"
             label="Confirm new password"
             error={errors.confirmPassword?.message}
             autoComplete="new-password"
+            className={AUTH_INPUT_CLASSNAME}
           />
         )}
       />

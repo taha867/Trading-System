@@ -15,7 +15,7 @@ export function SettingsContainer() {
   const tab = searchParams.get('tab') || DEFAULT_TAB;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -25,28 +25,30 @@ export function SettingsContainer() {
       </div>
 
       <Tabs value={tab} onValueChange={(value) => setSearchParams({ tab: value })}>
-        <TabsList>
-          <TabsTrigger value="exchange-rates">
-            <ArrowLeftRight className="size-4" />
-            Exchange Rates
-          </TabsTrigger>
-          <TabsTrigger value="payment-methods">
-            <Wallet className="size-4" />
-            Payment Methods
-          </TabsTrigger>
-          <TabsTrigger value="cargo-modes">
-            <Truck className="size-4" />
-            Cargo Modes
-          </TabsTrigger>
-          <TabsTrigger value="cargo-cost-bases">
-            <Scale className="size-4" />
-            Cost Bases
-          </TabsTrigger>
-          <TabsTrigger value="expense-categories">
-            <Tags className="size-4" />
-            Expense Categories
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList>
+            <TabsTrigger value="exchange-rates">
+              <ArrowLeftRight className="size-4" />
+              Exchange Rates
+            </TabsTrigger>
+            <TabsTrigger value="payment-methods">
+              <Wallet className="size-4" />
+              Payment Methods
+            </TabsTrigger>
+            <TabsTrigger value="cargo-modes">
+              <Truck className="size-4" />
+              Cargo Modes
+            </TabsTrigger>
+            <TabsTrigger value="cargo-cost-bases">
+              <Scale className="size-4" />
+              Cost Bases
+            </TabsTrigger>
+            <TabsTrigger value="expense-categories">
+              <Tags className="size-4" />
+              Expense Categories
+            </TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="exchange-rates" className="pt-4">
           <CrudTable
             config={exchangeRateCrudConfig}

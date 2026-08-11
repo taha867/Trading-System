@@ -2,9 +2,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import toast from 'react-hot-toast';
 import { signUpSchema } from '@/validations/authSchemas';
-import { FormField } from '@/components/custom';
+import { FormField, PasswordField } from '@/components/custom';
 import { Button } from '@/components/ui/button';
 import { TOAST_MESSAGES } from '@/utils/constants';
+
+const AUTH_INPUT_CLASSNAME = 'border-transparent bg-muted/60 focus-visible:bg-background';
 
 // No backend registration endpoint exists yet (Phase 0's single user is seeded, not
 // self-registered) — this form validates for real but has nowhere to submit to.
@@ -28,19 +30,25 @@ export function SignUpForm() {
         name="username"
         control={control}
         render={({ field }) => (
-          <FormField {...field} label="Username" error={errors.username?.message} autoComplete="username" />
+          <FormField
+            {...field}
+            label="Username"
+            error={errors.username?.message}
+            autoComplete="username"
+            className={AUTH_INPUT_CLASSNAME}
+          />
         )}
       />
       <Controller
         name="password"
         control={control}
         render={({ field }) => (
-          <FormField
+          <PasswordField
             {...field}
-            type="password"
             label="Password"
             error={errors.password?.message}
             autoComplete="new-password"
+            className={AUTH_INPUT_CLASSNAME}
           />
         )}
       />
@@ -48,12 +56,12 @@ export function SignUpForm() {
         name="confirmPassword"
         control={control}
         render={({ field }) => (
-          <FormField
+          <PasswordField
             {...field}
-            type="password"
             label="Confirm password"
             error={errors.confirmPassword?.message}
             autoComplete="new-password"
+            className={AUTH_INPUT_CLASSNAME}
           />
         )}
       />

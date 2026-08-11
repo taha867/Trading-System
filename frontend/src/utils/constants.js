@@ -1,3 +1,17 @@
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Truck,
+  Boxes,
+  Receipt,
+  Wallet,
+  Banknote,
+  Users2,
+  Package,
+  Settings,
+  Grid2x2,
+} from 'lucide-react';
+
 export const HTTP_STATUS = {
   UNAUTHORIZED: 401,
   CONFLICT: 409,
@@ -113,3 +127,26 @@ export const WINDOW_DAYS_OPTIONS = [
 // Mirrors backend/src/reporting/constants.py's DEFAULT_WINDOW_DAYS exactly —
 // keep the two in sync if that value ever changes.
 export const DEFAULT_WINDOW_DAYS = 30;
+
+// Shared by Sidebar.jsx (desktop icon rail) and BottomNav.jsx's mobile "More"
+// sheet — one source of truth for the app's primary navigation. shortLabel is
+// only used by BottomNav's primary tab row, which is width-constrained.
+export const NAV_LINKS = [
+  { to: '/dashboard', label: 'Dashboard', shortLabel: 'Home', icon: LayoutDashboard },
+  { to: '/purchase-orders', label: 'Purchase Orders', shortLabel: 'Purchases', icon: ShoppingCart },
+  { to: '/cargo-shipments', label: 'Cargo Shipments', icon: Truck },
+  { to: '/inventory', label: 'Inventory', shortLabel: 'Stock', icon: Boxes },
+  { to: '/sales-orders', label: 'Sales Orders', shortLabel: 'Sales', icon: Receipt },
+  { to: '/payments', label: 'Payments', icon: Wallet },
+  { to: '/expenses', label: 'Expenses', icon: Banknote },
+  { to: '/parties', label: 'Parties', icon: Users2 },
+  { to: '/catalog', label: 'Catalog', icon: Package },
+  { to: '/settings', label: 'Settings', icon: Settings },
+];
+
+// The four highest-traffic destinations on a phone (CLAUDE.md §3.7 names
+// "checking stock" and "confirming a sale" explicitly as the mobile personas)
+// get a fixed bottom tab in BottomNav.jsx; everything else lives behind its
+// "More" tab.
+export const BOTTOM_NAV_PRIMARY_PATHS = ['/dashboard', '/sales-orders', '/inventory', '/purchase-orders'];
+export const BOTTOM_NAV_MORE_ICON = Grid2x2;

@@ -23,46 +23,55 @@ import { PaymentsPage } from '@/pages/PaymentsPage';
 import { ExpensesPage } from '@/pages/ExpensesPage';
 import { PartyDetailPage } from '@/pages/PartyDetailPage';
 import { Navbar } from '@/components/Navbar';
+import { Sidebar } from '@/components/common/Sidebar';
+import { BottomNav } from '@/components/common/BottomNav';
 import { Footer } from '@/components/Footer';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export function App() {
   return (
-    <div className="flex min-h-svh flex-col">
-      <Navbar />
-      <main className="flex-1 bg-muted/30">
-        <Routes>
-          <Route element={<AuthRouteProtection />}>
-            <Route path="/sign-in" element={<SignInPage />} />
-            <Route path="/sign-up" element={<SignUpPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-          </Route>
+    <TooltipProvider>
+      <div className="flex min-h-svh">
+        <Sidebar />
+        <div className="flex min-h-svh min-w-0 flex-1 flex-col pb-16 md:pb-0">
+          <Navbar />
+          <main className="min-w-0 flex-1 bg-muted/30">
+            <Routes>
+              <Route element={<AuthRouteProtection />}>
+                <Route path="/sign-in" element={<SignInPage />} />
+                <Route path="/sign-up" element={<SignUpPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+              </Route>
 
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/catalog" element={<CatalogPage />} />
-            <Route path="/parties" element={<PartiesPage />} />
-            <Route path="/parties/:partyId" element={<PartyDetailPage />} />
-            <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
-            <Route path="/purchase-orders/new" element={<PurchaseOrderCreatePage />} />
-            <Route path="/purchase-orders/:orderId" element={<PurchaseOrderDetailPage />} />
-            <Route path="/cargo-shipments" element={<CargoShipmentsPage />} />
-            <Route path="/cargo-shipments/new" element={<CargoShipmentCreatePage />} />
-            <Route path="/cargo-shipments/:shipmentId" element={<CargoShipmentDetailPage />} />
-            <Route path="/inventory" element={<InventoryPage />} />
-            <Route path="/sales-orders" element={<SalesOrdersPage />} />
-            <Route path="/sales-orders/new" element={<SalesOrderCreatePage />} />
-            <Route path="/sales-orders/:orderId" element={<SalesOrderDetailPage />} />
-            <Route path="/payments" element={<PaymentsPage />} />
-            <Route path="/expenses" element={<ExpensesPage />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          </Route>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/catalog" element={<CatalogPage />} />
+                <Route path="/parties" element={<PartiesPage />} />
+                <Route path="/parties/:partyId" element={<PartyDetailPage />} />
+                <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+                <Route path="/purchase-orders/new" element={<PurchaseOrderCreatePage />} />
+                <Route path="/purchase-orders/:orderId" element={<PurchaseOrderDetailPage />} />
+                <Route path="/cargo-shipments" element={<CargoShipmentsPage />} />
+                <Route path="/cargo-shipments/new" element={<CargoShipmentCreatePage />} />
+                <Route path="/cargo-shipments/:shipmentId" element={<CargoShipmentDetailPage />} />
+                <Route path="/inventory" element={<InventoryPage />} />
+                <Route path="/sales-orders" element={<SalesOrdersPage />} />
+                <Route path="/sales-orders/new" element={<SalesOrderCreatePage />} />
+                <Route path="/sales-orders/:orderId" element={<SalesOrderDetailPage />} />
+                <Route path="/payments" element={<PaymentsPage />} />
+                <Route path="/expenses" element={<ExpensesPage />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              </Route>
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </main>
-      <Footer />
-    </div>
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
+        <BottomNav />
+      </div>
+    </TooltipProvider>
   );
 }

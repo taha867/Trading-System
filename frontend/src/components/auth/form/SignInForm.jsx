@@ -2,8 +2,10 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { signInSchema } from '@/validations/authSchemas';
 import { useSignIn } from '@/hooks/authHooks/authMutations';
-import { FormField } from '@/components/custom';
+import { FormField, PasswordField } from '@/components/custom';
 import { Button } from '@/components/ui/button';
+
+const AUTH_INPUT_CLASSNAME = 'border-transparent bg-muted/60 focus-visible:bg-background';
 
 export function SignInForm() {
   const {
@@ -30,19 +32,25 @@ export function SignInForm() {
         name="username"
         control={control}
         render={({ field }) => (
-          <FormField {...field} label="Username" error={errors.username?.message} autoComplete="username" />
+          <FormField
+            {...field}
+            label="Username"
+            error={errors.username?.message}
+            autoComplete="username"
+            className={AUTH_INPUT_CLASSNAME}
+          />
         )}
       />
       <Controller
         name="password"
         control={control}
         render={({ field }) => (
-          <FormField
+          <PasswordField
             {...field}
-            type="password"
             label="Password"
             error={errors.password?.message}
             autoComplete="current-password"
+            className={AUTH_INPUT_CLASSNAME}
           />
         )}
       />
