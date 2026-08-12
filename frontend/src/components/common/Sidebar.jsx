@@ -1,5 +1,4 @@
-import { Link, NavLink } from 'react-router-dom';
-import { ArrowLeftRight } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/authHooks/authHooks';
 import { NAV_LINKS } from '@/utils/constants';
@@ -10,16 +9,10 @@ export function Sidebar() {
 
   if (status !== 'authenticated') return null;
 
+  // No logo here — Navbar owns the single brand mark for the app. This rail is
+  // navigation only, so it doesn't duplicate it.
   return (
     <aside className="hidden w-16 shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-4 md:flex">
-      <Link
-        to="/dashboard"
-        className="mb-3 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground"
-        aria-label="Trading System — Dashboard"
-      >
-        <ArrowLeftRight className="size-4" />
-      </Link>
-
       <nav className="flex flex-col items-center gap-1">
         {NAV_LINKS.map(({ to, label, icon: Icon }) => (
           <Tooltip key={to}>
