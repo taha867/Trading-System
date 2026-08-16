@@ -30,6 +30,11 @@ export function useItemCrudConfig() {
       { key: 'category_id', label: 'Category', render: (row) => categoryNameById[row.category_id] ?? '—' },
       { key: 'model_id', label: 'Model', render: (row) => modelNameById[row.model_id] ?? '—' },
       { key: 'variant', label: 'Variant' },
+      {
+        key: 'compatible_models',
+        label: 'Also fits',
+        render: (row) => (row.compatible_models?.length ? row.compatible_models.map((m) => m.name).join(', ') : '—'),
+      },
     ],
     createSchema: itemCreateSchema,
     updateSchema: itemUpdateSchema,
@@ -71,6 +76,16 @@ export function useItemCrudConfig() {
       // sku is not present in ItemUpdate on the backend — immutable after create.
       { name: 'sku', label: 'SKU', component: 'text', editableOnUpdate: false },
       { name: 'variant', label: 'Variant', component: 'text' },
+      {
+        name: 'compatible_model_ids',
+        label: 'Also compatible with',
+        component: 'multiselect',
+        // Raw int value (not String(m.id)) — compatible_model_ids is numeric end-to-end
+        // (backend list[int], ItemRead.compatible_model_ids returns raw ints), unlike
+        // the model_id/category_id selects above which target a string-based control.
+        options: models.map((m) => ({ value: m.id, label: m.name })),
+        defaultValue: [],
+      },
     ],
   };
 }

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 
 class CategoryCreate(BaseModel):
@@ -57,16 +57,28 @@ class ItemCreate(BaseModel):
     model_id: int
     sku: Annotated[str, Field(max_length=64)]
     variant: Annotated[str | None, Field(max_length=64)] = None
+    compatible_model_ids: list[int] = []
 
 
-class ItemRead(ItemCreate):
+class ItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    category_id: int
+    model_id: int
+    sku: str
+    variant: str | None = None
     is_active: bool
+    compatible_models: list[ModelRead] = []
+
+    @computed_field
+    @property
+    def compatible_model_ids(self) -> list[int]:
+        return [m.id for m in self.compatible_models]
 
 
 class ItemUpdate(BaseModel):
     category_id: int | None = None
     model_id: int | None = None
     variant: Annotated[str | None, Field(max_length=64)] = None
+    compatible_model_ids: list[int] | None = None

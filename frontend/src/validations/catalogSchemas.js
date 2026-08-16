@@ -1,4 +1,4 @@
-import { object, string, number } from 'yup';
+import { object, string, number, array } from 'yup';
 
 export const categoryCreateSchema = object({
   name: string().required('Name is required').max(120),
@@ -28,6 +28,7 @@ export const itemCreateSchema = object({
   model_id: number().typeError('Select a model').required('Select a model'),
   sku: string().required('SKU is required').max(64),
   variant: string().max(64).nullable().default(null),
+  compatible_model_ids: array().of(number()).default([]),
 });
 // ItemUpdate omits sku entirely (immutable) — .omit() rather than .partial() alone,
 // same reasoning as ExchangeRateUpdate in the phase-0 spec §8.1.

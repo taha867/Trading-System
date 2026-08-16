@@ -13,7 +13,7 @@ from src.cargo.models import (  # noqa: F401
     CargoMode,
     CargoShipment,
 )
-from src.catalog.models import Category, Item, Model  # noqa: F401
+from src.catalog.models import Category, Item, ItemCompatibleModel, Model  # noqa: F401
 from src.config import settings
 from src.expenses.models import Expense, ExpenseCategory, RecurringExpenseTemplate  # noqa: F401
 from src.inventory.models import StockLot, StockMovement  # noqa: F401

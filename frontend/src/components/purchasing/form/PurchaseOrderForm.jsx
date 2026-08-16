@@ -2,12 +2,13 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FormField, FormSelect } from '@/components/custom';
+import { FormField, FormSelect, FormCombobox } from '@/components/custom';
 import { purchaseOrderCreateSchema } from '@/validations/purchasingSchemas';
 import { useCreatePurchaseOrder } from '@/hooks/purchasingHooks/purchasingMutations';
 import { useExchangeRateForDate } from '@/hooks/purchasingHooks/purchasingQueries';
 import { useChinaVendorParties, useLocalVendorParties } from '@/hooks/partyHooks/partyQueries';
 import { useItems } from '@/hooks/catalogHooks/itemQueries';
+import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { toMoney, computeRmbAmount, computePkrAmount, computeSaleAmount, formatRMB, formatPKR } from '@/utils/currencyUtils';
 import { PURCHASE_ORDER_SOURCE, PURCHASE_ORDER_SOURCE_OPTIONS } from '@/utils/constants';
 
@@ -19,10 +20,12 @@ export function PurchaseOrderForm({ onSuccess }) {
   const { vendors: chinaVendors } = useChinaVendorParties();
   const { vendors: localVendors } = useLocalVendorParties();
   const { data: itemsData } = useItems(LOOKUP_PAGE);
+  const { data: modelsData } = useModels(LOOKUP_PAGE);
 
+  const modelNameById = Object.fromEntries((modelsData?.items ?? []).map((m) => [m.id, m.name]));
   const itemOptions = (itemsData?.items ?? []).map((item) => ({
     value: String(item.id),
-    label: item.sku,
+    label: `${item.sku} · ${modelNameById[item.model_id] ?? 'Unknown model'}${item.variant ? ` (${item.variant})` : ''}`,
   }));
 
   const {
@@ -142,10 +145,11 @@ export function PurchaseOrderForm({ onSuccess }) {
               name={`lines.${index}.item_id`}
               control={control}
               render={({ field }) => (
-                <FormSelect
+                <FormCombobox
                   {...field}
                   label="Item"
                   placeholder="Select an item"
+                  searchPlaceholder="Search by SKU or model…"
                   options={itemOptions}
                   error={errors.lines?.[index]?.item_id?.message}
                 />
