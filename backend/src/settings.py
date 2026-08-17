@@ -15,10 +15,12 @@ SETTING_ID = 1
 class SettingRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     shop_name: str | None = None
+    shop_address: str | None = None
 
 
 class SettingUpdate(BaseModel):
     shop_name: Annotated[str, Field(max_length=120)] | None = None
+    shop_address: Annotated[str, Field(max_length=255)] | None = None
 
 
 async def get_or_create_setting(db: AsyncSession) -> Setting:

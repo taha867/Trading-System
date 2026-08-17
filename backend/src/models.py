@@ -23,3 +23,4 @@ class Setting(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     shop_name: Mapped[str | None] = mapped_column(nullable=True)
+    shop_address: Mapped[str | None] = mapped_column(nullable=True)

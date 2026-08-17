@@ -19,18 +19,21 @@ export function ShopSettingsForm() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(settingUpdateSchema, {}, { raw: true }),
-    defaultValues: { shop_name: '' },
+    defaultValues: { shop_name: '', shop_address: '' },
   });
 
   // Settings has exactly one row, always already loaded by the time this
   // effect can run more than once — a simple sync-on-fetch is enough, no
   // open/mode/row-style reset-key dance needed the way CrudDrawer's does.
   useEffect(() => {
-    if (data) reset({ shop_name: data.shop_name ?? '' });
+    if (data) reset({ shop_name: data.shop_name ?? '', shop_address: data.shop_address ?? '' });
   }, [data, reset]);
 
   const onSubmit = async (values) => {
-    await updateMutation.mutateAsync({ shop_name: values.shop_name || null });
+    await updateMutation.mutateAsync({
+      shop_name: values.shop_name || null,
+      shop_address: values.shop_address || null,
+    });
   };
 
   return (
@@ -38,7 +41,7 @@ export function ShopSettingsForm() {
       <CardHeader>
         <CardTitle className="text-base">Shop</CardTitle>
         <CardDescription>
-          Shown at the top of the Stock List image you share with clients.
+          Name is shown at the top of the Stock List image, address in its footer.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -48,6 +51,18 @@ export function ShopSettingsForm() {
             control={control}
             render={({ field }) => (
               <FormField {...field} label="Shop name" placeholder="Your shop name" error={errors.shop_name?.message} />
+            )}
+          />
+          <Controller
+            name="shop_address"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                {...field}
+                label="Shop address"
+                placeholder="Your shop address"
+                error={errors.shop_address?.message}
+              />
             )}
           />
           <Button type="submit" disabled={isSubmitting} className="self-start">

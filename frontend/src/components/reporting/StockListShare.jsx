@@ -59,7 +59,7 @@ const EXPORT_STYLES = `
   .model-list { margin: 0; }
   .model-item { position: relative; margin: 0; padding-left: 12px; font-size: 12px; line-height: ${LINE_HEIGHT_PX}px; }
   .model-item::before { content: ''; position: absolute; left: 0; top: ${(LINE_HEIGHT_PX - 4) / 2}px; width: 4px; height: 4px; border-radius: 50%; background: #111111; }
-  .footer { padding: 10px 28px; font-size: 11px; color: #6b7280; text-align: right; }
+  .footer { display: flex; justify-content: space-between; gap: 12px; padding: 10px 28px; font-size: 11px; color: #6b7280; border-top: 1px solid #e5e7eb; }
 `;
 
 // Flattens visibleGrouped into one brand-block-per-row list, each carrying a
@@ -131,7 +131,7 @@ function paginateBrandBlocks(visibleGrouped) {
 // first block belongs to — if a category's blocks span more than one page,
 // the band simply repeats on each page that carries part of it, reading
 // naturally as "this page continues that category."
-function buildPageDocument(shopName, blocks, pageNumber, totalPages, asOfDate) {
+function buildPageDocument(shopName, shopAddress, blocks, pageNumber, totalPages, asOfDate) {
   const category = blocks[0]?.category ?? '';
   const columns = columnsForBlocks(blocks);
   const cards = blocks
@@ -150,7 +150,14 @@ function buildPageDocument(shopName, blocks, pageNumber, totalPages, asOfDate) {
     </div>
     <div class="category-band">${escapeHtml(category)}</div>
     <div class="page-columns" style="column-count: ${columns}">${cards}</div>
-    ${totalPages > 1 ? `<div class="footer">Page ${pageNumber} of ${totalPages}</div>` : ''}
+    ${
+      shopAddress || totalPages > 1
+        ? `<div class="footer">
+      <span>${escapeHtml(shopAddress || '')}</span>
+      <span>${totalPages > 1 ? `Page ${pageNumber} of ${totalPages}` : ''}</span>
+    </div>`
+        : ''
+    }
   `;
   return `<!doctype html><html><head><meta charset="utf-8"><style>${EXPORT_STYLES}</style></head><body>${body}</body></html>`;
 }
@@ -165,6 +172,7 @@ export function StockListShare() {
   const { data, isLoading, isError } = useStockList(!showAllActive);
   const { data: settingData } = useSetting();
   const shopName = settingData?.shop_name;
+  const shopAddress = settingData?.shop_address;
   // Ephemeral UI state only — nothing here is submitted anywhere, so this is a
   // plain Set, not a react-hook-form field. A model is included unless its id
   // is in this set.
@@ -223,7 +231,7 @@ export function StockListShare() {
         try {
           await new Promise((resolve) => {
             iframe.onload = resolve;
-            iframe.srcdoc = buildPageDocument(shopName, pages[i], i + 1, pages.length, asOfDate);
+            iframe.srcdoc = buildPageDocument(shopName, shopAddress, pages[i], i + 1, pages.length, asOfDate);
           });
           // Grow the iframe to fit its real content — html2canvas only captures
           // what's within the target element's own box, and an untouched 100px
