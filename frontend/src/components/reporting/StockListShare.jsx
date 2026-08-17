@@ -56,7 +56,9 @@ const EXPORT_STYLES = `
   .page-columns { column-gap: 16px; padding: 18px 28px; }
   .brand-block { break-inside: avoid; margin: 0 0 14px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; }
   .brand-name { margin: 0 0 4px; font-size: 13px; font-weight: 700; text-decoration: underline; text-decoration-color: #1d4ed8; text-decoration-thickness: 2px; text-underline-offset: 3px; }
-  .model-list { margin: 0; padding-left: 16px; font-size: 12px; line-height: ${LINE_HEIGHT_PX}px; }
+  .model-list { margin: 0; }
+  .model-item { position: relative; margin: 0; padding-left: 12px; font-size: 12px; line-height: ${LINE_HEIGHT_PX}px; }
+  .model-item::before { content: ''; position: absolute; left: 0; top: ${(LINE_HEIGHT_PX - 4) / 2}px; width: 4px; height: 4px; border-radius: 50%; background: #111111; }
   .footer { padding: 10px 28px; font-size: 11px; color: #6b7280; text-align: right; }
 `;
 
@@ -131,7 +133,7 @@ function buildPageDocument(shopName, blocks, pageNumber, totalPages, asOfDate) {
       (b) => `
     <div class="brand-block">
       <p class="brand-name">${escapeHtml(b.brand)}</p>
-      <ul class="model-list">${b.models.map((m) => `<li>${escapeHtml(m.model)}</li>`).join('')}</ul>
+      <div class="model-list">${b.models.map((m) => `<p class="model-item">${escapeHtml(m.model)}</p>`).join('')}</div>
     </div>`,
     )
     .join('');
