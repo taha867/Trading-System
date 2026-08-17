@@ -7,11 +7,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useStockList } from '@/hooks/reportingHooks/reportingQueries';
 import { useSetting } from '@/hooks/settingsHooks/settingsQueries';
 
-// Export page geometry — see paginateBrandBlocks/buildPageDocument below.
-const PAGE_WIDTH = 700;
-const PAGE_HEIGHT = 1200;
-const HEADER_HEIGHT_LINES = 3; // shop name banner + category band, in "table row" units
-const ROW_HEIGHT_PX = 30;
+// Export page geometry — see paginateBrandBlocks/buildPageDocument below. Wide
+// enough for several brand-block "cards" side by side, tall enough that a
+// large multi-brand catalog packs into few pages instead of one page per
+// screenful of rows.
+const PAGE_WIDTH = 1000;
+const PAGE_HEIGHT = 1500;
+const MAX_COLUMNS = 4; // "as many columns as fit" — capped, not fixed; a sparse page uses fewer
+const HEADER_HEIGHT_LINES = 3; // shop name banner + category band, in "line" units
+const LINE_HEIGHT_PX = 20;
 
 // entries arrive flat, already ordered (category, brand, model) by the backend query —
 // grouping into two Maps preserves that order, so no re-sort is needed here.
@@ -49,11 +53,10 @@ const EXPORT_STYLES = `
   .subtitle { font-size: 12px; margin: 4px 0 0; opacity: 0.9; }
   .subtitle strong { font-weight: 700; }
   .category-band { background: #eff6ff; color: #1d4ed8; padding: 10px 28px; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-  .stock-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  .stock-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #1d4ed8; border-bottom: 2px solid #1d4ed8; padding: 10px 28px; }
-  .stock-table td { font-size: 13px; padding: 7px 28px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
-  .stock-table .brand-cell { font-weight: 700; }
-  .stock-table tr.zebra td { background: #f8fafc; }
+  .page-columns { column-gap: 16px; padding: 18px 28px; }
+  .brand-block { break-inside: avoid; margin: 0 0 14px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; }
+  .brand-name { margin: 0 0 4px; font-size: 13px; font-weight: 700; text-decoration: underline; text-decoration-color: #1d4ed8; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .model-list { margin: 0; padding-left: 16px; font-size: 12px; line-height: ${LINE_HEIGHT_PX}px; }
   .footer { padding: 10px 28px; font-size: 11px; color: #6b7280; text-align: right; }
 `;
 
@@ -68,14 +71,30 @@ function flattenToBrandBlocks(visibleGrouped) {
   );
 }
 
+// One column's line capacity, ignoring the page header (the header only
+// costs space once per page, not once per column).
+const LINES_PER_COLUMN = Math.floor(PAGE_HEIGHT / LINE_HEIGHT_PX) - HEADER_HEIGHT_LINES;
+
+// Picks how many columns a page's own content should flow into — as many as
+// fit (up to MAX_COLUMNS), but fewer when a page's content is short, so a
+// small selection never renders as 3-4 mostly-empty columns.
+function columnsForLineCount(totalLines) {
+  return Math.max(1, Math.min(MAX_COLUMNS, Math.ceil(totalLines / LINES_PER_COLUMN)));
+}
+
 // Greedily bin-packs brand blocks into pages so each page's total line cost
-// stays within one page's line budget. A single brand block whose own cost
-// exceeds a full page's budget is never split — it gets its own (over-budget)
-// page rather than fragmenting one brand's list across pages, an accepted
-// edge case for a shop with an unusually long single-brand catalog.
+// stays within one page's multi-column line budget (capacity per column times
+// up to MAX_COLUMNS) — this is what lets a large, many-brand catalog collapse
+// into a handful of pages instead of one page per screenful of rows. A single
+// brand block whose own cost exceeds a full page's budget is never split — it
+// gets its own (over-budget) page rather than fragmenting one brand's list
+// across pages, an accepted edge case for a shop with an unusually long
+// single-brand catalog. The browser's own column-flow (see buildPageDocument)
+// handles the actual per-column placement within a page; this only decides
+// how much content belongs together on one page.
 function paginateBrandBlocks(visibleGrouped) {
   const blocks = flattenToBrandBlocks(visibleGrouped);
-  const linesPerPage = Math.floor(PAGE_HEIGHT / ROW_HEIGHT_PX) - HEADER_HEIGHT_LINES;
+  const linesPerPage = LINES_PER_COLUMN * MAX_COLUMNS;
 
   const pages = [];
   let current = [];
@@ -93,28 +112,28 @@ function paginateBrandBlocks(visibleGrouped) {
   return pages;
 }
 
-// Builds one page's standalone HTML document. The category band shows
-// whichever category the page's first block belongs to — if a category's
-// blocks span more than one page, the band simply repeats on each page that
-// carries part of it, reading naturally as "this page continues that category."
+// Builds one page's standalone HTML document. Each brand renders as one
+// self-contained "card" (name + its full model list beneath it), and cards
+// flow into a CSS multi-column layout — `break-inside: avoid` keeps a card
+// from splitting across columns, and the browser's own column-balancing packs
+// short and long brand cards together far more densely than a single
+// Brand|Model table ever could, which is what collapses a large catalog into
+// far fewer pages. The category band shows whichever category the page's
+// first block belongs to — if a category's blocks span more than one page,
+// the band simply repeats on each page that carries part of it, reading
+// naturally as "this page continues that category."
 function buildPageDocument(shopName, blocks, pageNumber, totalPages, asOfDate) {
   const category = blocks[0]?.category ?? '';
-  // One <tr> per model; the brand name only appears once per group via
-  // rowspan, and every row in that group shares one zebra class so the
-  // striping reads as "one band per brand," not "one band per model."
-  const rows = blocks
-    .map((b, blockIndex) => {
-      const zebraClass = blockIndex % 2 === 1 ? ' class="zebra"' : '';
-      return b.models
-        .map(
-          (m, modelIndex) => `
-      <tr${zebraClass}>
-        ${modelIndex === 0 ? `<td class="brand-cell" rowspan="${b.models.length}">${escapeHtml(b.brand)}</td>` : ''}
-        <td>${escapeHtml(m.model)}</td>
-      </tr>`,
-        )
-        .join('');
-    })
+  const totalLines = blocks.reduce((sum, b) => sum + b.lineCost, 0);
+  const columns = columnsForLineCount(totalLines);
+  const cards = blocks
+    .map(
+      (b) => `
+    <div class="brand-block">
+      <p class="brand-name">${escapeHtml(b.brand)}</p>
+      <ul class="model-list">${b.models.map((m) => `<li>${escapeHtml(m.model)}</li>`).join('')}</ul>
+    </div>`,
+    )
     .join('');
   const body = `
     <div class="header">
@@ -122,11 +141,7 @@ function buildPageDocument(shopName, blocks, pageNumber, totalPages, asOfDate) {
       <p class="subtitle"><strong>Available Stock:</strong> ${escapeHtml(asOfDate)}</p>
     </div>
     <div class="category-band">${escapeHtml(category)}</div>
-    <table class="stock-table">
-      <colgroup><col style="width: 30%" /><col style="width: 70%" /></colgroup>
-      <thead><tr><th>Brand</th><th>Model</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
+    <div class="page-columns" style="column-count: ${columns}">${cards}</div>
     ${totalPages > 1 ? `<div class="footer">Page ${pageNumber} of ${totalPages}</div>` : ''}
   `;
   return `<!doctype html><html><head><meta charset="utf-8"><style>${EXPORT_STYLES}</style></head><body>${body}</body></html>`;
@@ -327,25 +342,23 @@ export function StockListShare() {
                     <p className="bg-blue-50 px-4 py-2 text-xs font-bold uppercase tracking-wide text-blue-700">
                       {cat.category}
                     </p>
-                    <table className="w-full text-sm">
-                      <tbody>
-                        {cat.brands.map((b, brandIndex) =>
-                          b.models.map((m, modelIndex) => (
-                            <tr key={m.modelId} className={brandIndex % 2 === 1 ? 'bg-slate-50' : undefined}>
-                              {modelIndex === 0 && (
-                                <td
-                                  rowSpan={b.models.length}
-                                  className="whitespace-nowrap border-r px-4 py-1.5 align-middle font-semibold"
-                                >
-                                  {b.brand}
-                                </td>
-                              )}
-                              <td className="w-full px-4 py-1.5">{m.model}</td>
-                            </tr>
-                          )),
-                        )}
-                      </tbody>
-                    </table>
+                    <div className="columns-1 gap-3 p-3 sm:columns-2 lg:columns-3">
+                      {cat.brands.map((b) => (
+                        <div
+                          key={b.brand}
+                          className="mb-3 break-inside-avoid rounded-md border bg-slate-50 px-3 py-2 text-sm"
+                        >
+                          <p className="mb-1 font-semibold underline decoration-blue-600 decoration-2 underline-offset-2">
+                            {b.brand}
+                          </p>
+                          <ul className="list-disc pl-4">
+                            {b.models.map((m) => (
+                              <li key={m.modelId}>{m.model}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
