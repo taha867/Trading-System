@@ -72,3 +72,14 @@ class MarginReportRead(BaseModel):
     total_revenue_pkr: Decimal
     total_cost_pkr: Decimal
     total_margin_pkr: Decimal
+
+
+class StockListEntryRead(BaseModel):
+    category: str
+    brand: str
+    model: str
+    model_id: int
+
+
+class StockListRead(BaseModel):
+    entries: list[StockListEntryRead]

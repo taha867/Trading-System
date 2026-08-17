@@ -8,7 +8,13 @@ from src.auth.models import User
 from src.database import get_db
 from src.reporting import service
 from src.reporting.constants import DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS, MIN_WINDOW_DAYS
-from src.reporting.schemas import BalanceStatementRead, MarginReportRead, ReorderPriorityRead, SellThroughRead
+from src.reporting.schemas import (
+    BalanceStatementRead,
+    MarginReportRead,
+    ReorderPriorityRead,
+    SellThroughRead,
+    StockListRead,
+)
 
 router = APIRouter(tags=["reporting"])  # no own prefix — main.py's is the only one, matches parties/router.py
 
@@ -48,3 +54,11 @@ async def margin_report(
     window_days: WindowDays = DEFAULT_WINDOW_DAYS,
 ):
     return await service.get_margin_report(db, window_days)
+
+
+@router.get("/stock-list", response_model=StockListRead)
+async def stock_list(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+):
+    return await service.get_stock_list(db)

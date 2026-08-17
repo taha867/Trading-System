@@ -10,6 +10,7 @@ import {
   Package,
   Settings,
   Grid2x2,
+  Share2,
 } from 'lucide-react';
 
 export const HTTP_STATUS = {
@@ -141,6 +142,7 @@ export const NAV_LINKS = [
   { to: '/expenses', label: 'Expenses', icon: Banknote },
   { to: '/parties', label: 'Parties', icon: Users2 },
   { to: '/catalog', label: 'Catalog', icon: Package },
+  { to: '/stock-list', label: 'Stock List', icon: Share2 },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];
 

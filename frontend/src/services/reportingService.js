@@ -30,3 +30,8 @@ export async function getMarginReport(windowDays) {
   const { data } = await fetchClient.get(`/reporting/margin?window_days=${windowDays}`);
   return data; // MarginReportRead
 }
+
+export async function getStockList() {
+  const { data } = await fetchClient.get('/reporting/stock-list');
+  return data; // StockListRead — no params, always "as of now"
+}

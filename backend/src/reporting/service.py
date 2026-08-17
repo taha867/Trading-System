@@ -1,10 +1,10 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.catalog.models import Item, Model
+from src.catalog.models import Brand, Category, Item, ItemCompatibleModel, Model
 from src.inventory.models import StockLot
 from src.ledger.models import LedgerEntry
 from src.parties.models import Party
@@ -18,6 +18,8 @@ from src.reporting.schemas import (
     ReorderPriorityRead,
     SellThroughEntryRead,
     SellThroughRead,
+    StockListEntryRead,
+    StockListRead,
 )
 from src.reporting.utils import money
 from src.sales.models import SalesOrder, SalesOrderLine, SalesOrderLineLot
@@ -213,4 +215,53 @@ async def get_margin_report(db: AsyncSession, window_days: int) -> MarginReportR
         total_revenue_pkr=total_revenue_pkr,
         total_cost_pkr=total_cost_pkr,
         total_margin_pkr=total_margin_pkr,
+    )
+
+
+async def get_stock_list(db: AsyncSession) -> StockListRead:
+    in_stock_item_ids = select(StockLot.item_id).where(StockLot.qty_remaining > 0).distinct()
+
+    primary = (
+        select(
+            Category.name.label("category"),
+            Brand.name.label("brand"),
+            Model.name.label("model"),
+            Model.id.label("model_id"),
+        )
+        .select_from(Item)
+        .join(Category, Category.id == Item.category_id)
+        .join(Model, Model.id == Item.model_id)
+        .join(Brand, Brand.id == Model.brand_id)
+        .where(Item.is_active.is_(True), Item.id.in_(in_stock_item_ids))
+    )
+
+    compatible = (
+        select(
+            Category.name.label("category"),
+            Brand.name.label("brand"),
+            Model.name.label("model"),
+            Model.id.label("model_id"),
+        )
+        .select_from(Item)
+        .join(Category, Category.id == Item.category_id)
+        .join(ItemCompatibleModel, ItemCompatibleModel.item_id == Item.id)
+        .join(Model, Model.id == ItemCompatibleModel.model_id)
+        .join(Brand, Brand.id == Model.brand_id)
+        .where(Item.is_active.is_(True), Item.id.in_(in_stock_item_ids))
+    )
+
+    combined = union(primary, compatible).subquery()
+    rows = (
+        await db.execute(
+            select(combined.c.category, combined.c.brand, combined.c.model, combined.c.model_id).order_by(
+                combined.c.category, combined.c.brand, combined.c.model
+            )
+        )
+    ).all()
+
+    return StockListRead(
+        entries=[
+            StockListEntryRead(category=r.category, brand=r.brand, model=r.model, model_id=r.model_id)
+            for r in rows
+        ]
     )

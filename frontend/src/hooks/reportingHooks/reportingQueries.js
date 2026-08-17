@@ -5,6 +5,7 @@ import {
   getSellThrough,
   recalculateReorderPriority,
   getMarginReport,
+  getStockList,
 } from '@/services/reportingService';
 
 export function useBalanceStatement() {
@@ -45,5 +46,12 @@ export function useRecalculateReorderPriority(windowDays) {
     queryFn: () => recalculateReorderPriority(windowDays),
     enabled: false,
     refetchOnWindowFocus: false,
+  });
+}
+
+export function useStockList() {
+  return useQuery({
+    queryKey: reportingKeys.stockList(),
+    queryFn: getStockList,
   });
 }

@@ -133,4 +133,10 @@ export const reportingKeys = {
   sellThrough: (windowDays) => [...reportingKeys.all, 'sell-through', windowDays],
   reorderPriority: (windowDays) => [...reportingKeys.all, 'reorder-priority', windowDays],
   margin: (windowDays) => [...reportingKeys.all, 'margin', windowDays],
+  stockList: () => [...reportingKeys.all, 'stock-list'],
+};
+
+export const settingsKeys = {
+  all: ['settings'],
+  detail: () => [...settingsKeys.all, 'detail'],
 };
