@@ -8,11 +8,10 @@ import { useStockList } from '@/hooks/reportingHooks/reportingQueries';
 import { useSetting } from '@/hooks/settingsHooks/settingsQueries';
 
 // Export page geometry — see paginateBrandBlocks/buildPageDocument below.
-const PAGE_WIDTH = 900;
+const PAGE_WIDTH = 700;
 const PAGE_HEIGHT = 1200;
-const COLUMN_COUNT = 3;
-const HEADER_HEIGHT_LINES = 3; // shop name banner + category band, in "model line" units
-const LINE_HEIGHT_PX = 22;
+const HEADER_HEIGHT_LINES = 3; // shop name banner + category band, in "table row" units
+const ROW_HEIGHT_PX = 30;
 
 // entries arrive flat, already ordered (category, brand, model) by the backend query —
 // grouping into two Maps preserves that order, so no re-sort is needed here.
@@ -47,11 +46,14 @@ const EXPORT_STYLES = `
   body { margin: 0; padding: 0; width: ${PAGE_WIDTH}px; font-family: Arial, Helvetica, sans-serif; color: #111111; background: #ffffff; }
   .header { background: #1d4ed8; color: #ffffff; padding: 20px 28px; }
   .shop-name { font-size: 22px; font-weight: 700; margin: 0; }
+  .subtitle { font-size: 12px; margin: 4px 0 0; opacity: 0.9; }
+  .subtitle strong { font-weight: 700; }
   .category-band { background: #eff6ff; color: #1d4ed8; padding: 10px 28px; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-  .page-columns { column-count: ${COLUMN_COUNT}; column-gap: 24px; padding: 20px 28px; }
-  .brand-block { break-inside: avoid; margin-bottom: 16px; }
-  .brand-name { font-size: 14px; font-weight: 700; margin: 0 0 4px; border-bottom: 2px solid #1d4ed8; display: inline-block; padding-bottom: 2px; }
-  .model-list { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: ${LINE_HEIGHT_PX}px; }
+  .stock-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .stock-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #1d4ed8; border-bottom: 2px solid #1d4ed8; padding: 10px 28px; }
+  .stock-table td { font-size: 13px; padding: 7px 28px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+  .stock-table .brand-cell { font-weight: 700; }
+  .stock-table tr.zebra td { background: #f8fafc; }
   .footer { padding: 10px 28px; font-size: 11px; color: #6b7280; text-align: right; }
 `;
 
@@ -73,7 +75,7 @@ function flattenToBrandBlocks(visibleGrouped) {
 // edge case for a shop with an unusually long single-brand catalog.
 function paginateBrandBlocks(visibleGrouped) {
   const blocks = flattenToBrandBlocks(visibleGrouped);
-  const linesPerPage = Math.floor(PAGE_HEIGHT / LINE_HEIGHT_PX - HEADER_HEIGHT_LINES) * COLUMN_COUNT;
+  const linesPerPage = Math.floor(PAGE_HEIGHT / ROW_HEIGHT_PX) - HEADER_HEIGHT_LINES;
 
   const pages = [];
   let current = [];
@@ -95,22 +97,36 @@ function paginateBrandBlocks(visibleGrouped) {
 // whichever category the page's first block belongs to — if a category's
 // blocks span more than one page, the band simply repeats on each page that
 // carries part of it, reading naturally as "this page continues that category."
-function buildPageDocument(shopName, blocks, pageNumber, totalPages) {
+function buildPageDocument(shopName, blocks, pageNumber, totalPages, asOfDate) {
   const category = blocks[0]?.category ?? '';
-  const body = `
-    <div class="header"><p class="shop-name">${escapeHtml(shopName || 'Stock List')}</p></div>
-    <div class="category-band">${escapeHtml(category)}</div>
-    <div class="page-columns">
-      ${blocks
+  // One <tr> per model; the brand name only appears once per group via
+  // rowspan, and every row in that group shares one zebra class so the
+  // striping reads as "one band per brand," not "one band per model."
+  const rows = blocks
+    .map((b, blockIndex) => {
+      const zebraClass = blockIndex % 2 === 1 ? ' class="zebra"' : '';
+      return b.models
         .map(
-          (b) => `
-        <div class="brand-block">
-          <p class="brand-name">${escapeHtml(b.brand)}</p>
-          <ul class="model-list">${b.models.map((m) => `<li>${escapeHtml(m.model)}</li>`).join('')}</ul>
-        </div>`,
+          (m, modelIndex) => `
+      <tr${zebraClass}>
+        ${modelIndex === 0 ? `<td class="brand-cell" rowspan="${b.models.length}">${escapeHtml(b.brand)}</td>` : ''}
+        <td>${escapeHtml(m.model)}</td>
+      </tr>`,
         )
-        .join('')}
+        .join('');
+    })
+    .join('');
+  const body = `
+    <div class="header">
+      <p class="shop-name">${escapeHtml(shopName || 'Stock List')}</p>
+      <p class="subtitle"><strong>Available Stock:</strong> ${escapeHtml(asOfDate)}</p>
     </div>
+    <div class="category-band">${escapeHtml(category)}</div>
+    <table class="stock-table">
+      <colgroup><col style="width: 30%" /><col style="width: 70%" /></colgroup>
+      <thead><tr><th>Brand</th><th>Model</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
     ${totalPages > 1 ? `<div class="footer">Page ${pageNumber} of ${totalPages}</div>` : ''}
   `;
   return `<!doctype html><html><head><meta charset="utf-8"><style>${EXPORT_STYLES}</style></head><body>${body}</body></html>`;
@@ -169,6 +185,7 @@ export function StockListShare() {
     if (visibleGrouped.length === 0) return;
     setIsDownloading(true);
     try {
+      const asOfDate = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
       const pages = paginateBrandBlocks(visibleGrouped);
       for (let i = 0; i < pages.length; i++) {
         const iframe = document.createElement('iframe');
@@ -177,7 +194,7 @@ export function StockListShare() {
         try {
           await new Promise((resolve) => {
             iframe.onload = resolve;
-            iframe.srcdoc = buildPageDocument(shopName, pages[i], i + 1, pages.length);
+            iframe.srcdoc = buildPageDocument(shopName, pages[i], i + 1, pages.length, asOfDate);
           });
           // Grow the iframe to fit its real content — html2canvas only captures
           // what's within the target element's own box, and an untouched 100px
@@ -288,23 +305,34 @@ export function StockListShare() {
             </div>
 
             <div className="flex min-w-0 flex-1 flex-col gap-3">
-              <div className="rounded-lg border bg-white p-4 text-black">
-                {visibleGrouped.length === 0 && <p className="text-sm text-muted-foreground">Nothing selected.</p>}
+              <div className="overflow-hidden rounded-lg border bg-white text-black">
+                {visibleGrouped.length === 0 && (
+                  <p className="p-4 text-sm text-muted-foreground">Nothing selected.</p>
+                )}
                 {visibleGrouped.map((cat) => (
-                  <div key={cat.category} className="mb-4 last:mb-0">
-                    <p className="text-sm font-bold uppercase tracking-wide">{cat.category}</p>
-                    {cat.brands.map((b) => (
-                      <div key={b.brand} className="mt-2 pl-3">
-                        <p className="text-sm font-semibold">{b.brand}</p>
-                        <ul className="mt-1 pl-3">
-                          {b.models.map((m) => (
-                            <li key={m.modelId} className="text-sm">
-                              {m.model}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
+                  <div key={cat.category} className="border-b last:border-b-0">
+                    <p className="bg-blue-50 px-4 py-2 text-xs font-bold uppercase tracking-wide text-blue-700">
+                      {cat.category}
+                    </p>
+                    <table className="w-full text-sm">
+                      <tbody>
+                        {cat.brands.map((b, brandIndex) =>
+                          b.models.map((m, modelIndex) => (
+                            <tr key={m.modelId} className={brandIndex % 2 === 1 ? 'bg-slate-50' : undefined}>
+                              {modelIndex === 0 && (
+                                <td
+                                  rowSpan={b.models.length}
+                                  className="whitespace-nowrap border-r px-4 py-1.5 align-middle font-semibold"
+                                >
+                                  {b.brand}
+                                </td>
+                              )}
+                              <td className="w-full px-4 py-1.5">{m.model}</td>
+                            </tr>
+                          )),
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 ))}
               </div>

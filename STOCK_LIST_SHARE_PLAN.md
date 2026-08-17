@@ -66,3 +66,4 @@ No new database tables/migrations (purely a read query over existing `catalog`/`
 3. Open the new Stock List page: confirm the checklist groups correctly by Category → Brand, confirm unchecking a model removes it from the live preview immediately.
 4. Click "Download image": confirm the downloaded PNG matches the on-screen preview exactly (same models, same grouping, same text).
 5. Check at ~375px width (phone) — confirm the checklist and preview remain usable, not squeezed into an unreadable two-column layout.
+
