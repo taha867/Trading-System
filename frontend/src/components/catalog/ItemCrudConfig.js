@@ -8,7 +8,7 @@ import { itemKeys } from '@/utils/queryKeys';
 // No server-side filter/sort exists on any Phase 1 list endpoint — fetching one
 // page_size=100 page and mapping client-side is a deliberate, documented limitation
 // (phase-1-frontend spec §1.1/§2), reused here for the category/model lookups.
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
+const LOOKUP_PAGE = { page: 1, page_size: 500 };
 
 export function useItemCrudConfig() {
   const { data: categoriesData } = useCategories(LOOKUP_PAGE);

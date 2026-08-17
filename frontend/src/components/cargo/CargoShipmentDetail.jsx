@@ -8,7 +8,7 @@ import { useItems } from '@/hooks/catalogHooks/itemQueries';
 import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
 import { useModels } from '@/hooks/catalogHooks/modelQueries';
 
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
+const LOOKUP_PAGE = { page: 1, page_size: 500 };
 
 export function CargoShipmentDetail({ shipment }) {
   const { data: partiesData } = useParties(LOOKUP_PAGE);

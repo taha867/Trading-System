@@ -11,7 +11,7 @@ import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { modelKeys } from '@/utils/queryKeys';
 import { WINDOW_DAYS_OPTIONS, DEFAULT_WINDOW_DAYS } from '@/utils/constants';
 
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
+const LOOKUP_PAGE = { page: 1, page_size: 500 };
 
 export function ReorderPriorityTable() {
   const [windowDays, setWindowDays] = useState(String(DEFAULT_WINDOW_DAYS));

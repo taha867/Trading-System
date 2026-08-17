@@ -11,7 +11,7 @@ import { useItems } from '@/hooks/catalogHooks/itemQueries';
 import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
 
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
+const LOOKUP_PAGE = { page: 1, page_size: 500 };
 
 function itemSubLabel(item, categoryNameById) {
   if (!item) return null;

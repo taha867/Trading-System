@@ -7,7 +7,7 @@ T = TypeVar("T")
 
 class PaginationParams(BaseModel):
     page: Annotated[int, Field(ge=1)] = 1
-    page_size: Annotated[int, Field(ge=1, le=100)] = 20
+    page_size: Annotated[int, Field(ge=1, le=500)] = 20
 
 
 class PaginatedResponse(BaseModel, Generic[T]):

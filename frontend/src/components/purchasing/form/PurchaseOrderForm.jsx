@@ -12,7 +12,7 @@ import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { toMoney, computeRmbAmount, computePkrAmount, computeSaleAmount, formatRMB, formatPKR } from '@/utils/currencyUtils';
 import { PURCHASE_ORDER_SOURCE, PURCHASE_ORDER_SOURCE_OPTIONS } from '@/utils/constants';
 
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
+const LOOKUP_PAGE = { page: 1, page_size: 500 };
 const EMPTY_LINE = { item_id: '', qty: '', rate_rmb: '', rate_pkr: '' };
 const todayIso = () => new Date().toISOString().slice(0, 10);
 

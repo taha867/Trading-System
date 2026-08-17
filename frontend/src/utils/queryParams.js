@@ -1,7 +1,7 @@
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
 const MIN_PAGE_SIZE = 1;
-const MAX_PAGE_SIZE = 100;
+const MAX_PAGE_SIZE = 500;
 
 export function buildQueryString({ page = DEFAULT_PAGE, page_size = DEFAULT_PAGE_SIZE, ...filters } = {}) {
   const clampedPage = Math.max(1, page);

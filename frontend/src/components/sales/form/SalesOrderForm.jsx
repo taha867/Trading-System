@@ -11,7 +11,7 @@ import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { useStockLots } from '@/hooks/inventoryHooks/inventoryQueries';
 import { toMoney, computeSaleAmount, formatPKR } from '@/utils/currencyUtils';
 
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
+const LOOKUP_PAGE = { page: 1, page_size: 500 };
 const EMPTY_LINE = { item_id: '', qty: '', rate_pkr: '' };
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
