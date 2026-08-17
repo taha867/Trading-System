@@ -31,7 +31,7 @@ export async function getMarginReport(windowDays) {
   return data; // MarginReportRead
 }
 
-export async function getStockList() {
-  const { data } = await fetchClient.get('/reporting/stock-list');
-  return data; // StockListRead — no params, always "as of now"
+export async function getStockList(inStockOnly = true) {
+  const { data } = await fetchClient.get(`/reporting/stock-list?in_stock_only=${inStockOnly}`);
+  return data; // StockListRead
 }

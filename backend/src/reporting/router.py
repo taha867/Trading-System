@@ -60,5 +60,6 @@ async def margin_report(
 async def stock_list(
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
+    in_stock_only: bool = True,
 ):
-    return await service.get_stock_list(db)
+    return await service.get_stock_list(db, in_stock_only)

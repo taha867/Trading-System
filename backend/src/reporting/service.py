@@ -218,8 +218,16 @@ async def get_margin_report(db: AsyncSession, window_days: int) -> MarginReportR
     )
 
 
-async def get_stock_list(db: AsyncSession) -> StockListRead:
-    in_stock_item_ids = select(StockLot.item_id).where(StockLot.qty_remaining > 0).distinct()
+async def get_stock_list(db: AsyncSession, in_stock_only: bool = True) -> StockListRead:
+    # Before real stock is being tracked (freshly seeded catalog, no PurchaseOrders/
+    # StockLots yet), in_stock_only=False lets the whole active catalog be
+    # downloaded anyway — deliberately NOT solved by faking StockLot rows, which
+    # would need real PurchaseOrderLine/vendor/ledger records behind them per this
+    # app's accounting model and would corrupt real inventory valuation later.
+    extra_conditions = []
+    if in_stock_only:
+        in_stock_item_ids = select(StockLot.item_id).where(StockLot.qty_remaining > 0).distinct()
+        extra_conditions.append(Item.id.in_(in_stock_item_ids))
 
     primary = (
         select(
@@ -232,7 +240,7 @@ async def get_stock_list(db: AsyncSession) -> StockListRead:
         .join(Category, Category.id == Item.category_id)
         .join(Model, Model.id == Item.model_id)
         .join(Brand, Brand.id == Model.brand_id)
-        .where(Item.is_active.is_(True), Item.id.in_(in_stock_item_ids))
+        .where(Item.is_active.is_(True), *extra_conditions)
     )
 
     compatible = (
@@ -247,7 +255,7 @@ async def get_stock_list(db: AsyncSession) -> StockListRead:
         .join(ItemCompatibleModel, ItemCompatibleModel.item_id == Item.id)
         .join(Model, Model.id == ItemCompatibleModel.model_id)
         .join(Brand, Brand.id == Model.brand_id)
-        .where(Item.is_active.is_(True), Item.id.in_(in_stock_item_ids))
+        .where(Item.is_active.is_(True), *extra_conditions)
     )
 
     combined = union(primary, compatible).subquery()

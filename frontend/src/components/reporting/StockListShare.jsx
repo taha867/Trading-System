@@ -133,7 +133,13 @@ function buildPageDocument(shopName, blocks, pageNumber, totalPages, asOfDate) {
 }
 
 export function StockListShare() {
-  const { data, isLoading, isError } = useStockList();
+  // Off by default — only models with real recorded stock show up, matching
+  // what the shop can actually fulfill right now. Switching this on bypasses
+  // the stock filter entirely (every active model, regardless of StockLot
+  // quantity) — for before real stock tracking is set up, without needing to
+  // fake StockLot/PurchaseOrder rows against real accounting data to get there.
+  const [showAllActive, setShowAllActive] = useState(false);
+  const { data, isLoading, isError } = useStockList(!showAllActive);
   const { data: settingData } = useSetting();
   const shopName = settingData?.shop_name;
   // Ephemeral UI state only — nothing here is submitted anywhere, so this is a
@@ -224,7 +230,9 @@ export function StockListShare() {
           <div>
             <CardTitle className="text-base">Stock List Share</CardTitle>
             <CardDescription>
-              Everything currently in stock — uncheck what you don't want to share, then download an image.
+              {showAllActive
+                ? 'Every active model, regardless of recorded stock — uncheck what you don\'t want to share, then download an image.'
+                : "Everything currently in stock — uncheck what you don't want to share, then download an image."}
             </CardDescription>
           </div>
         </div>
@@ -239,6 +247,11 @@ export function StockListShare() {
       </CardHeader>
 
       <CardContent>
+        <label className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Checkbox checked={showAllActive} onCheckedChange={(checked) => setShowAllActive(Boolean(checked))} />
+          Show all active models (not just what's currently in stock)
+        </label>
+
         {isLoading && (
           <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
             <Loader2 className="size-5 animate-spin" />
@@ -249,7 +262,7 @@ export function StockListShare() {
         {!isLoading && !isError && entries.length === 0 && (
           <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
             <Inbox className="size-6 text-muted-foreground/60" />
-            Nothing currently in stock.
+            {showAllActive ? 'No active models in the catalog yet.' : "Nothing currently in stock — try \"Show all active models.\""}
           </div>
         )}
 

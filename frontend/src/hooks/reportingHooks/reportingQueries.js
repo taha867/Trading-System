@@ -49,9 +49,9 @@ export function useRecalculateReorderPriority(windowDays) {
   });
 }
 
-export function useStockList() {
+export function useStockList(inStockOnly = true) {
   return useQuery({
-    queryKey: reportingKeys.stockList(),
-    queryFn: getStockList,
+    queryKey: reportingKeys.stockList(inStockOnly),
+    queryFn: () => getStockList(inStockOnly),
   });
 }
