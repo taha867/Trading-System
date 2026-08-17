@@ -4,11 +4,7 @@ import { useItems } from '@/hooks/catalogHooks/itemQueries';
 import { useCreateItem, useUpdateItem, useDeleteItem } from '@/hooks/catalogHooks/itemMutations';
 import { itemCreateSchema, itemUpdateSchema } from '@/validations/catalogSchemas';
 import { itemKeys } from '@/utils/queryKeys';
-
-// No server-side filter/sort exists on any Phase 1 list endpoint — fetching one
-// page_size=100 page and mapping client-side is a deliberate, documented limitation
-// (phase-1-frontend spec §1.1/§2), reused here for the category/model lookups.
-const LOOKUP_PAGE = { page: 1, page_size: 500 };
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 export function useItemCrudConfig() {
   const { data: categoriesData } = useCategories(LOOKUP_PAGE);

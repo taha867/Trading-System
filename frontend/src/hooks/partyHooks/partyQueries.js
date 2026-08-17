@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { partyKeys } from '@/utils/queryKeys';
 import { listParties, getPartyStatement } from '@/services/partyService';
 import { PARTY_ROLE } from '@/utils/constants';
-
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 export function useParties(params) {
   return useQuery({

@@ -10,8 +10,7 @@ import { useItems } from '@/hooks/catalogHooks/itemQueries';
 import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
 import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { useReceivedLineIds } from '@/hooks/inventoryHooks/inventoryQueries';
-
-const LOOKUP_PAGE = { page: 1, page_size: 500 };
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 function itemLabel(item, categoryNameById, modelNameById) {
   if (!item) return null;

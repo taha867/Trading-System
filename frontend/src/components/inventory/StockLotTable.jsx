@@ -10,8 +10,7 @@ import { useStockLots } from '@/hooks/inventoryHooks/inventoryQueries';
 import { useItems } from '@/hooks/catalogHooks/itemQueries';
 import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
-
-const LOOKUP_PAGE = { page: 1, page_size: 500 };
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 function itemSubLabel(item, categoryNameById) {
   if (!item) return null;

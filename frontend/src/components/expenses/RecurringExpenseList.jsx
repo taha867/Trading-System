@@ -12,9 +12,9 @@ import { useExpenseCategories, useTemplateIdsGeneratedThisMonth } from '@/hooks/
 import { usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
 import { useGenerateExpenseFromTemplate } from '@/hooks/expensesHooks/expensesMutations';
 import { EXPENSE_CATEGORY_FREQUENCY } from '@/utils/constants';
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const DEFAULT_PAGE_SIZE = 20;
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
 
 export function RecurringExpenseList() {
   const [page, setPage] = useState(1);

@@ -3,6 +3,11 @@ const DEFAULT_PAGE_SIZE = 20;
 const MIN_PAGE_SIZE = 1;
 const MAX_PAGE_SIZE = 500;
 
+// The "fetch everything for a dropdown/lookup id->name map" page — pinned to
+// MAX_PAGE_SIZE so raising that ceiling automatically raises this too, in the
+// one place both are defined, instead of needing every call site updated again.
+export const LOOKUP_PAGE = { page: 1, page_size: MAX_PAGE_SIZE };
+
 export function buildQueryString({ page = DEFAULT_PAGE, page_size = DEFAULT_PAGE_SIZE, ...filters } = {}) {
   const clampedPage = Math.max(1, page);
   const clampedPageSize = Math.min(MAX_PAGE_SIZE, Math.max(MIN_PAGE_SIZE, page_size));

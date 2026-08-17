@@ -12,8 +12,8 @@ import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
 import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { CARGO_COST_BASIS_CODE } from '@/utils/constants';
 import { toMoney, computeCargoAllocation, formatPKR } from '@/utils/currencyUtils';
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
-const LOOKUP_PAGE = { page: 1, page_size: 500 };
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function CargoShipmentForm({ onSuccess }) {

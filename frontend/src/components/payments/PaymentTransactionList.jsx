@@ -9,9 +9,9 @@ import { FormSelect } from '@/components/custom';
 import { usePaymentTransactions, usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
 import { useParties } from '@/hooks/partyHooks/partyQueries';
 import { PAYMENT_DIRECTION, PAYMENT_REFERENCE_TYPE_LABEL } from '@/utils/constants';
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const DEFAULT_PAGE_SIZE = 20;
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
 const ALL_ACCOUNTS = 'all';
 
 export function PaymentTransactionList() {

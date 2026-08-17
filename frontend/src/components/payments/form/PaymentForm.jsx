@@ -16,8 +16,8 @@ import {
   PAYMENT_REFERENCE_TYPE,
   PAYMENT_REFERENCE_TYPE_OPTIONS,
 } from '@/utils/constants';
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function PaymentForm({ onSuccess }) {

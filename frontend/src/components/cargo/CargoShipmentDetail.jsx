@@ -7,8 +7,7 @@ import { usePurchaseOrders } from '@/hooks/purchasingHooks/purchasingQueries';
 import { useItems } from '@/hooks/catalogHooks/itemQueries';
 import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
 import { useModels } from '@/hooks/catalogHooks/modelQueries';
-
-const LOOKUP_PAGE = { page: 1, page_size: 500 };
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 export function CargoShipmentDetail({ shipment }) {
   const { data: partiesData } = useParties(LOOKUP_PAGE);

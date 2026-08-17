@@ -7,11 +7,7 @@ import {
 } from '@/hooks/catalogHooks/modelMutations';
 import { modelCreateSchema, modelUpdateSchema } from '@/validations/catalogSchemas';
 import { modelKeys } from '@/utils/queryKeys';
-
-// No server-side filter/sort exists on any Phase 1 list endpoint — fetching one
-// page_size=100 page and mapping client-side is a deliberate, documented limitation
-// (phase-1-frontend spec §1.1/§2), reused here for the brand lookup.
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 export function useModelCrudConfig() {
   const { data: brandsData } = useBrands(LOOKUP_PAGE);

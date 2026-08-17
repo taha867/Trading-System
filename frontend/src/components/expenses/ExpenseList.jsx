@@ -12,9 +12,9 @@ import { useExpenses, useExpenseCategories } from '@/hooks/expensesHooks/expense
 import { usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
 import { useConfirmExpense, useDiscardExpense } from '@/hooks/expensesHooks/expensesMutations';
 import { EXPENSE_STATUS, EXPENSE_STATUS_OPTIONS } from '@/utils/constants';
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const DEFAULT_PAGE_SIZE = 20;
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
 const ALL = 'all';
 
 export function ExpenseList() {

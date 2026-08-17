@@ -3,8 +3,7 @@ import { CrudTable } from '@/components/common/CrudTable';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { paymentAccountCrudConfig } from '@/components/payments/PaymentAccountCrudConfig';
 import { usePaymentAccountBalances, usePaymentMethods } from '@/hooks/paymentsHooks/paymentsQueries';
-
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 export function PaymentAccountList() {
   const { data: balancesData } = usePaymentAccountBalances();

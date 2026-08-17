@@ -10,8 +10,7 @@ import { useSellThrough, useRecalculateReorderPriority } from '@/hooks/reporting
 import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { modelKeys } from '@/utils/queryKeys';
 import { WINDOW_DAYS_OPTIONS, DEFAULT_WINDOW_DAYS } from '@/utils/constants';
-
-const LOOKUP_PAGE = { page: 1, page_size: 500 };
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 export function ReorderPriorityTable() {
   const [windowDays, setWindowDays] = useState(String(DEFAULT_WINDOW_DAYS));

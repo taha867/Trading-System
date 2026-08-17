@@ -8,9 +8,9 @@ import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { useSalesOrders } from '@/hooks/salesHooks/salesQueries';
 import { useParties } from '@/hooks/partyHooks/partyQueries';
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const DEFAULT_PAGE_SIZE = 20;
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
 
 export function SalesOrderList() {
   const [page, setPage] = useState(1);

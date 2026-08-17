@@ -6,8 +6,8 @@ import { expenseCreateSchema } from '@/validations/expensesSchemas';
 import { useCreateExpense } from '@/hooks/expensesHooks/expensesMutations';
 import { useExpenseCategories } from '@/hooks/expensesHooks/expensesQueries';
 import { usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function ExpenseForm({ onSuccess }) {

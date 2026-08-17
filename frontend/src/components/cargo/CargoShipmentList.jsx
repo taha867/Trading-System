@@ -8,9 +8,9 @@ import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { useCargoShipments, useCargoModes, useCargoCostBases } from '@/hooks/cargoHooks/cargoQueries';
 import { useParties } from '@/hooks/partyHooks/partyQueries';
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const DEFAULT_PAGE_SIZE = 20;
-const LOOKUP_PAGE = { page: 1, page_size: 100 };
 
 export function CargoShipmentList() {
   const [page, setPage] = useState(1);
