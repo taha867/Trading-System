@@ -59,7 +59,8 @@ const EXPORT_STYLES = `
   .model-list { margin: 0; }
   .model-item { position: relative; margin: 0; padding-left: 12px; font-size: 12px; line-height: ${LINE_HEIGHT_PX}px; }
   .model-item::before { content: ''; position: absolute; left: 0; top: ${(LINE_HEIGHT_PX - 4) / 2}px; width: 4px; height: 4px; border-radius: 50%; background: #111111; }
-  .footer { display: flex; justify-content: space-between; gap: 12px; padding: 10px 28px; font-size: 11px; color: #6b7280; border-top: 1px solid #e5e7eb; }
+  .footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 28px; font-size: 14px; font-weight: 600; color: #ffffff; background: #1d4ed8; }
+  .footer strong { font-weight: 700; }
 `;
 
 // Flattens visibleGrouped into one brand-block-per-row list, each carrying a
@@ -153,7 +154,7 @@ function buildPageDocument(shopName, shopAddress, blocks, pageNumber, totalPages
     ${
       shopAddress || totalPages > 1
         ? `<div class="footer">
-      <span>${escapeHtml(shopAddress || '')}</span>
+      <span>${shopAddress ? `<strong>Address:</strong> ${escapeHtml(shopAddress)}` : ''}</span>
       <span>${totalPages > 1 ? `Page ${pageNumber} of ${totalPages}` : ''}</span>
     </div>`
         : ''
