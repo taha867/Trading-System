@@ -78,10 +78,17 @@ function flattenToBrandBlocks(visibleGrouped) {
 const LINES_PER_COLUMN = Math.floor(PAGE_HEIGHT / LINE_HEIGHT_PX) - HEADER_HEIGHT_LINES;
 
 // Picks how many columns a page's own content should flow into — as many as
-// fit (up to MAX_COLUMNS), but fewer when a page's content is short, so a
-// small selection never renders as 3-4 mostly-empty columns.
-function columnsForLineCount(totalLines) {
-  return Math.max(1, Math.min(MAX_COLUMNS, Math.ceil(totalLines / LINES_PER_COLUMN)));
+// fit (up to MAX_COLUMNS), capped by how many brand blocks are actually on the
+// page. Sized off the block count, not the estimated line volume: the page is
+// a fixed width regardless of how tall its content is, so a short page still
+// wants every column filled (the column-balancer below packs short and tall
+// blocks together to even out the heights) — fewer columns than blocks fit
+// would just leave the right side of a wide page blank. The only time fewer
+// columns is correct is when there simply aren't enough distinct brands to
+// fill them (e.g. a single brand on its own page shouldn't render as 4 mostly
+// empty columns).
+function columnsForBlocks(blocks) {
+  return Math.max(1, Math.min(MAX_COLUMNS, blocks.length));
 }
 
 // Greedily bin-packs brand blocks into pages so each page's total line cost
@@ -126,8 +133,7 @@ function paginateBrandBlocks(visibleGrouped) {
 // naturally as "this page continues that category."
 function buildPageDocument(shopName, blocks, pageNumber, totalPages, asOfDate) {
   const category = blocks[0]?.category ?? '';
-  const totalLines = blocks.reduce((sum, b) => sum + b.lineCost, 0);
-  const columns = columnsForLineCount(totalLines);
+  const columns = columnsForBlocks(blocks);
   const cards = blocks
     .map(
       (b) => `
