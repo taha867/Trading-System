@@ -18,7 +18,7 @@ from src.config import settings
 from src.expenses.models import Expense, ExpenseCategory, RecurringExpenseTemplate  # noqa: F401
 from src.inventory.models import StockLot, StockMovement  # noqa: F401
 from src.ledger.models import LedgerEntry  # noqa: F401
-from src.models import Base
+from src.models import Base, Setting  # noqa: F401
 from src.parties.models import Party  # noqa: F401
 from src.payments.models import PaymentAccount, PaymentMethod, PaymentTransaction  # noqa: F401
 from src.purchasing.models import (  # noqa: F401

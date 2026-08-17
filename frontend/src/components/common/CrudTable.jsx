@@ -139,7 +139,7 @@ export function CrudTable({ config, title, description, icon: Icon, addLabel = '
           </div>
         </div>
         <CardAction>
-          <Button size="sm" onClick={() => setDrawerState({ mode: 'create' })}>
+          <Button size="sm" onClick={() => setDrawerState({ mode: 'create', openedAt: Date.now() })}>
             <Plus />
             {addLabel}
           </Button>
@@ -199,7 +199,7 @@ export function CrudTable({ config, title, description, icon: Icon, addLabel = '
                         variant="ghost"
                         size="icon-sm"
                         aria-label={`Edit ${entityLabel}`}
-                        onClick={() => setDrawerState({ mode: 'edit', row })}
+                        onClick={() => setDrawerState({ mode: 'edit', row, openedAt: Date.now() })}
                       >
                         <Pencil />
                       </Button>
@@ -227,6 +227,7 @@ export function CrudTable({ config, title, description, icon: Icon, addLabel = '
         open={Boolean(drawerState)}
         mode={drawerState?.mode}
         row={drawerState?.row}
+        openedAt={drawerState?.openedAt}
         entityLabel={entityLabel}
         onOpenChange={(nextOpen) => !nextOpen && setDrawerState(null)}
       />

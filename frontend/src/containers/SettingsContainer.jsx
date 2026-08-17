@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeftRight, Wallet, Truck, Scale, Tags } from 'lucide-react';
+import { ArrowLeftRight, Wallet, Truck, Scale, Tags, Store } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { CrudTable } from '@/components/common/CrudTable';
 import { exchangeRateCrudConfig } from '@/components/purchasing/ExchangeRateCrudConfig';
@@ -7,6 +7,7 @@ import { paymentMethodCrudConfig } from '@/components/payments/PaymentMethodCrud
 import { cargoModeCrudConfig } from '@/components/cargo/CargoModeCrudConfig';
 import { cargoCostBasisCrudConfig } from '@/components/cargo/CargoCostBasisCrudConfig';
 import { expenseCategoryCrudConfig } from '@/components/expenses/ExpenseCategoryCrudConfig';
+import { ShopSettingsForm } from '@/components/settings/ShopSettingsForm';
 
 const DEFAULT_TAB = 'exchange-rates';
 
@@ -46,6 +47,10 @@ export function SettingsContainer() {
             <TabsTrigger value="expense-categories">
               <Tags className="size-4" />
               Expense Categories
+            </TabsTrigger>
+            <TabsTrigger value="shop">
+              <Store className="size-4" />
+              Shop
             </TabsTrigger>
           </TabsList>
         </div>
@@ -98,6 +103,9 @@ export function SettingsContainer() {
             addLabel="Add category"
             entityLabel="expense category"
           />
+        </TabsContent>
+        <TabsContent value="shop" className="pt-4">
+          <ShopSettingsForm />
         </TabsContent>
       </Tabs>
     </div>

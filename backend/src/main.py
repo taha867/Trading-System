@@ -13,6 +13,7 @@ from src.payments.router import router as payments_router
 from src.purchasing.router import router as purchasing_router
 from src.reporting.router import router as reporting_router
 from src.sales.router import router as sales_router
+from src.settings import router as settings_router
 
 app = FastAPI(title="Trading System")
 register_middlewares(app)
@@ -34,3 +35,4 @@ app.include_router(inventory_router, prefix="/inventory")
 app.include_router(sales_router, prefix="/sales")
 app.include_router(expenses_router, prefix="/expenses")
 app.include_router(reporting_router, prefix="/reporting")
+app.include_router(settings_router, prefix="/settings")

@@ -28,7 +28,7 @@ function inputTypeFor(component) {
   return 'text';
 }
 
-export function CrudDrawer({ config, open, mode, row, onOpenChange, entityLabel = 'record' }) {
+export function CrudDrawer({ config, open, mode, row, openedAt, onOpenChange, entityLabel = 'record' }) {
   const schema = mode === 'edit' ? config.updateSchema : config.createSchema;
 
   const {
@@ -50,8 +50,12 @@ export function CrudDrawer({ config, open, mode, row, onOpenChange, entityLabel 
     if (open) {
       reset(buildDefaultValues(config.fields, mode === 'edit' ? row : null, mode));
     }
+    // openedAt is a fresh Date.now() on every "Add"/"Edit" click (set by CrudTable) —
+    // needed because open/mode/row alone can stay identical across two consecutive
+    // "Add" clicks (both are {mode:'create'}, no row), which would otherwise skip
+    // this reset and leave stale typed values in the form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, row]);
+  }, [open, mode, row, openedAt]);
 
   const onSubmit = async (values) => {
     try {
