@@ -10,6 +10,7 @@ from src.inventory import service
 from src.inventory.dependencies import valid_stock_lot
 from src.inventory.models import StockLot
 from src.inventory.schemas import (
+    StockLotListRead,
     StockLotRead,
     StockLotReceiveCreate,
     StockMovementCreate,
@@ -29,7 +30,7 @@ async def receive_line(
     return await service.receive_purchase_order_line(db, payload)
 
 
-@stock_lot_router.get("", response_model=PaginatedResponse[StockLotRead])
+@stock_lot_router.get("", response_model=StockLotListRead)
 async def list_stock_lots(
     # PaginationParams uses Depends() here rather than crud.py/other routers' Query() —
     # this endpoint also takes plain filter params (item_id/stock_lot_id/

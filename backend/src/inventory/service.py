@@ -19,7 +19,7 @@ from src.inventory.exceptions import (
 )
 from src.inventory.models import StockLot, StockMovement
 from src.inventory.schemas import (
-    StockLotRead,
+    StockLotListRead,
     StockLotReceiveCreate,
     StockMovementCreate,
     StockMovementRead,
@@ -186,7 +186,7 @@ async def list_stock_lots(
     category_id: int | None = None,
     brand_id: int | None = None,
     model_id: int | None = None,
-) -> PaginatedResponse[StockLotRead]:
+) -> StockLotListRead:
     offset = (pagination.page - 1) * pagination.page_size
 
     filters = []
@@ -206,22 +206,32 @@ async def list_stock_lots(
     needs_join = category_id is not None or model_id is not None or brand_id is not None
 
     count_stmt = select(func.count()).select_from(StockLot).where(*filters)
+    # Same filters, no offset/limit — "how much stock is on hand" has to sum every
+    # matching lot, not just the page being rendered.
+    sum_stmt = select(
+        func.coalesce(func.sum(StockLot.qty_remaining), 0),
+        func.coalesce(func.sum(StockLot.qty_remaining * StockLot.landed_cost_pkr), 0),
+    ).where(*filters)
     list_stmt = select(StockLot).options(*STOCK_LOT_LOAD_OPTIONS).where(*filters)
     if needs_join:
         count_stmt = count_stmt.join(Item, Item.id == StockLot.item_id).join(Model, Model.id == Item.model_id)
+        sum_stmt = sum_stmt.join(Item, Item.id == StockLot.item_id).join(Model, Model.id == Item.model_id)
         list_stmt = list_stmt.join(Item, Item.id == StockLot.item_id).join(Model, Model.id == Item.model_id)
 
     total = await db.scalar(count_stmt)
+    total_qty_remaining, total_value_remaining_pkr = (await db.execute(sum_stmt)).one()
     result = await db.execute(
         list_stmt.order_by(StockLot.item_id, StockLot.received_date, StockLot.id).offset(offset).limit(pagination.page_size)
     )
     items = result.unique().scalars().all()
 
-    return PaginatedResponse[StockLotRead](
+    return StockLotListRead(
         items=items,
         total=total or 0,
         page=pagination.page,
         page_size=pagination.page_size,
+        total_qty_remaining=total_qty_remaining,
+        total_value_remaining_pkr=money(total_value_remaining_pkr),
     )
 
 

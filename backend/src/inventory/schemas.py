@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from src.inventory.constants import StockMovementType
 from src.inventory.utils import money
+from src.pagination import PaginatedResponse
 
 
 class StockLotReceiveCreate(BaseModel):
@@ -34,6 +35,14 @@ class StockLotRead(BaseModel):
     @property
     def value_remaining_pkr(self) -> Decimal:
         return money(self.qty_remaining * self.landed_cost_pkr)
+
+
+class StockLotListRead(PaginatedResponse[StockLotRead]):
+    # `total` (from PaginatedResponse) is a row count, not a unit count — a
+    # page shows 20 lots, but "how much stock is actually on hand" needs the
+    # sum across every lot matching the current filters, not just this page.
+    total_qty_remaining: Decimal
+    total_value_remaining_pkr: Decimal
 
 
 class StockMovementCreate(BaseModel):

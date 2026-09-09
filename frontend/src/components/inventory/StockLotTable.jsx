@@ -52,6 +52,9 @@ export function StockLotTable() {
   });
   const lots = data?.items ?? [];
   const total = data?.total ?? 0;
+  const totalQtyRemaining = data?.total_qty_remaining ?? 0;
+  const totalValueRemainingPkr = data?.total_value_remaining_pkr ?? 0;
+  const hasActiveFilter = Boolean(categoryId || brandId || modelId);
 
   const groupIndex = new Map();
   const groups = [];
@@ -102,6 +105,15 @@ export function StockLotTable() {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
+        {!isLoading && !isError && (
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3">
+            <span className="text-2xl font-semibold text-foreground">{totalQtyRemaining}</span>
+            <span className="text-sm text-muted-foreground">
+              units on hand{hasActiveFilter ? ' matching the filters below' : ' across the whole catalog'} ·{' '}
+              <CurrencyAmount value={totalValueRemainingPkr} className="font-medium text-foreground" />
+            </span>
+          </div>
+        )}
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Select value={categoryId || ALL_VALUE} onValueChange={handleCategoryChange}>
             <SelectTrigger className="w-full sm:w-48" aria-label="Category">
