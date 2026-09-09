@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Loader2, Inbox, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,21 @@ import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const DEFAULT_PAGE_SIZE = 20;
 
+// A PO's own lines already carry their category_name (embedded — see
+// purchasing/schemas.py's PurchaseOrderLineRead), so no per-row lookup fetch
+// is needed just to answer "what did this order buy" (usually one category,
+// per this app's own "one PurchaseOrder per category" convention, but shown
+// honestly if a PO ever mixes a few).
+function categoryLabel(order) {
+  const names = [...new Set((order.lines ?? []).map((line) => line.category_name))];
+  if (names.length === 0) return '—';
+  if (names.length === 1) return names[0];
+  return `${names[0]} +${names.length - 1} more`;
+}
+
 export function PurchaseOrderList() {
   const [page, setPage] = useState(1);
+  const navigate = useNavigate();
   const { data, isLoading, isError } = usePurchaseOrders({ page, page_size: DEFAULT_PAGE_SIZE });
   const { data: partiesData } = useParties(LOOKUP_PAGE);
 
@@ -51,6 +64,7 @@ export function PurchaseOrderList() {
               <TableRow className="bg-muted/50">
                 <TableHead>ID</TableHead>
                 <TableHead>Vendor</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Order date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Source</TableHead>
@@ -60,7 +74,7 @@ export function PurchaseOrderList() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Loader2 className="size-5 animate-spin" />
                       Loading…
@@ -70,14 +84,14 @@ export function PurchaseOrderList() {
               )}
               {isError && (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-destructive">
+                  <TableCell colSpan={7} className="h-32 text-center text-destructive">
                     Failed to load.
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && !isError && orders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Inbox className="size-6 text-muted-foreground/60" />
                       No purchase orders yet — create the first one above.
@@ -86,13 +100,14 @@ export function PurchaseOrderList() {
                 </TableRow>
               )}
               {orders.map((order) => (
-                <TableRow key={order.id} className="hover:bg-muted/40">
-                  <TableCell>
-                    <Link to={`/purchase-orders/${order.id}`} className="font-medium text-primary hover:underline">
-                      #{order.id}
-                    </Link>
-                  </TableCell>
+                <TableRow
+                  key={order.id}
+                  className="cursor-pointer hover:bg-muted/40"
+                  onClick={() => navigate(`/purchase-orders/${order.id}`)}
+                >
+                  <TableCell className="font-medium text-primary">#{order.id}</TableCell>
                   <TableCell>{vendorNameById[order.party_id] ?? `Party #${order.party_id}`}</TableCell>
+                  <TableCell>{categoryLabel(order)}</TableCell>
                   <TableCell>{order.order_date}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{order.status}</Badge>
