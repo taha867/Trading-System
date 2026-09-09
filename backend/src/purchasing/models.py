@@ -4,6 +4,7 @@ from decimal import Decimal
 from sqlalchemy import Date, DateTime, ForeignKey, Numeric, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.catalog.models import Item
 from src.models import Base
 
 
@@ -46,3 +47,25 @@ class PurchaseOrderLine(Base):
     landed_cost_pkr: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
 
     purchase_order: Mapped["PurchaseOrder"] = relationship(back_populates="lines", lazy="raise")
+    # Read-only navigation for display purposes (PurchaseOrderLineRead embeds the
+    # item's sku/model/category) — purchasing still only references Item by id,
+    # doesn't own it; no back_populates, Item has no reason to know about this.
+    # Every read path must joinedload the whole chain (item -> model, item -> category),
+    # same lazy="raise" discipline as the relationship itself.
+    item: Mapped["Item"] = relationship(lazy="raise")
+
+    @property
+    def item_sku(self) -> str:
+        return self.item.sku
+
+    @property
+    def item_variant(self) -> str | None:
+        return self.item.variant
+
+    @property
+    def model_name(self) -> str:
+        return self.item.model.name
+
+    @property
+    def category_name(self) -> str:
+        return self.item.category.name

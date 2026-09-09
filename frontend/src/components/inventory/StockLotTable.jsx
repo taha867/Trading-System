@@ -5,50 +5,46 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
+import { PaginationControls } from '@/components/common/PaginationControls';
 import { StockAdjustmentDialog } from '@/components/inventory/StockAdjustmentDialog';
 import { useStockLots } from '@/hooks/inventoryHooks/inventoryQueries';
-import { useItems } from '@/hooks/catalogHooks/itemQueries';
-import { useModels } from '@/hooks/catalogHooks/modelQueries';
-import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
-import { LOOKUP_PAGE } from '@/utils/queryParams';
 
-function itemSubLabel(item, categoryNameById) {
-  if (!item) return null;
-  const parts = [categoryNameById[item.category_id], item.sku].filter(Boolean);
-  return parts.join(' · ') + (item.variant ? ` (${item.variant})` : '');
+const PAGE_SIZE = 20;
+
+function itemSubLabel(lot) {
+  const parts = [lot.category_name, lot.item_sku].filter(Boolean);
+  return parts.join(' · ') + (lot.item_variant ? ` (${lot.item_variant})` : '');
 }
 
 export function StockLotTable() {
+  const [page, setPage] = useState(1);
   const [includeDepleted, setIncludeDepleted] = useState(false);
   const [adjustingLot, setAdjustingLot] = useState(null);
 
-  // page_size=100, unpaginated in the UI, on purpose — grouping by model needs the
-  // whole set at once. Not the same accepted-limitation shape as a one-off
-  // client-side filter elsewhere: past 100 total lots this view starts silently
-  // dropping the newest ones rather than just missing a filter match.
-  const { data, isLoading, isError } = useStockLots({ page: 1, page_size: 100, include_depleted: includeDepleted });
-  const { data: itemsData } = useItems(LOOKUP_PAGE);
-  const { data: modelsData } = useModels(LOOKUP_PAGE);
-  const { data: categoriesData } = useCategories(LOOKUP_PAGE);
-
-  const itemById = Object.fromEntries((itemsData?.items ?? []).map((i) => [i.id, i]));
-  const modelNameById = Object.fromEntries((modelsData?.items ?? []).map((m) => [m.id, m.name]));
-  const categoryNameById = Object.fromEntries((categoriesData?.items ?? []).map((c) => [c.id, c.name]));
+  // Real pagination — StockLotRead now carries its own item_sku/model_name/
+  // category_name (see backend/src/inventory/schemas.py), so no more
+  // whole-Items/Models/Categories-catalog LOOKUP_PAGE fetch is needed just to
+  // label a page of rows. Grouping by model is a per-page display concern
+  // now, not a whole-table one — a model's lots can span two pages.
+  const { data, isLoading, isError } = useStockLots({ page, page_size: PAGE_SIZE, include_depleted: includeDepleted });
   const lots = data?.items ?? [];
+  const total = data?.total ?? 0;
 
   const groupIndex = new Map();
   const groups = [];
   for (const lot of lots) {
-    const item = itemById[lot.item_id];
-    const modelId = item?.model_id ?? 'unknown';
-    const key = `${modelId}:${lot.item_id}`;
+    const key = `${lot.item_id}`;
     if (!groupIndex.has(key)) {
       groupIndex.set(key, groups.length);
-      groups.push({ modelId, itemId: lot.item_id, item, lots: [] });
+      groups.push({ itemId: lot.item_id, modelName: lot.model_name, lots: [] });
     }
     groups[groupIndex.get(key)].lots.push(lot);
   }
-  groups.sort((a, b) => (modelNameById[a.modelId] ?? '').localeCompare(modelNameById[b.modelId] ?? ''));
+
+  const handleIncludeDepletedChange = (checked) => {
+    setIncludeDepleted(Boolean(checked));
+    setPage(1);
+  };
 
   return (
     <Card>
@@ -64,7 +60,7 @@ export function StockLotTable() {
         </div>
         <CardAction>
           <label className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
-            <Checkbox checked={includeDepleted} onCheckedChange={setIncludeDepleted} />
+            <Checkbox checked={includeDepleted} onCheckedChange={handleIncludeDepletedChange} />
             Show depleted lots
           </label>
         </CardAction>
@@ -114,15 +110,11 @@ export function StockLotTable() {
               {!isLoading &&
                 !isError &&
                 groups.map((group) => (
-                  <Fragment key={`${group.modelId}:${group.itemId}`}>
+                  <Fragment key={group.itemId}>
                     <TableRow className="bg-muted/30">
                       <TableCell colSpan={4} className="font-medium text-foreground">
-                        {modelNameById[group.modelId] ?? `Model #${group.modelId}`}
-                        {itemSubLabel(group.item, categoryNameById) && (
-                          <span className="ml-2 font-normal text-muted-foreground">
-                            {itemSubLabel(group.item, categoryNameById)}
-                          </span>
-                        )}
+                        {group.modelName}
+                        <span className="ml-2 font-normal text-muted-foreground">{itemSubLabel(group.lots[0])}</span>
                       </TableCell>
                       <TableCell colSpan={2} className="text-right font-medium text-foreground">
                         {group.lots.reduce((sum, lot) => sum + Number(lot.qty_remaining), 0)} on hand
@@ -156,6 +148,9 @@ export function StockLotTable() {
             </TableBody>
           </Table>
         </div>
+        {!isLoading && !isError && total > 0 && (
+          <PaginationControls page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+        )}
       </CardContent>
 
       {adjustingLot && (

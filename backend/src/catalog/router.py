@@ -52,6 +52,7 @@ model_router = build_crud_router(
     prefix="/models",
     tags=["catalog"],
     exact_filters=["brand_id"],
+    search_filters=["name"],
 )
 
 item_router = APIRouter(prefix="/items", tags=["catalog"])
@@ -62,11 +63,12 @@ async def list_items(
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
     page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    page_size: Annotated[int, Query(ge=1, le=500)] = 20,
     category_id: int | None = None,
     model_id: int | None = None,
     sku: str | None = None,
     variant: str | None = None,
+    search: str | None = None,
 ):
     # A Query()-annotated PaginationParams model doesn't flatten into page/page_size
     # query params when the endpoint also takes other plain scalar query params
@@ -75,7 +77,7 @@ async def list_items(
     # unlike build_crud_router's generic list endpoint, which never mixes a
     # Query-model with hand-picked extra filters on one route.
     pagination = PaginationParams(page=page, page_size=page_size)
-    return await service.list_items(db, pagination, category_id, model_id, sku, variant)
+    return await service.list_items(db, pagination, category_id, model_id, sku, variant, search)
 
 
 @item_router.post("", response_model=ItemRead, status_code=201)

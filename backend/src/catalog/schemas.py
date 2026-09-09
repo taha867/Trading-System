@@ -70,11 +70,26 @@ class ItemRead(BaseModel):
     variant: str | None = None
     is_active: bool
     compatible_models: list[ModelRead] = []
+    # Embedded the same way compatible_models is — lets any screen that already
+    # has an ItemRead (a PO/SO line, a stock lot, a CRUD table row) render the
+    # model/category name directly, with no separate id->name lookup fetch.
+    model: ModelRead
+    category: CategoryRead
 
     @computed_field
     @property
     def compatible_model_ids(self) -> list[int]:
         return [m.id for m in self.compatible_models]
+
+    @computed_field
+    @property
+    def model_name(self) -> str:
+        return self.model.name
+
+    @computed_field
+    @property
+    def category_name(self) -> str:
+        return self.category.name
 
 
 class ItemUpdate(BaseModel):

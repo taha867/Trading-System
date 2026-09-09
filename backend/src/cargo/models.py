@@ -5,6 +5,7 @@ from sqlalchemy import Date, DateTime, ForeignKey, Numeric, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models import Base
+from src.purchasing.models import PurchaseOrderLine
 
 
 class CargoMode(Base):
@@ -56,3 +57,23 @@ class CargoAllocation(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     cargo_shipment: Mapped["CargoShipment"] = relationship(back_populates="allocations", lazy="raise")
+    # Read-only navigation for display purposes (CargoAllocationRead embeds the
+    # underlying item's sku/model/category) — the whole chain (purchase_order_line
+    # -> item -> model/category) must be eagerly loaded, same lazy="raise" discipline.
+    purchase_order_line: Mapped["PurchaseOrderLine"] = relationship(lazy="raise")
+
+    @property
+    def item_sku(self) -> str:
+        return self.purchase_order_line.item_sku
+
+    @property
+    def item_variant(self) -> str | None:
+        return self.purchase_order_line.item_variant
+
+    @property
+    def model_name(self) -> str:
+        return self.purchase_order_line.model_name
+
+    @property
+    def category_name(self) -> str:
+        return self.purchase_order_line.category_name

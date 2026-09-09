@@ -3,7 +3,6 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from src.catalog.models import Item
 from src.exceptions import ConflictException
@@ -12,6 +11,7 @@ from src.ledger import service as ledger_service
 from src.pagination import PaginatedResponse, PaginationParams
 from src.parties import service as parties_service
 from src.parties.constants import PartyRole
+from src.sales.dependencies import SALES_ORDER_LOAD_OPTIONS
 from src.sales.exceptions import InvalidSalesOrderItem
 from src.sales.models import SalesOrder, SalesOrderLine, SalesOrderLineLot
 from src.sales.schemas import SalesOrderCreate, SalesOrderRead
@@ -91,7 +91,12 @@ async def create_sales_order(db: AsyncSession, payload: SalesOrderCreate) -> Sal
         await db.rollback()
         raise ConflictException("Sales order could not be saved") from exc
 
-    return so
+    # so.lines/.consumptions survive commit fine (expire_on_commit=False), but each
+    # line's `item` relationship (needed for SalesOrderLineRead's embedded
+    # sku/model/category) was never touched, only item_id was set — re-fetch
+    # with the same eager-load chain every other read path uses.
+    result = await db.execute(select(SalesOrder).options(*SALES_ORDER_LOAD_OPTIONS).where(SalesOrder.id == so.id))
+    return result.unique().scalar_one()
 
 
 async def list_sales_orders(db: AsyncSession, pagination: PaginationParams) -> PaginatedResponse[SalesOrderRead]:
@@ -100,12 +105,12 @@ async def list_sales_orders(db: AsyncSession, pagination: PaginationParams) -> P
     total = await db.scalar(select(func.count()).select_from(SalesOrder))
     result = await db.execute(
         select(SalesOrder)
-        .options(selectinload(SalesOrder.lines).selectinload(SalesOrderLine.consumptions))
+        .options(*SALES_ORDER_LOAD_OPTIONS)
         .order_by(SalesOrder.order_date.desc(), SalesOrder.id.desc())
         .offset(offset)
         .limit(pagination.page_size)
     )
-    items = result.scalars().all()
+    items = result.unique().scalars().all()
 
     return PaginatedResponse[SalesOrderRead](
         items=items,

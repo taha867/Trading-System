@@ -4,9 +4,6 @@ import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { useParties } from '@/hooks/partyHooks/partyQueries';
 import { useCargoModes, useCargoCostBases } from '@/hooks/cargoHooks/cargoQueries';
 import { usePurchaseOrders } from '@/hooks/purchasingHooks/purchasingQueries';
-import { useItems } from '@/hooks/catalogHooks/itemQueries';
-import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
-import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 export function CargoShipmentDetail({ shipment }) {
@@ -14,34 +11,26 @@ export function CargoShipmentDetail({ shipment }) {
   const { data: modesData } = useCargoModes(LOOKUP_PAGE);
   const { data: costBasesData } = useCargoCostBases(LOOKUP_PAGE);
   // Unfiltered, not useDraftPurchaseOrders — a shipment's allocations reference lines
-  // whose parent PO is now "allocated", not "draft".
+  // whose parent PO is now "allocated", not "draft". Only needed here to resolve
+  // "which PO does this line belong to" (a CargoAllocation only carries
+  // purchase_order_line_id) — the item/model/category label itself comes straight
+  // off the line (PurchaseOrderLineRead embeds those, same as CargoAllocationRead).
   const { data: ordersData } = usePurchaseOrders(LOOKUP_PAGE);
-  const { data: itemsData } = useItems(LOOKUP_PAGE);
-  const { data: categoriesData } = useCategories(LOOKUP_PAGE);
-  const { data: modelsData } = useModels(LOOKUP_PAGE);
 
   const agentNameById = Object.fromEntries((partiesData?.items ?? []).map((p) => [p.id, p.name]));
   const modeNameById = Object.fromEntries((modesData?.items ?? []).map((m) => [m.id, m.name]));
   const costBasisById = Object.fromEntries((costBasesData?.items ?? []).map((b) => [b.id, b]));
-  const itemById = Object.fromEntries((itemsData?.items ?? []).map((i) => [i.id, i]));
-  const categoryNameById = Object.fromEntries((categoriesData?.items ?? []).map((c) => [c.id, c.name]));
-  const modelNameById = Object.fromEntries((modelsData?.items ?? []).map((m) => [m.id, m.name]));
 
-  // Flatten every fetched PO's lines into one map keyed by line id — an allocation
-  // only carries `purchase_order_line_id`, so this is the only way to resolve which
-  // PO/item a given allocation row belongs to.
-  const lineContextById = Object.fromEntries(
-    (ordersData?.items ?? []).flatMap((po) => po.lines.map((line) => [line.id, { po, line }])),
+  const poIdByLineId = Object.fromEntries(
+    (ordersData?.items ?? []).flatMap((po) => po.lines.map((line) => [line.id, po.id])),
   );
 
-  function lineLabel(lineId) {
-    const ctx = lineContextById[lineId];
-    if (!ctx) return `Line #${lineId}`;
-    const item = itemById[ctx.line.item_id];
-    const itemPart = item
-      ? [modelNameById[item.model_id], categoryNameById[item.category_id], item.sku].filter(Boolean).join(' · ')
-      : `Item #${ctx.line.item_id}`;
-    return `PO #${ctx.po.id} — ${itemPart}`;
+  function lineLabel(allocation) {
+    const poId = poIdByLineId[allocation.purchase_order_line_id];
+    const itemPart = [allocation.model_name, allocation.category_name, allocation.item_sku]
+      .filter(Boolean)
+      .join(' · ');
+    return poId ? `PO #${poId} — ${itemPart}` : itemPart;
   }
 
   const costBasis = costBasisById[shipment.cost_basis_id];
@@ -71,7 +60,7 @@ export function CargoShipmentDetail({ shipment }) {
           <TableBody>
             {shipment.allocations.map((allocation) => (
               <TableRow key={allocation.id} className="hover:bg-muted/40">
-                <TableCell>{lineLabel(allocation.purchase_order_line_id)}</TableCell>
+                <TableCell>{lineLabel(allocation)}</TableCell>
                 <TableCell>{allocation.basis_value}</TableCell>
                 <TableCell className="text-right">
                   <CurrencyAmount value={allocation.allocated_cost_pkr} />

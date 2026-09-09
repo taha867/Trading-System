@@ -9,11 +9,12 @@ export function useExchangeRates(params) {
   });
 }
 
-// Derived, not a separate backend call — no ?rate_date= filter exists, so this
-// fetches one page_size=100 page and searches client-side for an exact match.
+// GET /purchasing/exchange-rates?rate_date= filters server-side (an exact-match
+// date_filters entry on the generic CRUD factory) — no more fetching a fixed
+// page and hoping the target date is in the first 100 rows.
 export function useExchangeRateForDate(rateDate) {
-  const query = useExchangeRates({ page: 1, page_size: 100 });
-  const rate = query.data?.items?.find((r) => r.rate_date === rateDate) ?? null;
+  const query = useExchangeRates({ page: 1, page_size: 1, rate_date: rateDate });
+  const rate = query.data?.items?.[0] ?? null;
   return { ...query, rate };
 }
 
@@ -32,11 +33,11 @@ export function usePurchaseOrder(id) {
   });
 }
 
-// Derived, not a separate backend call — no ?status= filter exists on
-// GET /purchasing/purchase-orders (phase-2-frontend spec §1.1), so this fetches one
-// page_size=100 page and filters client-side, same pattern as useExchangeRateForDate.
+// GET /purchasing/purchase-orders?status= now filters server-side — draft POs
+// realistically never number in the hundreds at once, so page_size=100 here
+// is a reasonable cap, not a silent-truncation risk like the old unfiltered fetch.
 export function useDraftPurchaseOrders() {
-  const query = usePurchaseOrders({ page: 1, page_size: 100 });
-  const draftOrders = (query.data?.items ?? []).filter((order) => order.status === 'draft');
+  const query = usePurchaseOrders({ page: 1, page_size: 100, status: 'draft' });
+  const draftOrders = query.data?.items ?? [];
   return { ...query, draftOrders };
 }

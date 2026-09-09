@@ -57,3 +57,7 @@ class Item(Base):
         secondary=ItemCompatibleModel.__table__,
         lazy="raise",
     )
+    # Primary model/category, embedded in ItemRead the same way compatible_models is —
+    # every read path must joinedload both explicitly (lazy="raise").
+    model: Mapped["Model"] = relationship(foreign_keys=[model_id], lazy="raise")
+    category: Mapped["Category"] = relationship(foreign_keys=[category_id], lazy="raise")

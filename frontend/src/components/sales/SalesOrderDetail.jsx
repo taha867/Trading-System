@@ -2,27 +2,17 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { useParties } from '@/hooks/partyHooks/partyQueries';
-import { useItems } from '@/hooks/catalogHooks/itemQueries';
-import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
-import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
 
-function itemLabel(item, categoryNameById, modelNameById) {
-  if (!item) return null;
-  const parts = [modelNameById[item.model_id], categoryNameById[item.category_id], item.sku];
-  return parts.filter(Boolean).join(' · ') + (item.variant ? ` (${item.variant})` : '');
+function lineItemLabel(line) {
+  const parts = [line.model_name, line.category_name, line.item_sku];
+  return parts.filter(Boolean).join(' · ') + (line.item_variant ? ` (${line.item_variant})` : '');
 }
 
 export function SalesOrderDetail({ order }) {
   const { data: partiesData } = useParties(LOOKUP_PAGE);
-  const { data: itemsData } = useItems(LOOKUP_PAGE);
-  const { data: categoriesData } = useCategories(LOOKUP_PAGE);
-  const { data: modelsData } = useModels(LOOKUP_PAGE);
 
   const customerNameById = Object.fromEntries((partiesData?.items ?? []).map((p) => [p.id, p.name]));
-  const itemById = Object.fromEntries((itemsData?.items ?? []).map((i) => [i.id, i]));
-  const categoryNameById = Object.fromEntries((categoriesData?.items ?? []).map((c) => [c.id, c.name]));
-  const modelNameById = Object.fromEntries((modelsData?.items ?? []).map((m) => [m.id, m.name]));
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,9 +44,7 @@ export function SalesOrderDetail({ order }) {
           <TableBody>
             {order.lines.map((line) => (
               <TableRow key={line.id} className="hover:bg-muted/40">
-                <TableCell>
-                  {itemLabel(itemById[line.item_id], categoryNameById, modelNameById) ?? `Item #${line.item_id}`}
-                </TableCell>
+                <TableCell>{lineItemLabel(line)}</TableCell>
                 <TableCell className="text-right">{line.qty}</TableCell>
                 <TableCell className="text-right">
                   <CurrencyAmount value={line.rate_pkr} />

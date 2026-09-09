@@ -1,7 +1,7 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from src.catalog.exceptions import ItemNotFound
 from src.catalog.models import Category, Item, ItemCompatibleModel, Model
@@ -36,12 +36,17 @@ async def _get_compatible_models(db: AsyncSession, model_ids: list[int]) -> list
     return list(models)
 
 
+_ITEM_LOAD_OPTIONS = (
+    selectinload(Item.compatible_models),
+    joinedload(Item.model),
+    joinedload(Item.category),
+)
+
+
 async def get_item(db: AsyncSession, item_id: int) -> Item:
     # select().options(selectinload(...)), not db.get() — Session.get() silently ignores
     # loader options when it serves the object from the identity map.
-    result = await db.execute(
-        select(Item).options(selectinload(Item.compatible_models)).where(Item.id == item_id)
-    )
+    result = await db.execute(select(Item).options(*_ITEM_LOAD_OPTIONS).where(Item.id == item_id))
     item = result.scalar_one_or_none()
     if not item or not item.is_active:
         raise ItemNotFound()
@@ -55,9 +60,13 @@ async def list_items(
     model_id: int | None,
     sku: str | None,
     variant: str | None,
+    search: str | None = None,
 ) -> PaginatedResponse[ItemRead]:
     offset = (pagination.page - 1) * pagination.page_size
 
+    # `search` joins Model — a picker searching by what a human actually types
+    # ("iPhone 15") needs to match the model name, not just the internal sku code.
+    needs_model_join = search is not None
     conditions = [Item.is_active.is_(True)]
     if category_id is not None:
         conditions.append(Item.category_id == category_id)
@@ -70,18 +79,19 @@ async def list_items(
         conditions.append(Item.sku.ilike(f"%{sku}%"))
     if variant is not None:
         conditions.append(Item.variant.ilike(f"%{variant}%"))
+    if search is not None:
+        conditions.append(or_(Item.sku.ilike(f"%{search}%"), Model.name.ilike(f"%{search}%")))
 
-    total = await db.scalar(select(func.count()).select_from(Item).where(*conditions))
+    count_stmt = select(func.count()).select_from(Item).where(*conditions)
+    list_stmt = select(Item).options(*_ITEM_LOAD_OPTIONS).where(*conditions)
+    if needs_model_join:
+        count_stmt = count_stmt.join(Model, Model.id == Item.model_id)
+        list_stmt = list_stmt.join(Model, Model.id == Item.model_id)
 
-    result = await db.execute(
-        select(Item)
-        .options(selectinload(Item.compatible_models))
-        .where(*conditions)
-        .order_by(Item.id)
-        .offset(offset)
-        .limit(pagination.page_size)
-    )
-    items = result.scalars().all()
+    total = await db.scalar(count_stmt)
+
+    result = await db.execute(list_stmt.order_by(Item.id).offset(offset).limit(pagination.page_size))
+    items = result.unique().scalars().all()
 
     return PaginatedResponse[ItemRead](
         items=items, total=total or 0, page=pagination.page, page_size=pagination.page_size
@@ -108,7 +118,7 @@ async def create_item(db: AsyncSession, payload: ItemCreate) -> Item:
         await db.rollback()
         raise ConflictException("Item already exists") from exc
 
-    await db.refresh(item, attribute_names=["compatible_models"])
+    await db.refresh(item, attribute_names=["compatible_models", "model", "category"])
     return item
 
 
@@ -134,7 +144,7 @@ async def update_item(db: AsyncSession, item: Item, payload: ItemUpdate) -> Item
         await db.rollback()
         raise ConflictException("Item already exists") from exc
 
-    await db.refresh(item, attribute_names=["compatible_models"])
+    await db.refresh(item, attribute_names=["compatible_models", "model", "category"])
     return item
 
 

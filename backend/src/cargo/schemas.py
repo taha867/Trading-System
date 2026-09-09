@@ -46,6 +46,12 @@ class CargoAllocationRead(BaseModel):
     purchase_order_line_id: int
     basis_value: Decimal
     allocated_cost_pkr: Decimal
+    # Embedded so a screen showing this allocation never needs a separate
+    # id->name lookup fetch against the whole Items/Models/Categories catalog.
+    item_sku: str
+    item_variant: str | None = None
+    model_name: str
+    category_name: str
 
 
 class CargoShipmentLineInput(BaseModel):

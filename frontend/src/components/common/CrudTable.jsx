@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent }
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { ConfirmDeleteDialog } from '@/components/common/ConfirmDeleteDialog';
 import { CrudDrawer } from '@/components/common/CrudDrawer';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -19,18 +20,6 @@ const ALL_VALUE = '__all__';
 function formatCell(value) {
   if (value === null || value === undefined || value === '') return '—';
   return String(value);
-}
-
-// A search-component filter fires on every keystroke locally but is debounced
-// before it ever becomes a query param — typing "privacy" should cost one network
-// request, not seven.
-function useDebouncedValue(value, delayMs) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(timer);
-  }, [value, delayMs]);
-  return debounced;
 }
 
 function SearchFilter({ filter, value, onChange }) {

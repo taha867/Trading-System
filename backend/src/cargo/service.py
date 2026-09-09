@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.cargo.dependencies import CARGO_SHIPMENT_LOAD_OPTIONS
 from src.cargo.exceptions import MissingBasisValue, PurchaseOrderNotOpen
 from src.cargo.models import CargoAllocation, CargoCostBasis, CargoMode, CargoShipment
 from src.cargo.schemas import CargoShipmentCreate, CargoShipmentRead
@@ -115,7 +116,14 @@ async def create_shipment(db: AsyncSession, payload: CargoShipmentCreate) -> Car
         await db.rollback()
         raise ConflictException("Cargo shipment could not be saved") from exc
 
-    return shipment
+    # shipment.allocations survives commit fine (expire_on_commit=False), but each
+    # allocation's `purchase_order_line` chain (needed for CargoAllocationRead's
+    # embedded sku/model/category) was never touched — re-fetch with the same
+    # eager-load chain every other read path uses.
+    result = await db.execute(
+        select(CargoShipment).options(*CARGO_SHIPMENT_LOAD_OPTIONS).where(CargoShipment.id == shipment.id)
+    )
+    return result.unique().scalar_one()
 
 
 async def list_shipments(db: AsyncSession, pagination: PaginationParams) -> PaginatedResponse[CargoShipmentRead]:
@@ -124,12 +132,12 @@ async def list_shipments(db: AsyncSession, pagination: PaginationParams) -> Pagi
     total = await db.scalar(select(func.count()).select_from(CargoShipment))
     result = await db.execute(
         select(CargoShipment)
-        .options(selectinload(CargoShipment.allocations))
+        .options(*CARGO_SHIPMENT_LOAD_OPTIONS)
         .order_by(CargoShipment.id)
         .offset(offset)
         .limit(pagination.page_size)
     )
-    items = result.scalars().all()
+    items = result.unique().scalars().all()
 
     return PaginatedResponse[CargoShipmentRead](
         items=items,

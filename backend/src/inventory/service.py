@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.exceptions import ConflictException
+from src.inventory.dependencies import STOCK_LOT_LOAD_OPTIONS
 from src.inventory.exceptions import (
     InsufficientStock,
     InvalidAdjustment,
@@ -88,8 +89,11 @@ async def receive_purchase_order_line(db: AsyncSession, payload: StockLotReceive
         await db.rollback()
         raise ConflictException("Stock lot could not be saved") from exc
 
-    await db.refresh(lot)
-    return lot
+    # lot's own columns survive commit fine, but `item` (needed for StockLotRead's
+    # embedded sku/model/category) was never touched — re-fetch with the same
+    # eager-load chain every other read path uses.
+    result = await db.execute(select(StockLot).options(*STOCK_LOT_LOAD_OPTIONS).where(StockLot.id == lot.id))
+    return result.unique().scalar_one()
 
 
 async def create_adjustment(db: AsyncSession, payload: StockMovementCreate) -> StockMovement:
@@ -190,12 +194,13 @@ async def list_stock_lots(
     total = await db.scalar(select(func.count()).select_from(StockLot).where(*filters))
     result = await db.execute(
         select(StockLot)
+        .options(*STOCK_LOT_LOAD_OPTIONS)
         .where(*filters)
         .order_by(StockLot.item_id, StockLot.received_date, StockLot.id)
         .offset(offset)
         .limit(pagination.page_size)
     )
-    items = result.scalars().all()
+    items = result.unique().scalars().all()
 
     return PaginatedResponse[StockLotRead](
         items=items,

@@ -12,8 +12,6 @@ export function useItemCrudConfig() {
 
   const categories = categoriesData?.items ?? [];
   const models = modelsData?.items ?? [];
-  const categoryNameById = Object.fromEntries(categories.map((c) => [c.id, c.name]));
-  const modelNameById = Object.fromEntries(models.map((m) => [m.id, m.name]));
 
   return {
     queryKey: itemKeys,
@@ -23,8 +21,9 @@ export function useItemCrudConfig() {
     useDelete: useDeleteItem,
     columns: [
       { key: 'sku', label: 'SKU' },
-      { key: 'category_id', label: 'Category', render: (row) => categoryNameById[row.category_id] ?? '—' },
-      { key: 'model_id', label: 'Model', render: (row) => modelNameById[row.model_id] ?? '—' },
+      // ItemRead already embeds category_name/model_name — no separate lookup needed.
+      { key: 'category_id', label: 'Category', render: (row) => row.category_name ?? '—' },
+      { key: 'model_id', label: 'Model', render: (row) => row.model_name ?? '—' },
       { key: 'variant', label: 'Variant' },
       {
         key: 'compatible_models',

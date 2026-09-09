@@ -6,30 +6,20 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { ReceiveStockLotDialog } from '@/components/inventory/ReceiveStockLotDialog';
 import { useParties } from '@/hooks/partyHooks/partyQueries';
-import { useItems } from '@/hooks/catalogHooks/itemQueries';
-import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
-import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { useReceivedLineIds } from '@/hooks/inventoryHooks/inventoryQueries';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
 
-function itemLabel(item, categoryNameById, modelNameById) {
-  if (!item) return null;
-  const parts = [modelNameById[item.model_id], categoryNameById[item.category_id], item.sku];
-  return parts.filter(Boolean).join(' · ') + (item.variant ? ` (${item.variant})` : '');
+function lineItemLabel(line) {
+  const parts = [line.model_name, line.category_name, line.item_sku];
+  return parts.filter(Boolean).join(' · ') + (line.item_variant ? ` (${line.item_variant})` : '');
 }
 
 export function PurchaseOrderDetail({ order }) {
   const { data: partiesData } = useParties(LOOKUP_PAGE);
-  const { data: itemsData } = useItems(LOOKUP_PAGE);
-  const { data: categoriesData } = useCategories(LOOKUP_PAGE);
-  const { data: modelsData } = useModels(LOOKUP_PAGE);
   const { ids: receivedLineIds } = useReceivedLineIds();
   const [receivingLine, setReceivingLine] = useState(null);
 
   const vendorNameById = Object.fromEntries((partiesData?.items ?? []).map((p) => [p.id, p.name]));
-  const itemById = Object.fromEntries((itemsData?.items ?? []).map((i) => [i.id, i]));
-  const categoryNameById = Object.fromEntries((categoriesData?.items ?? []).map((c) => [c.id, c.name]));
-  const modelNameById = Object.fromEntries((modelsData?.items ?? []).map((m) => [m.id, m.name]));
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,9 +54,7 @@ export function PurchaseOrderDetail({ order }) {
           <TableBody>
             {order.lines.map((line) => (
               <TableRow key={line.id} className="hover:bg-muted/40">
-                <TableCell>
-                  {itemLabel(itemById[line.item_id], categoryNameById, modelNameById) ?? `Item #${line.item_id}`}
-                </TableCell>
+                <TableCell>{lineItemLabel(line)}</TableCell>
                 <TableCell>{line.qty}</TableCell>
                 <TableCell>
                   {line.rate_rmb != null ? <CurrencyAmount value={line.rate_rmb} currency="RMB" /> : '—'}
@@ -120,10 +108,7 @@ export function PurchaseOrderDetail({ order }) {
           open={Boolean(receivingLine)}
           onOpenChange={(open) => !open && setReceivingLine(null)}
           line={receivingLine}
-          itemLabel={
-            itemLabel(itemById[receivingLine.item_id], categoryNameById, modelNameById) ??
-            `Item #${receivingLine.item_id}`
-          }
+          itemLabel={lineItemLabel(receivingLine)}
         />
       )}
     </div>

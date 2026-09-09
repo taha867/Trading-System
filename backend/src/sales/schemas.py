@@ -35,6 +35,12 @@ class SalesOrderLineRead(BaseModel):
     qty: Decimal
     rate_pkr: Decimal
     consumptions: list[SalesOrderLineLotRead]
+    # Embedded so a screen showing this line never needs a separate
+    # id->name lookup fetch against the whole Items/Models/Categories catalog.
+    item_sku: str
+    item_variant: str | None = None
+    model_name: str
+    category_name: str
 
     @computed_field
     @property

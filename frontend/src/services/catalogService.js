@@ -63,6 +63,11 @@ export async function listItems(params) {
   return data;
 }
 
+export async function getItem(id) {
+  const { data } = await fetchClient.get(`/catalog/items/${id}`);
+  return data;
+}
+
 export async function createItem(payload) {
   const { data } = await fetchClient.post('/catalog/items', payload);
   return data;

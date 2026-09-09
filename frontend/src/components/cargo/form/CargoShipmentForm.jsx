@@ -7,9 +7,6 @@ import { useCreateCargoShipment } from '@/hooks/cargoHooks/cargoMutations';
 import { useCargoModes, useCargoCostBases } from '@/hooks/cargoHooks/cargoQueries';
 import { useCargoAgentParties, useParties } from '@/hooks/partyHooks/partyQueries';
 import { useDraftPurchaseOrders } from '@/hooks/purchasingHooks/purchasingQueries';
-import { useItems } from '@/hooks/catalogHooks/itemQueries';
-import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
-import { useModels } from '@/hooks/catalogHooks/modelQueries';
 import { CARGO_COST_BASIS_CODE } from '@/utils/constants';
 import { toMoney, computeCargoAllocation, formatPKR } from '@/utils/currencyUtils';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
@@ -22,20 +19,14 @@ export function CargoShipmentForm({ onSuccess }) {
   const { data: costBasesData } = useCargoCostBases(LOOKUP_PAGE);
   const { draftOrders } = useDraftPurchaseOrders();
   const { data: partiesData } = useParties(LOOKUP_PAGE);
-  const { data: itemsData } = useItems(LOOKUP_PAGE);
-  const { data: categoriesData } = useCategories(LOOKUP_PAGE);
-  const { data: modelsData } = useModels(LOOKUP_PAGE);
 
   const vendorNameById = Object.fromEntries((partiesData?.items ?? []).map((p) => [p.id, p.name]));
-  const itemById = Object.fromEntries((itemsData?.items ?? []).map((i) => [i.id, i]));
-  const categoryNameById = Object.fromEntries((categoriesData?.items ?? []).map((c) => [c.id, c.name]));
-  const modelNameById = Object.fromEntries((modelsData?.items ?? []).map((m) => [m.id, m.name]));
 
+  // PurchaseOrderLineRead already embeds item_sku/item_variant/model_name/
+  // category_name — no separate Items/Models/Categories lookup needed.
   function lineLabel(line) {
-    const item = itemById[line.item_id];
-    if (!item) return `Item #${line.item_id}`;
-    const parts = [modelNameById[item.model_id], categoryNameById[item.category_id], item.sku].filter(Boolean);
-    return parts.join(' · ') + (item.variant ? ` (${item.variant})` : '');
+    const parts = [line.model_name, line.category_name, line.item_sku].filter(Boolean);
+    return parts.join(' · ') + (line.item_variant ? ` (${line.item_variant})` : '');
   }
 
   const agentOptions = agents.map((a) => ({ value: String(a.id), label: a.name }));

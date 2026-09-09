@@ -17,11 +17,18 @@ router = APIRouter(tags=["parties"])
 
 @router.get("", response_model=PaginatedResponse[PartyRead])
 async def list_parties(
-    pagination: Annotated[PaginationParams, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=500)] = 20,
+    search: str | None = None,
 ):
-    return await service.list_parties(db, pagination)
+    # Plain scalar params, not Annotated[PaginationParams, Query()] — mixing that
+    # model-exploding Query() with an additional sibling Query() scalar param breaks
+    # FastAPI's flattening for the model entirely (see catalog/router.py::list_items
+    # and expenses/router.py::list_expenses for the same documented workaround).
+    pagination = PaginationParams(page=page, page_size=page_size)
+    return await service.list_parties(db, pagination, search)
 
 
 @router.post("", response_model=PartyRead, status_code=201)

@@ -4,6 +4,7 @@ from decimal import Decimal
 from sqlalchemy import Date, DateTime, ForeignKey, Numeric, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.catalog.models import Item
 from src.models import Base
 
 
@@ -39,6 +40,25 @@ class SalesOrderLine(Base):
         order_by="SalesOrderLineLot.id",
         lazy="raise",
     )
+    # Read-only navigation for display purposes (SalesOrderLineRead embeds the
+    # item's sku/model/category), same shape as purchasing/models.py's PurchaseOrderLine.
+    item: Mapped["Item"] = relationship(lazy="raise")
+
+    @property
+    def item_sku(self) -> str:
+        return self.item.sku
+
+    @property
+    def item_variant(self) -> str | None:
+        return self.item.variant
+
+    @property
+    def model_name(self) -> str:
+        return self.item.model.name
+
+    @property
+    def category_name(self) -> str:
+        return self.item.category.name
 
 
 class SalesOrderLineLot(Base):

@@ -37,6 +37,7 @@ export const itemKeys = {
   all: ['items'],
   lists: () => [...itemKeys.all, 'list'],
   list: (params) => [...itemKeys.lists(), params],
+  detail: (id) => [...itemKeys.all, 'detail', id],
 };
 
 export const partyKeys = {

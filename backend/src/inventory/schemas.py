@@ -23,6 +23,12 @@ class StockLotRead(BaseModel):
     qty_remaining: Decimal
     landed_cost_pkr: Decimal
     received_date: date
+    # Embedded so a screen showing this lot never needs a separate
+    # id->name lookup fetch against the whole Items/Models/Categories catalog.
+    item_sku: str
+    item_variant: str | None = None
+    model_name: str
+    category_name: str
 
     @computed_field
     @property

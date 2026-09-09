@@ -3,7 +3,6 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from src.catalog.models import Item
 from src.exceptions import ConflictException
@@ -11,6 +10,7 @@ from src.ledger import service as ledger_service
 from src.pagination import PaginatedResponse, PaginationParams
 from src.parties import service as parties_service
 from src.parties.constants import PartyRole
+from src.purchasing.dependencies import PURCHASE_ORDER_LOAD_OPTIONS
 from src.purchasing.exceptions import (
     ExchangeRateMissingForDate,
     InvalidPurchaseOrderItem,
@@ -108,21 +108,33 @@ async def create_purchase_order(db: AsyncSession, payload: PurchaseOrderCreate) 
         await db.rollback()
         raise ConflictException("Purchase order could not be saved") from exc
 
-    return po
+    # po.lines itself survives commit fine (expire_on_commit=False), but each
+    # line's `item` relationship (needed for PurchaseOrderLineRead's embedded
+    # sku/model/category) was never touched, only item_id was set — re-fetch
+    # with the same eager-load chain every other read path uses.
+    result = await db.execute(select(PurchaseOrder).options(*PURCHASE_ORDER_LOAD_OPTIONS).where(PurchaseOrder.id == po.id))
+    return result.unique().scalar_one()
 
 
-async def list_purchase_orders(db: AsyncSession, pagination: PaginationParams) -> PaginatedResponse[PurchaseOrderRead]:
+async def list_purchase_orders(
+    db: AsyncSession, pagination: PaginationParams, status: str | None = None
+) -> PaginatedResponse[PurchaseOrderRead]:
     offset = (pagination.page - 1) * pagination.page_size
 
-    total = await db.scalar(select(func.count()).select_from(PurchaseOrder))
+    conditions = []
+    if status is not None:
+        conditions.append(PurchaseOrder.status == status)
+
+    total = await db.scalar(select(func.count()).select_from(PurchaseOrder).where(*conditions))
     result = await db.execute(
         select(PurchaseOrder)
-        .options(selectinload(PurchaseOrder.lines))
+        .options(*PURCHASE_ORDER_LOAD_OPTIONS)
+        .where(*conditions)
         .order_by(PurchaseOrder.id)
         .offset(offset)
         .limit(pagination.page_size)
     )
-    items = result.scalars().all()
+    items = result.unique().scalars().all()
 
     return PaginatedResponse[PurchaseOrderRead](
         items=items,

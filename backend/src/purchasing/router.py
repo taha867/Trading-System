@@ -26,6 +26,7 @@ exchange_rate_router = build_crud_router(
     update_schema=ExchangeRateUpdate,
     prefix="/exchange-rates",
     tags=["purchasing"],
+    date_filters=["rate_date"],
 )
 
 purchase_order_router = APIRouter(prefix="/purchase-orders", tags=["purchasing"])
@@ -42,11 +43,17 @@ async def create_purchase_order(
 
 @purchase_order_router.get("", response_model=PaginatedResponse[PurchaseOrderRead])
 async def list_purchase_orders(
-    pagination: Annotated[PaginationParams, Query()],
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=500)] = 20,
+    status: str | None = None,
 ):
-    return await service.list_purchase_orders(db, pagination)
+    # Plain scalar params, not Annotated[PaginationParams, Query()] — see
+    # parties/router.py::list_parties for why mixing that with a sibling scalar
+    # param breaks FastAPI's flattening.
+    pagination = PaginationParams(page=page, page_size=page_size)
+    return await service.list_purchase_orders(db, pagination, status)
 
 
 @purchase_order_router.get("/{purchase_order_id}", response_model=PurchaseOrderRead)

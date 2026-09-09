@@ -17,9 +17,19 @@ export function FormCombobox({
   searchPlaceholder = 'Search…',
   emptyLabel = 'No results.',
   disabled,
+  // Opt-in server-search mode: pass inputValue/onInputValueChange to observe
+  // what's typed (debounce it, call a search-filtered query hook) instead of
+  // relying on cmdk's own client-side filter over a pre-fetched `options`
+  // list — needed once an entity is too large to fetch in full (Items,
+  // Models, ...). Omit both for the default static-options behavior, used by
+  // every small fixed lookup-table picker (Category, CargoMode, ...).
+  inputValue,
+  onInputValueChange,
+  loading = false,
 }) {
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
+  const serverSearch = onInputValueChange !== undefined;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -44,10 +54,14 @@ export function FormCombobox({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
-          <Command>
-            <CommandInput placeholder={searchPlaceholder} />
+          <Command shouldFilter={!serverSearch}>
+            <CommandInput
+              placeholder={searchPlaceholder}
+              value={serverSearch ? inputValue : undefined}
+              onValueChange={serverSearch ? onInputValueChange : undefined}
+            />
             <CommandList>
-              <CommandEmpty>{emptyLabel}</CommandEmpty>
+              <CommandEmpty>{loading ? 'Searching…' : emptyLabel}</CommandEmpty>
               <CommandGroup>
                 {options.map((option) => (
                   <CommandItem

@@ -124,6 +124,9 @@ async def list_expenses(
     category_id: int | None = None,
     payment_account_id: int | None = None,
     status: str | None = None,
+    recurring_template_id: int | None = None,
+    expense_date_from: date | None = None,
+    expense_date_to: date | None = None,
 ) -> PaginatedResponse[ExpenseRead]:
     offset = (pagination.page - 1) * pagination.page_size
 
@@ -134,6 +137,12 @@ async def list_expenses(
         filters.append(Expense.payment_account_id == payment_account_id)
     if status is not None:
         filters.append(Expense.status == status)
+    if recurring_template_id is not None:
+        filters.append(Expense.recurring_template_id == recurring_template_id)
+    if expense_date_from is not None:
+        filters.append(Expense.expense_date >= expense_date_from)
+    if expense_date_to is not None:
+        filters.append(Expense.expense_date <= expense_date_to)
 
     total = await db.scalar(select(func.count()).select_from(Expense).where(*filters))
     result = await db.execute(

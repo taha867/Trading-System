@@ -2,8 +2,9 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import Date, DateTime, ForeignKey, Numeric, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.catalog.models import Item
 from src.models import Base
 
 
@@ -20,6 +21,27 @@ class StockLot(Base):
     landed_cost_pkr: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     received_date: Mapped[date] = mapped_column(Date)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Read-only navigation for display purposes (StockLotRead embeds the item's
+    # sku/model/category) — every read path must joinedload the whole chain
+    # (item -> model, item -> category), same lazy="raise" discipline.
+    item: Mapped["Item"] = relationship(lazy="raise")
+
+    @property
+    def item_sku(self) -> str:
+        return self.item.sku
+
+    @property
+    def item_variant(self) -> str | None:
+        return self.item.variant
+
+    @property
+    def model_name(self) -> str:
+        return self.item.model.name
+
+    @property
+    def category_name(self) -> str:
+        return self.item.category.name
 
 
 class StockMovement(Base):

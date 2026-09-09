@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated, Sequence, Type, TypeVar
 
 from fastapi import APIRouter, Depends, Query
@@ -28,6 +29,7 @@ def build_crud_router(
     tags: list[str],
     exact_filters: Sequence[str] = (),
     search_filters: Sequence[str] = (),
+    date_filters: Sequence[str] = (),
 ) -> APIRouter:
     assert hasattr(model, "is_active"), (
         f"{model.__name__} must declare `is_active` to be used with the generic CRUD factory"
@@ -39,7 +41,10 @@ def build_crud_router(
     # JS — a list already past the 100-row page cap (Items, for one) would silently
     # miss matches under client-side filtering. `exact_filters` are FK/id columns
     # matched by equality (dropdown-driven); `search_filters` are free-text columns
-    # matched case-insensitively as a substring (a search box, not a dropdown).
+    # matched case-insensitively as a substring (a search box, not a dropdown);
+    # `date_filters` are date columns matched by exact equality (a lookup-by-date,
+    # e.g. "the ExchangeRate for this date" — needs its own typed slot since
+    # exact_filters is hardcoded int-typed).
     #
     # Built as one Pydantic model extending PaginationParams — not a second,
     # separate `Annotated[..., Query()]` parameter — because FastAPI 0.141 doesn't
@@ -49,6 +54,7 @@ def build_crud_router(
     # and the filters all live in the same query string together.
     filter_fields = {name: (int | None, None) for name in exact_filters}
     filter_fields.update({name: (str | None, None) for name in search_filters})
+    filter_fields.update({name: (date | None, None) for name in date_filters})
     ListParams = create_model(f"{model.__name__}ListParams", __base__=PaginationParams, **filter_fields)
 
     def _apply_filters(stmt, params: BaseModel):
@@ -59,6 +65,9 @@ def build_crud_router(
         for name in search_filters:
             if name in values:
                 stmt = stmt.where(getattr(model, name).ilike(f"%{values[name]}%"))
+        for name in date_filters:
+            if name in values:
+                stmt = stmt.where(getattr(model, name) == values[name])
         return stmt
 
     async def _get_active_or_404(db: AsyncSession, item_id: int) -> ModelT:

@@ -41,12 +41,18 @@ def ensure_any_role(party: Party, roles: tuple[PartyRole, ...]) -> Party:
     return party
 
 
-async def list_parties(db: AsyncSession, pagination: PaginationParams) -> PaginatedResponse[PartyRead]:
+async def list_parties(
+    db: AsyncSession, pagination: PaginationParams, search: str | None = None
+) -> PaginatedResponse[PartyRead]:
     offset = (pagination.page - 1) * pagination.page_size
 
-    total = await db.scalar(select(func.count()).select_from(Party).where(Party.is_active.is_(True)))
+    conditions = [Party.is_active.is_(True)]
+    if search is not None:
+        conditions.append(Party.name.ilike(f"%{search}%"))
+
+    total = await db.scalar(select(func.count()).select_from(Party).where(*conditions))
     result = await db.execute(
-        select(Party).where(Party.is_active.is_(True)).order_by(Party.id).offset(offset).limit(pagination.page_size)
+        select(Party).where(*conditions).order_by(Party.id).offset(offset).limit(pagination.page_size)
     )
     items = result.scalars().all()
 

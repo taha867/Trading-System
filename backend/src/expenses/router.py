@@ -65,10 +65,13 @@ async def list_expenses(
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
     page: Annotated[int, Query(ge=1)] = 1,
-    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    page_size: Annotated[int, Query(ge=1, le=500)] = 20,
     category_id: Annotated[int | None, Query()] = None,
     payment_account_id: Annotated[int | None, Query()] = None,
     status: Annotated[str | None, Query()] = None,
+    recurring_template_id: Annotated[int | None, Query()] = None,
+    expense_date_from: Annotated[date | None, Query()] = None,
+    expense_date_to: Annotated[date | None, Query()] = None,
 ):
     # Not Annotated[PaginationParams, Query()] here, unlike every other list route in this
     # codebase — mixing that model-exploding Query() with additional sibling Query() scalar
@@ -78,7 +81,14 @@ async def list_expenses(
     # keeping identical validation/defaults.
     pagination = PaginationParams(page=page, page_size=page_size)
     return await service.list_expenses(
-        db, pagination, category_id=category_id, payment_account_id=payment_account_id, status=status
+        db,
+        pagination,
+        category_id=category_id,
+        payment_account_id=payment_account_id,
+        status=status,
+        recurring_template_id=recurring_template_id,
+        expense_date_from=expense_date_from,
+        expense_date_to=expense_date_to,
     )
 
 
