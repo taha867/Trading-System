@@ -4,18 +4,16 @@ import { Loader2, Inbox, Share2, Download } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useStockList } from '@/hooks/reportingHooks/reportingQueries';
 import { useSetting } from '@/hooks/settingsHooks/settingsQueries';
-
-// Export page geometry — see paginateBrandBlocks/buildPageDocument below. Wide
-// enough for several brand-block "cards" side by side, tall enough that a
-// large multi-brand catalog packs into few pages instead of one page per
-// screenful of rows.
-const PAGE_WIDTH = 1000;
-const PAGE_HEIGHT = 1500;
-const MAX_COLUMNS = 4; // "as many columns as fit" — capped, not fixed; a sparse page uses fewer
-const HEADER_HEIGHT_LINES = 3; // shop name banner + category band, in "line" units
-const LINE_HEIGHT_PX = 20;
+import {
+  SELECT_ALL_VALUE,
+  STOCK_LIST_PAGE_WIDTH,
+  STOCK_LIST_MAX_COLUMNS,
+  STOCK_LIST_LINES_PER_COLUMN,
+  STOCK_LIST_EXPORT_STYLES,
+} from '@/utils/constants';
 
 // entries arrive flat, already ordered (category, brand, model) by the backend query —
 // grouping into two Maps preserves that order, so no re-sort is needed here.
@@ -37,49 +35,40 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Plain hex-color CSS, deliberately isolated from the app's own Tailwind
-// stylesheet — both html-to-image and html2canvas fail on this app's real
-// stylesheet (confirmed by hand: one hangs indefinitely inside its SVG→canvas
-// step with no error, the other throws "Attempting to parse an unsupported
-// color function 'oklch'" outright, since Tailwind v4's entire default
-// palette resolves through oklch() custom properties neither library's color
-// parser understands). Colors below are literal hex — swap them for the
-// shop's real brand colors freely; the isolation only requires they never be
-// a CSS custom property pointing back at the app's own stylesheet.
-const EXPORT_STYLES = `
-  body { margin: 0; padding: 0; width: ${PAGE_WIDTH}px; font-family: Arial, Helvetica, sans-serif; color: #111111; background: #ffffff; }
-  .header { background: #1d4ed8; color: #ffffff; padding: 20px 28px; }
-  .shop-name { font-size: 22px; font-weight: 700; margin: 0; }
-  .subtitle { font-size: 12px; margin: 4px 0 0; opacity: 0.9; }
-  .subtitle strong { font-weight: 700; }
-  .category-band { background: #eff6ff; color: #1d4ed8; padding: 10px 28px; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-  .page-columns { column-gap: 16px; padding: 18px 28px; }
-  .brand-block { break-inside: avoid; margin: 0 0 14px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; }
-  .brand-name { margin: 0 0 4px; font-size: 13px; font-weight: 700; text-decoration: underline; text-decoration-color: #1d4ed8; text-decoration-thickness: 2px; text-underline-offset: 3px; }
-  .model-list { margin: 0; }
-  .model-item { position: relative; margin: 0; padding-left: 12px; font-size: 12px; line-height: ${LINE_HEIGHT_PX}px; }
-  .model-item::before { content: ''; position: absolute; left: 0; top: ${(LINE_HEIGHT_PX - 4) / 2}px; width: 4px; height: 4px; border-radius: 50%; background: #111111; }
-  .footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 28px; font-size: 14px; font-weight: 600; color: #ffffff; background: #1d4ed8; }
-  .footer strong { font-weight: 700; }
-`;
-
-// Flattens visibleGrouped into one brand-block-per-row list, each carrying a
-// rough "line cost" (model count + 1 for its own heading) used to bin-pack
-// blocks into pages below. No existing precedent for export pagination in
-// this codebase — this is a deliberately simple heuristic (not exact DOM
-// measurement), matched to WhatsApp-image sharing rather than print fidelity.
-function flattenToBrandBlocks(visibleGrouped) {
-  return visibleGrouped.flatMap((cat) =>
-    cat.brands.map((b) => ({ category: cat.category, brand: b.brand, models: b.models, lineCost: b.models.length + 1 })),
-  );
+function slugify(text) {
+  const slug = String(text)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  return slug || 'category';
 }
 
-// One column's line capacity, ignoring the page header (the header only
-// costs space once per page, not once per column).
-const LINES_PER_COLUMN = Math.floor(PAGE_HEIGHT / LINE_HEIGHT_PX) - HEADER_HEIGHT_LINES;
+// A single category's model list is numbered sequentially, continuing across
+// every brand within that category (matching the reference design: iPhone's
+// last model might be #20, and Redmi's first model right after it is #21) —
+// this is why numbering is assigned once per category, before any pagination
+// splits the brands across pages/columns.
+function assignSequentialNumbers(brands) {
+  let counter = 1;
+  return brands.map((b) => ({
+    brand: b.brand,
+    models: b.models.map((m) => ({ ...m, number: counter++ })),
+  }));
+}
+
+// Flattens one category's numbered brands into one brand-block-per-row list,
+// each carrying a rough "line cost" (model count + 1 for its own heading)
+// used to bin-pack blocks into pages below. No existing precedent for export
+// pagination in this codebase — this is a deliberately simple heuristic (not
+// exact DOM measurement), matched to WhatsApp-image sharing rather than print
+// fidelity.
+function toBrandBlocks(numberedBrands) {
+  return numberedBrands.map((b) => ({ brand: b.brand, models: b.models, lineCost: b.models.length + 1 }));
+}
 
 // Picks how many columns a page's own content should flow into — as many as
-// fit (up to MAX_COLUMNS), capped by how many brand blocks are actually on the
+// fit (up to STOCK_LIST_MAX_COLUMNS), capped by how many brand blocks are actually on the
 // page. Sized off the block count, not the estimated line volume: the page is
 // a fixed width regardless of how tall its content is, so a short page still
 // wants every column filled (the column-balancer below packs short and tall
@@ -89,22 +78,22 @@ const LINES_PER_COLUMN = Math.floor(PAGE_HEIGHT / LINE_HEIGHT_PX) - HEADER_HEIGH
 // fill them (e.g. a single brand on its own page shouldn't render as 4 mostly
 // empty columns).
 function columnsForBlocks(blocks) {
-  return Math.max(1, Math.min(MAX_COLUMNS, blocks.length));
+  return Math.max(1, Math.min(STOCK_LIST_MAX_COLUMNS, blocks.length));
 }
 
-// Greedily bin-packs brand blocks into pages so each page's total line cost
-// stays within one page's multi-column line budget (capacity per column times
-// up to MAX_COLUMNS) — this is what lets a large, many-brand catalog collapse
-// into a handful of pages instead of one page per screenful of rows. A single
-// brand block whose own cost exceeds a full page's budget is never split — it
-// gets its own (over-budget) page rather than fragmenting one brand's list
-// across pages, an accepted edge case for a shop with an unusually long
-// single-brand catalog. The browser's own column-flow (see buildPageDocument)
-// handles the actual per-column placement within a page; this only decides
-// how much content belongs together on one page.
-function paginateBrandBlocks(visibleGrouped) {
-  const blocks = flattenToBrandBlocks(visibleGrouped);
-  const linesPerPage = LINES_PER_COLUMN * MAX_COLUMNS;
+// Greedily bin-packs one category's brand blocks into pages so each page's
+// total line cost stays within one page's multi-column line budget (capacity
+// per column times up to STOCK_LIST_MAX_COLUMNS) — this is what lets a large, many-brand
+// category collapse into a handful of pages instead of one page per
+// screenful of rows. A single brand block whose own cost exceeds a full
+// page's budget is never split — it gets its own (over-budget) page rather
+// than fragmenting one brand's list across pages, an accepted edge case for a
+// shop with an unusually long single-brand catalog. The browser's own
+// column-flow (see buildPageDocument) handles the actual per-column placement
+// within a page; this only decides how much content belongs together on one
+// page.
+function paginateBlocks(blocks) {
+  const linesPerPage = STOCK_LIST_LINES_PER_COLUMN * STOCK_LIST_MAX_COLUMNS;
 
   const pages = [];
   let current = [];
@@ -122,45 +111,64 @@ function paginateBrandBlocks(visibleGrouped) {
   return pages;
 }
 
-// Builds one page's standalone HTML document. Each brand renders as one
-// self-contained "card" (name + its full model list beneath it), and cards
-// flow into a CSS multi-column layout — `break-inside: avoid` keeps a card
-// from splitting across columns, and the browser's own column-balancing packs
-// short and long brand cards together far more densely than a single
-// Brand|Model table ever could, which is what collapses a large catalog into
-// far fewer pages. The category band shows whichever category the page's
-// first block belongs to — if a category's blocks span more than one page,
-// the band simply repeats on each page that carries part of it, reading
-// naturally as "this page continues that category."
-function buildPageDocument(shopName, shopAddress, blocks, pageNumber, totalPages, asOfDate) {
-  const category = blocks[0]?.category ?? '';
+// Builds one page's standalone HTML document. Every page belongs to exactly
+// one category — the whole page is a title page for that category (large
+// bold category name + "Available Models" subtitle), not a shop-wide banner —
+// and each brand renders as one self-contained "card" (name + its
+// sequentially-numbered model list beneath it) that flows into a CSS
+// multi-column layout. `break-inside: avoid` keeps a card from splitting
+// across columns, and the browser's own column-balancing packs short and
+// long brand cards together far more densely than a single Brand|Model table
+// ever could, which is what collapses a large category into far fewer pages.
+function buildPageDocument(shopName, shopAddress, category, blocks, pageNumber, totalPages) {
   const columns = columnsForBlocks(blocks);
   const cards = blocks
     .map(
       (b) => `
     <div class="brand-block">
       <p class="brand-name">${escapeHtml(b.brand)}</p>
-      <div class="model-list">${b.models.map((m) => `<p class="model-item">${escapeHtml(m.model)}</p>`).join('')}</div>
+      <div class="model-list">${b.models
+        .map((m) => `<p class="model-item"><span class="model-number">${m.number}.</span> ${escapeHtml(m.model)}</p>`)
+        .join('')}</div>
     </div>`,
     )
     .join('');
   const body = `
-    <div class="header">
-      <p class="shop-name">${escapeHtml(shopName || 'Stock List')}</p>
-      <p class="subtitle"><strong>Available Stock:</strong> ${escapeHtml(asOfDate)}</p>
+    <div class="title-block">
+      <p class="category-title">${escapeHtml(category)}</p>
+      <p class="category-subtitle">Available Models</p>
     </div>
-    <div class="category-band">${escapeHtml(category)}</div>
+    <hr class="divider" />
     <div class="page-columns" style="column-count: ${columns}">${cards}</div>
-    ${
-      shopAddress || totalPages > 1
-        ? `<div class="footer">
-      <span>${shopAddress ? `<strong>Address:</strong> ${escapeHtml(shopAddress)}` : ''}</span>
-      <span>${totalPages > 1 ? `Page ${pageNumber} of ${totalPages}` : ''}</span>
-    </div>`
-        : ''
-    }
+    <div class="footer">
+      <p class="footer-shop">${escapeHtml(shopName || 'Stock List')}</p>
+      ${shopAddress ? `<p class="footer-address">${escapeHtml(shopAddress)}</p>` : ''}
+      ${totalPages > 1 ? `<p class="footer-page">Page ${pageNumber} of ${totalPages}</p>` : ''}
+    </div>
   `;
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${EXPORT_STYLES}</style></head><body>${body}</body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${STOCK_LIST_EXPORT_STYLES}</style></head><body>${body}</body></html>`;
+}
+
+// Every category becomes its own independent set of pages — numbering resets
+// to 1 at the start of each category (see assignSequentialNumbers) since a
+// category's export reads as its own standalone document (e.g. a "Dust Plug"
+// list handed to a customer on its own), not a chapter of one combined file.
+function buildCategoryDocuments(visibleGrouped, shopName, shopAddress) {
+  const documents = [];
+  for (const cat of visibleGrouped) {
+    const numberedBrands = assignSequentialNumbers(cat.brands);
+    const blocks = toBrandBlocks(numberedBrands);
+    const pages = paginateBlocks(blocks);
+    pages.forEach((pageBlocks, index) => {
+      documents.push({
+        category: cat.category,
+        pageNumber: index + 1,
+        totalPages: pages.length,
+        html: buildPageDocument(shopName, shopAddress, cat.category, pageBlocks, index + 1, pages.length),
+      });
+    });
+  }
+  return documents;
 }
 
 export function StockListShare() {
@@ -174,18 +182,29 @@ export function StockListShare() {
   const { data: settingData } = useSetting();
   const shopName = settingData?.shop_name;
   const shopAddress = settingData?.shop_address;
-  // Ephemeral UI state only — nothing here is submitted anywhere, so this is a
-  // plain Set, not a react-hook-form field. A model is included unless its id
-  // is in this set.
+  // Ephemeral UI state only — nothing here is submitted anywhere, so these are
+  // plain useState, not react-hook-form fields.
   const [excludedModelIds, setExcludedModelIds] = useState(() => new Set());
+  const [selectedCategory, setSelectedCategory] = useState(SELECT_ALL_VALUE);
   const [isDownloading, setIsDownloading] = useState(false);
 
   // React Compiler handles memoization automatically (CLAUDE.md §3.6) — no
   // manual useMemo needed for these, and the dataset is small (a few hundred
   // rows at most).
   const entries = data?.entries ?? [];
-  const grouped = groupByCategoryAndBrand(entries);
-  const allModelIds = entries.map((e) => e.model_id);
+  const groupedAll = groupByCategoryAndBrand(entries);
+  // The category selector's own options always reflect every category the
+  // current stock filter (showAllActive) has, regardless of which one is
+  // currently selected — so switching categories never requires resetting
+  // back to "All categories" first.
+  const categoryOptions = groupedAll.map((c) => c.category);
+  const grouped =
+    selectedCategory === SELECT_ALL_VALUE ? groupedAll : groupedAll.filter((c) => c.category === selectedCategory);
+  // "Select all" / "Deselect all" scope to whatever's currently visible (all
+  // categories, or just the one picked above) — picking one category and
+  // hitting "print that only" shouldn't require also manually excluding every
+  // other category's models first.
+  const visibleModelIds = grouped.flatMap((cat) => cat.brands.flatMap((b) => b.models.map((m) => m.modelId)));
 
   const toggleModel = (modelId) => {
     setExcludedModelIds((prev) => {
@@ -215,24 +234,25 @@ export function StockListShare() {
 
   // Renders each page into its own isolated, off-screen <iframe> with the
   // plain hex-color stylesheet above, rather than capturing the on-screen
-  // preview node directly — see EXPORT_STYLES's comment for why. Downloads
+  // preview node directly — see STOCK_LIST_EXPORT_STYLES's comment for why. Downloads
   // are sequential (awaited one at a time, not Promise.all/fired in a tight
   // burst) — clicking several <a download> links synchronously is what makes
-  // browsers treat later ones as blocked pop-ups.
+  // browsers treat later ones as blocked pop-ups. Each category downloads as
+  // its own file (or its own numbered set of files, if it spans multiple
+  // pages) — picking "Dust Plug" alone downloads just dust-plug.png.
   const handleDownload = async () => {
     if (visibleGrouped.length === 0) return;
     setIsDownloading(true);
     try {
-      const asOfDate = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-      const pages = paginateBrandBlocks(visibleGrouped);
-      for (let i = 0; i < pages.length; i++) {
+      const documents = buildCategoryDocuments(visibleGrouped, shopName, shopAddress);
+      for (const doc of documents) {
         const iframe = document.createElement('iframe');
-        iframe.style.cssText = `position:fixed;left:-9999px;top:0;width:${PAGE_WIDTH}px;height:100px;border:0;`;
+        iframe.style.cssText = `position:fixed;left:-9999px;top:0;width:${STOCK_LIST_PAGE_WIDTH}px;height:100px;border:0;`;
         document.body.appendChild(iframe);
         try {
           await new Promise((resolve) => {
             iframe.onload = resolve;
-            iframe.srcdoc = buildPageDocument(shopName, shopAddress, pages[i], i + 1, pages.length, asOfDate);
+            iframe.srcdoc = doc.html;
           });
           // Grow the iframe to fit its real content — html2canvas only captures
           // what's within the target element's own box, and an untouched 100px
@@ -240,7 +260,8 @@ export function StockListShare() {
           iframe.style.height = `${iframe.contentDocument.body.scrollHeight}px`;
           const canvas = await html2canvas(iframe.contentDocument.body, { scale: 2, backgroundColor: '#ffffff' });
           const link = document.createElement('a');
-          link.download = pages.length > 1 ? `stock-list-page-${i + 1}-of-${pages.length}.png` : 'stock-list.png';
+          const slug = slugify(doc.category);
+          link.download = doc.totalPages > 1 ? `${slug}-page-${doc.pageNumber}-of-${doc.totalPages}.png` : `${slug}.png`;
           link.href = canvas.toDataURL('image/png');
           link.click();
         } finally {
@@ -272,17 +293,36 @@ export function StockListShare() {
           <Button size="sm" variant="outline" onClick={() => setExcludedModelIds(new Set())}>
             Select all
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setExcludedModelIds(new Set(allModelIds))}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setExcludedModelIds((prev) => new Set([...prev, ...visibleModelIds]))}
+          >
             Deselect all
           </Button>
         </CardAction>
       </CardHeader>
 
       <CardContent>
-        <label className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <Checkbox checked={showAllActive} onCheckedChange={(checked) => setShowAllActive(Boolean(checked))} />
-          Show all active models (not just what's currently in stock)
-        </label>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox checked={showAllActive} onCheckedChange={(checked) => setShowAllActive(Boolean(checked))} />
+            Show all active models (not just what's currently in stock)
+          </label>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full sm:w-56" aria-label="Category">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={SELECT_ALL_VALUE}>All categories</SelectItem>
+              {categoryOptions.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {isLoading && (
           <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
@@ -297,8 +337,14 @@ export function StockListShare() {
             {showAllActive ? 'No active models in the catalog yet.' : "Nothing currently in stock — try \"Show all active models.\""}
           </div>
         )}
+        {!isLoading && !isError && entries.length > 0 && grouped.length === 0 && (
+          <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
+            <Inbox className="size-6 text-muted-foreground/60" />
+            No models in this category.
+          </div>
+        )}
 
-        {!isLoading && !isError && entries.length > 0 && (
+        {!isLoading && !isError && grouped.length > 0 && (
           <div className="flex flex-col gap-6 md:flex-row">
             <div className="flex min-w-0 flex-1 flex-col gap-4">
               {grouped.map((cat) => {
@@ -350,32 +396,45 @@ export function StockListShare() {
             </div>
 
             <div className="flex min-w-0 flex-1 flex-col gap-3">
-              <div className="overflow-hidden rounded-lg border bg-white text-black">
+              <div className="flex flex-col gap-4 overflow-hidden rounded-lg border bg-white text-black">
                 {visibleGrouped.length === 0 && (
                   <p className="p-4 text-sm text-muted-foreground">Nothing selected.</p>
                 )}
                 {visibleGrouped.map((cat) => (
-                  <div key={cat.category} className="border-b last:border-b-0">
-                    <p className="bg-blue-50 px-4 py-2 text-xs font-bold uppercase tracking-wide text-blue-700">
-                      {cat.category}
-                    </p>
-                    <div className="columns-1 gap-3 p-3 sm:columns-2 lg:columns-3">
-                      {cat.brands.map((b) => (
+                  <div key={cat.category} className="border-b pb-4 last:border-b-0 last:pb-0">
+                    <div className="px-4 pt-4 text-center">
+                      <p className="text-lg font-extrabold uppercase tracking-wide text-blue-900">{cat.category}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Available Models</p>
+                    </div>
+                    <hr className="mx-4 mt-3 border-blue-900" />
+                    <div className="columns-1 gap-3 p-4 sm:columns-2 lg:columns-3">
+                      {assignSequentialNumbers(cat.brands).map((b) => (
                         <div
                           key={b.brand}
                           className="mb-3 break-inside-avoid rounded-md border bg-slate-50 px-3 py-2 text-sm"
                         >
-                          <p className="mb-1 font-semibold underline decoration-blue-600 decoration-2 underline-offset-2">
+                          <p className="mb-1 font-semibold text-blue-700 underline decoration-blue-600 decoration-2 underline-offset-2">
                             {b.brand}
                           </p>
-                          <ul className="list-disc pl-4">
+                          <div className="flex flex-col">
                             {b.models.map((m) => (
-                              <li key={m.modelId}>{m.model}</li>
+                              <p key={m.modelId}>
+                                <span className="inline-block min-w-5 font-medium text-muted-foreground">
+                                  {m.number}.
+                                </span>{' '}
+                                {m.model}
+                              </p>
                             ))}
-                          </ul>
+                          </div>
                         </div>
                       ))}
                     </div>
+                    <p className="px-4 text-center text-xs font-semibold text-muted-foreground">
+                      {shopName || 'Stock List'}
+                    </p>
+                    {shopAddress && (
+                      <p className="px-4 text-center text-[11px] text-muted-foreground/70">{shopAddress}</p>
+                    )}
                   </div>
                 ))}
               </div>

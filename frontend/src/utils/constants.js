@@ -152,3 +152,49 @@ export const NAV_LINKS = [
 // "More" tab.
 export const BOTTOM_NAV_PRIMARY_PATHS = ['/dashboard', '/sales-orders', '/inventory', '/purchase-orders'];
 export const BOTTOM_NAV_MORE_ICON = Grid2x2;
+
+// Radix Select can't represent "no selection" as an empty-string item value —
+// shared sentinel for every "All <something>" filter option in the app
+// (StockListShare.jsx's category filter, etc).
+export const SELECT_ALL_VALUE = '__all__';
+
+// StockListShare.jsx's export page geometry — wide enough for several
+// brand-block "cards" side by side, tall enough that a large multi-brand
+// category packs into few pages instead of one page per screenful of rows.
+export const STOCK_LIST_PAGE_WIDTH = 1000;
+export const STOCK_LIST_PAGE_HEIGHT = 1500;
+export const STOCK_LIST_MAX_COLUMNS = 4; // "as many columns as fit" — capped, not fixed; a sparse page uses fewer
+export const STOCK_LIST_HEADER_HEIGHT_LINES = 4; // title + "Available Models" subtitle + divider, in "line" units
+export const STOCK_LIST_LINE_HEIGHT_PX = 20;
+
+// One column's line capacity, ignoring the page header (the header only
+// costs space once per page, not once per column).
+export const STOCK_LIST_LINES_PER_COLUMN =
+  Math.floor(STOCK_LIST_PAGE_HEIGHT / STOCK_LIST_LINE_HEIGHT_PX) - STOCK_LIST_HEADER_HEIGHT_LINES;
+
+// Plain hex-color CSS, deliberately isolated from the app's own Tailwind
+// stylesheet — both html-to-image and html2canvas fail on this app's real
+// stylesheet (confirmed by hand: one hangs indefinitely inside its SVG→canvas
+// step with no error, the other throws "Attempting to parse an unsupported
+// color function 'oklch'" outright, since Tailwind v4's entire default
+// palette resolves through oklch() custom properties neither library's color
+// parser understands). Colors below are literal hex — swap them for the
+// shop's real brand colors freely; the isolation only requires they never be
+// a CSS custom property pointing back at the app's own stylesheet.
+export const STOCK_LIST_EXPORT_STYLES = `
+  body { margin: 0; padding: 0; width: ${STOCK_LIST_PAGE_WIDTH}px; font-family: Arial, Helvetica, sans-serif; color: #111111; background: #ffffff; }
+  .title-block { text-align: center; padding: 26px 28px 6px; }
+  .category-title { margin: 0; font-size: 32px; font-weight: 800; color: #1e3a8a; letter-spacing: 0.02em; text-transform: uppercase; }
+  .category-subtitle { margin: 6px 0 0; font-size: 14px; color: #6b7280; }
+  .divider { border: none; border-top: 2px solid #1e3a8a; margin: 14px 28px 0; }
+  .page-columns { column-gap: 16px; padding: 18px 28px; }
+  .brand-block { break-inside: avoid; margin: 0 0 14px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; }
+  .brand-name { margin: 0 0 4px; font-size: 13px; font-weight: 700; color: #1d4ed8; text-decoration: underline; text-decoration-color: #1d4ed8; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .model-list { margin: 0; }
+  .model-item { margin: 0; font-size: 12px; line-height: ${STOCK_LIST_LINE_HEIGHT_PX}px; }
+  .model-number { display: inline-block; min-width: 20px; color: #374151; font-weight: 600; }
+  .footer { text-align: center; padding: 14px 28px; border-top: 1px solid #e5e7eb; }
+  .footer-shop { margin: 0; font-size: 13px; font-weight: 600; color: #6b7280; }
+  .footer-address { margin: 2px 0 0; font-size: 11px; color: #9ca3af; }
+  .footer-page { margin: 4px 0 0; font-size: 10px; color: #9ca3af; }
+`;
