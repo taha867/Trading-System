@@ -11,6 +11,7 @@ import {
   SELECT_ALL_VALUE,
   STOCK_LIST_PAGE_WIDTH,
   STOCK_LIST_MAX_COLUMNS,
+  STOCK_LIST_MIN_COLUMN_WIDTH_PX,
   STOCK_LIST_LINES_PER_COLUMN,
   STOCK_LIST_EXPORT_STYLES,
 } from '@/utils/constants';
@@ -440,13 +441,16 @@ export function StockListShare() {
                         mis-paint), so this can safely use native columns instead of grid. Native
                         columns is also what gives the reference's actual flow: one column fills
                         top-to-bottom before the next one starts, not grid's row-by-row order. */}
-                    <div className="columns-1 gap-7 p-4 [column-rule:1px_solid_#d1d5db] sm:columns-2 lg:columns-3">
+                    <div
+                      className="gap-7 p-4 [column-rule:1px_solid_#d1d5db]"
+                      style={{ columnCount: columnsForBlocks(cat.brands), columnWidth: `${STOCK_LIST_MIN_COLUMN_WIDTH_PX}px` }}
+                    >
                       {assignSequentialNumbers(cat.brands).map((b) => (
                         <div key={b.brand} className="mb-3 break-inside-avoid text-sm">
                           <p className="mb-0.5 font-semibold text-blue-700">{b.brand}</p>
                           <div className="flex flex-col">
                             {b.models.map((m) => (
-                              <p key={m.modelId}>
+                              <p key={m.modelId} className="whitespace-nowrap">
                                 <span className="inline-block min-w-4.5">{m.number}.</span> {m.model}
                               </p>
                             ))}

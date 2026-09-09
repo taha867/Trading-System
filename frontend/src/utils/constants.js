@@ -161,9 +161,16 @@ export const SELECT_ALL_VALUE = '__all__';
 // StockListShare.jsx's export page geometry — wide enough for several
 // brand-block "cards" side by side, tall enough that a large multi-brand
 // category packs into few pages instead of one page per screenful of rows.
-export const STOCK_LIST_PAGE_WIDTH = 1000;
+export const STOCK_LIST_PAGE_WIDTH = 1400;
 export const STOCK_LIST_PAGE_HEIGHT = 1500;
 export const STOCK_LIST_MAX_COLUMNS = 4; // "as many columns as fit" — capped, not fixed; a sparse page uses fewer
+// A column never renders narrower than this — full "model + color" names (e.g.
+// "iPhone 16 Pro Natural Titanium Cosmic") need this much room on one line at
+// STOCK_LIST_LINE_HEIGHT_PX/12px text; set alongside column-count (both in
+// STOCK_LIST_EXPORT_STYLES and the on-screen preview), the browser always
+// picks whichever constraint yields FEWER columns, so a page of long names
+// automatically drops to fewer, wider columns instead of wrapping.
+export const STOCK_LIST_MIN_COLUMN_WIDTH_PX = 300;
 export const STOCK_LIST_HEADER_HEIGHT_LINES = 4; // title + "Available Models" subtitle + divider, in "line" units
 export const STOCK_LIST_LINE_HEIGHT_PX = 20;
 
@@ -187,12 +194,12 @@ export const STOCK_LIST_EXPORT_STYLES = `
   .category-title { margin: 0; font-size: 32px; font-weight: 800; color: #1e3a8a; letter-spacing: 0.02em; text-transform: uppercase; }
   .category-subtitle { margin: 6px 0 0; font-size: 14px; color: #6b7280; }
   .divider { border: none; border-top: 2px solid #1e3a8a; margin: 14px 28px 0; }
-  .page-columns { position: relative; column-gap: 28px; column-rule: 1px solid #d1d5db; padding: 18px 28px; }
+  .page-columns { position: relative; column-gap: 28px; column-width: ${STOCK_LIST_MIN_COLUMN_WIDTH_PX}px; column-rule: 1px solid #d1d5db; padding: 18px 28px; }
   .column-divider { position: absolute; top: 0; width: 1px; background: #d1d5db; }
   .brand-block { break-inside: avoid; margin: 0 0 12px; }
   .brand-name { margin: 0 0 2px; font-size: 13px; font-weight: 700; color: #1d4ed8; }
   .model-list { margin: 0; }
-  .model-item { margin: 0; font-size: 12px; line-height: ${STOCK_LIST_LINE_HEIGHT_PX}px; color: #111111; }
+  .model-item { margin: 0; font-size: 12px; line-height: ${STOCK_LIST_LINE_HEIGHT_PX}px; color: #111111; white-space: nowrap; }
   .model-number { display: inline-block; min-width: 18px; }
   .footer { text-align: center; padding: 14px 28px; }
   .footer-shop { margin: 0; font-size: 13px; font-weight: 600; color: #6b7280; }
