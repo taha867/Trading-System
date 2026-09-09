@@ -187,13 +187,14 @@ export const STOCK_LIST_EXPORT_STYLES = `
   .category-title { margin: 0; font-size: 32px; font-weight: 800; color: #1e3a8a; letter-spacing: 0.02em; text-transform: uppercase; }
   .category-subtitle { margin: 6px 0 0; font-size: 14px; color: #6b7280; }
   .divider { border: none; border-top: 2px solid #1e3a8a; margin: 14px 28px 0; }
-  .page-columns { column-gap: 16px; padding: 18px 28px; }
-  .brand-block { break-inside: avoid; margin: 0 0 14px; padding: 8px 12px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; }
-  .brand-name { margin: 0 0 4px; font-size: 13px; font-weight: 700; color: #1d4ed8; text-decoration: underline; text-decoration-color: #1d4ed8; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .page-columns { position: relative; column-gap: 28px; column-rule: 1px solid #d1d5db; padding: 18px 28px; }
+  .column-divider { position: absolute; top: 0; width: 1px; background: #d1d5db; }
+  .brand-block { break-inside: avoid; margin: 0 0 12px; }
+  .brand-name { margin: 0 0 2px; font-size: 13px; font-weight: 700; color: #1d4ed8; }
   .model-list { margin: 0; }
-  .model-item { margin: 0; font-size: 12px; line-height: ${STOCK_LIST_LINE_HEIGHT_PX}px; }
-  .model-number { display: inline-block; min-width: 20px; color: #374151; font-weight: 600; }
-  .footer { text-align: center; padding: 14px 28px; border-top: 1px solid #e5e7eb; }
+  .model-item { margin: 0; font-size: 12px; line-height: ${STOCK_LIST_LINE_HEIGHT_PX}px; color: #111111; }
+  .model-number { display: inline-block; min-width: 18px; }
+  .footer { text-align: center; padding: 14px 28px; }
   .footer-shop { margin: 0; font-size: 13px; font-weight: 600; color: #6b7280; }
   .footer-address { margin: 2px 0 0; font-size: 11px; color: #9ca3af; }
   .footer-page { margin: 4px 0 0; font-size: 10px; color: #9ca3af; }

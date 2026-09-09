@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
-from sqlalchemy import func, select, union
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.models import Brand, Category, Item, ItemCompatibleModel, Model
@@ -229,47 +229,65 @@ async def get_stock_list(db: AsyncSession, in_stock_only: bool = True) -> StockL
         in_stock_item_ids = select(StockLot.item_id).where(StockLot.qty_remaining > 0).distinct()
         extra_conditions.append(Item.id.in_(in_stock_item_ids))
 
-    primary = (
-        select(
-            Category.name.label("category"),
-            Brand.name.label("brand"),
-            Model.name.label("model"),
-            Model.id.label("model_id"),
-        )
-        .select_from(Item)
-        .join(Category, Category.id == Item.category_id)
-        .join(Model, Model.id == Item.model_id)
-        .join(Brand, Brand.id == Model.brand_id)
-        .where(Item.is_active.is_(True), *extra_conditions)
-    )
-
-    compatible = (
-        select(
-            Category.name.label("category"),
-            Brand.name.label("brand"),
-            Model.name.label("model"),
-            Model.id.label("model_id"),
-        )
-        .select_from(Item)
-        .join(Category, Category.id == Item.category_id)
-        .join(ItemCompatibleModel, ItemCompatibleModel.item_id == Item.id)
-        .join(Model, Model.id == ItemCompatibleModel.model_id)
-        .join(Brand, Brand.id == Model.brand_id)
-        .where(Item.is_active.is_(True), *extra_conditions)
-    )
-
-    combined = union(primary, compatible).subquery()
-    rows = (
+    # Primary rows: one row PER ITEM, not deduplicated by model -- two
+    # differently-colored items of the same phone model (e.g. a Bolt Lens
+    # Protector in Silver vs. Golden) are two distinct physical products and
+    # must both show up, each with its own full "model + variant" name. Keyed
+    # by the item's own id, which is naturally unique.
+    primary_rows = (
         await db.execute(
-            select(combined.c.category, combined.c.brand, combined.c.model, combined.c.model_id).order_by(
-                combined.c.category, combined.c.brand, combined.c.model
+            select(
+                Category.name.label("category"),
+                Brand.name.label("brand"),
+                Model.name.label("model"),
+                Item.variant.label("variant"),
+                Item.id.label("entry_key"),
             )
+            .select_from(Item)
+            .join(Category, Category.id == Item.category_id)
+            .join(Model, Model.id == Item.model_id)
+            .join(Brand, Brand.id == Model.brand_id)
+            .where(Item.is_active.is_(True), *extra_conditions)
+            .order_by(Category.name, Brand.name, Model.name)
         )
     ).all()
 
-    return StockListRead(
-        entries=[
-            StockListEntryRead(category=r.category, brand=r.brand, model=r.model, model_id=r.model_id)
-            for r in rows
-        ]
-    )
+    # Compatible rows: "this model also fits one of this category's items" --
+    # a per-link variant was never tracked (item_compatible_model has no
+    # variant column), so these are deduplicated by model as before. Keyed by
+    # the negative of the model id so it can never collide with an item id
+    # from the primary rows above.
+    compatible_rows = (
+        await db.execute(
+            select(
+                Category.name.label("category"),
+                Brand.name.label("brand"),
+                Model.name.label("model"),
+                Model.id.label("model_id"),
+            )
+            .select_from(Item)
+            .join(Category, Category.id == Item.category_id)
+            .join(ItemCompatibleModel, ItemCompatibleModel.item_id == Item.id)
+            .join(Model, Model.id == ItemCompatibleModel.model_id)
+            .join(Brand, Brand.id == Model.brand_id)
+            .where(Item.is_active.is_(True), *extra_conditions)
+            .distinct()
+            .order_by(Category.name, Brand.name, Model.name)
+        )
+    ).all()
+
+    entries = [
+        StockListEntryRead(
+            category=r.category,
+            brand=r.brand,
+            model=f"{r.model} {r.variant}" if r.variant else r.model,
+            model_id=r.entry_key,
+        )
+        for r in primary_rows
+    ] + [
+        StockListEntryRead(category=r.category, brand=r.brand, model=r.model, model_id=-r.model_id)
+        for r in compatible_rows
+    ]
+    entries.sort(key=lambda e: (e.category, e.brand, e.model))
+
+    return StockListRead(entries=entries)

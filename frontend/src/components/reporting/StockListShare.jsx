@@ -139,7 +139,7 @@ function buildPageDocument(shopName, shopAddress, category, blocks, pageNumber, 
       <p class="category-subtitle">Available Models</p>
     </div>
     <hr class="divider" />
-    <div class="page-columns" style="column-count: ${columns}">${cards}</div>
+    <div class="page-columns" data-columns="${columns}" style="column-count: ${columns}">${cards}</div>
     <div class="footer">
       <p class="footer-shop">${escapeHtml(shopName || 'Stock List')}</p>
       ${shopAddress ? `<p class="footer-address">${escapeHtml(shopAddress)}</p>` : ''}
@@ -147,6 +147,31 @@ function buildPageDocument(shopName, shopAddress, category, blocks, pageNumber, 
     </div>
   `;
   return `<!doctype html><html><head><meta charset="utf-8"><style>${STOCK_LIST_EXPORT_STYLES}</style></head><body>${body}</body></html>`;
+}
+
+// html2canvas doesn't paint CSS `column-rule` at all (confirmed by hand: the
+// live iframe renders the rule correctly, but it's silently missing from the
+// captured PNG every time) — so the export draws the same vertical divider
+// itself, as plain positioned elements html2canvas has no trouble with,
+// instead of relying on that property for the file that actually gets shared.
+function addColumnDividers(pageColumnsEl) {
+  const columns = Number(pageColumnsEl.dataset.columns) || 1;
+  if (columns < 2) return;
+  const cs = getComputedStyle(pageColumnsEl);
+  const paddingLeft = parseFloat(cs.paddingLeft) || 0;
+  const paddingRight = parseFloat(cs.paddingRight) || 0;
+  const gap = parseFloat(cs.columnGap) || 0;
+  const contentWidth = pageColumnsEl.clientWidth - paddingLeft - paddingRight;
+  const colWidth = (contentWidth - (columns - 1) * gap) / columns;
+  const height = pageColumnsEl.clientHeight;
+  const doc = pageColumnsEl.ownerDocument;
+  for (let i = 1; i < columns; i++) {
+    const x = paddingLeft + i * (colWidth + gap) - gap / 2;
+    const divider = doc.createElement('div');
+    divider.className = 'column-divider';
+    divider.style.cssText = `left:${x}px; height:${height}px;`;
+    pageColumnsEl.appendChild(divider);
+  }
 }
 
 // Every category becomes its own independent set of pages — numbering resets
@@ -258,6 +283,8 @@ export function StockListShare() {
           // what's within the target element's own box, and an untouched 100px
           // starting height would clip anything longer than that.
           iframe.style.height = `${iframe.contentDocument.body.scrollHeight}px`;
+          const pageColumnsEl = iframe.contentDocument.querySelector('.page-columns');
+          if (pageColumnsEl) addColumnDividers(pageColumnsEl);
           const canvas = await html2canvas(iframe.contentDocument.body, { scale: 2, backgroundColor: '#ffffff' });
           const link = document.createElement('a');
           const slug = slugify(doc.category);
@@ -407,26 +434,20 @@ export function StockListShare() {
                       <p className="mt-0.5 text-xs text-muted-foreground">Available Models</p>
                     </div>
                     <hr className="mx-4 mt-3 border-blue-900" />
-                    {/* CSS grid, not Tailwind's columns-N + break-inside-avoid multi-column layout —
-                        Chromium mis-paints a break-inside:avoid card's border/background when its
-                        content is taller than the balanced column-height estimate, clipping the box
-                        to a sliver around just its heading while the rest of the list overflows
-                        unstyled below it (confirmed by hand: a single brand with ~19 models
-                        reproduces it every time). Grid lays out each card as a real item with no
-                        fragmentation step, so it can't hit that bug. */}
-                    <div className="grid grid-cols-1 items-start gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {/* Real CSS multi-column, matching the reference design exactly — no card
+                        background/border on each brand group (that's what made the earlier
+                        break-inside:avoid Chromium bug possible; plain text has nothing to
+                        mis-paint), so this can safely use native columns instead of grid. Native
+                        columns is also what gives the reference's actual flow: one column fills
+                        top-to-bottom before the next one starts, not grid's row-by-row order. */}
+                    <div className="columns-1 gap-7 p-4 [column-rule:1px_solid_#d1d5db] sm:columns-2 lg:columns-3">
                       {assignSequentialNumbers(cat.brands).map((b) => (
-                        <div key={b.brand} className="rounded-md border bg-slate-50 px-3 py-2 text-sm">
-                          <p className="mb-1 font-semibold text-blue-700 underline decoration-blue-600 decoration-2 underline-offset-2">
-                            {b.brand}
-                          </p>
+                        <div key={b.brand} className="mb-3 break-inside-avoid text-sm">
+                          <p className="mb-0.5 font-semibold text-blue-700">{b.brand}</p>
                           <div className="flex flex-col">
                             {b.models.map((m) => (
                               <p key={m.modelId}>
-                                <span className="inline-block min-w-5 font-medium text-muted-foreground">
-                                  {m.number}.
-                                </span>{' '}
-                                {m.model}
+                                <span className="inline-block min-w-4.5">{m.number}.</span> {m.model}
                               </p>
                             ))}
                           </div>

@@ -77,7 +77,16 @@ class MarginReportRead(BaseModel):
 class StockListEntryRead(BaseModel):
     category: str
     brand: str
+    # Full display name -- includes the item's own variant/color when it has one
+    # (e.g. "iPhone 13 Pro Max Silver"), matching how the shop's own stock sheets
+    # write it, so two differently-colored items of the same phone model show as
+    # two distinct lines instead of collapsing into one.
     model: str
+    # A key unique across this response, NOT necessarily a real Model.id -- a
+    # primary (this item's own model) row uses the Item's id, a compatible
+    # (secondary/"also fits") row uses the negative of the Model's id, so the two
+    # spaces can never collide. Only used by the frontend as a stable React/
+    # exclusion-set key, never round-tripped back to the API.
     model_id: int
 
 
