@@ -407,12 +407,16 @@ export function StockListShare() {
                       <p className="mt-0.5 text-xs text-muted-foreground">Available Models</p>
                     </div>
                     <hr className="mx-4 mt-3 border-blue-900" />
-                    <div className="columns-1 gap-3 p-4 sm:columns-2 lg:columns-3">
+                    {/* CSS grid, not Tailwind's columns-N + break-inside-avoid multi-column layout —
+                        Chromium mis-paints a break-inside:avoid card's border/background when its
+                        content is taller than the balanced column-height estimate, clipping the box
+                        to a sliver around just its heading while the rest of the list overflows
+                        unstyled below it (confirmed by hand: a single brand with ~19 models
+                        reproduces it every time). Grid lays out each card as a real item with no
+                        fragmentation step, so it can't hit that bug. */}
+                    <div className="grid grid-cols-1 items-start gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
                       {assignSequentialNumbers(cat.brands).map((b) => (
-                        <div
-                          key={b.brand}
-                          className="mb-3 break-inside-avoid rounded-md border bg-slate-50 px-3 py-2 text-sm"
-                        >
+                        <div key={b.brand} className="rounded-md border bg-slate-50 px-3 py-2 text-sm">
                           <p className="mb-1 font-semibold text-blue-700 underline decoration-blue-600 decoration-2 underline-offset-2">
                             {b.brand}
                           </p>
