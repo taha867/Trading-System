@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.catalog.models import Item, Model
 from src.exceptions import ConflictException
 from src.inventory.dependencies import STOCK_LOT_LOAD_OPTIONS
 from src.inventory.exceptions import (
@@ -182,6 +183,9 @@ async def list_stock_lots(
     pagination: PaginationParams,
     item_id: int | None,
     include_depleted: bool,
+    category_id: int | None = None,
+    brand_id: int | None = None,
+    model_id: int | None = None,
 ) -> PaginatedResponse[StockLotRead]:
     offset = (pagination.page - 1) * pagination.page_size
 
@@ -190,15 +194,26 @@ async def list_stock_lots(
         filters.append(StockLot.item_id == item_id)
     if not include_depleted:
         filters.append(StockLot.qty_remaining > 0)
+    if category_id is not None:
+        filters.append(Item.category_id == category_id)
+    if model_id is not None:
+        filters.append(Item.model_id == model_id)
+    if brand_id is not None:
+        filters.append(Model.brand_id == brand_id)
 
-    total = await db.scalar(select(func.count()).select_from(StockLot).where(*filters))
+    # category_id/model_id only need Item; brand_id needs the further Item -> Model
+    # hop — join both whenever either filter is in play so brand_id isn't a special case.
+    needs_join = category_id is not None or model_id is not None or brand_id is not None
+
+    count_stmt = select(func.count()).select_from(StockLot).where(*filters)
+    list_stmt = select(StockLot).options(*STOCK_LOT_LOAD_OPTIONS).where(*filters)
+    if needs_join:
+        count_stmt = count_stmt.join(Item, Item.id == StockLot.item_id).join(Model, Model.id == Item.model_id)
+        list_stmt = list_stmt.join(Item, Item.id == StockLot.item_id).join(Model, Model.id == Item.model_id)
+
+    total = await db.scalar(count_stmt)
     result = await db.execute(
-        select(StockLot)
-        .options(*STOCK_LOT_LOAD_OPTIONS)
-        .where(*filters)
-        .order_by(StockLot.item_id, StockLot.received_date, StockLot.id)
-        .offset(offset)
-        .limit(pagination.page_size)
+        list_stmt.order_by(StockLot.item_id, StockLot.received_date, StockLot.id).offset(offset).limit(pagination.page_size)
     )
     items = result.unique().scalars().all()
 

@@ -41,8 +41,13 @@ async def list_stock_lots(
     _current_user: Annotated[User, Depends(get_current_user)],
     item_id: int | None = None,
     include_depleted: bool = False,
+    category_id: int | None = None,
+    brand_id: int | None = None,
+    model_id: int | None = None,
 ):
-    return await service.list_stock_lots(db, pagination, item_id, include_depleted)
+    return await service.list_stock_lots(
+        db, pagination, item_id, include_depleted, category_id=category_id, brand_id=brand_id, model_id=model_id
+    )
 
 
 @stock_lot_router.get("/{stock_lot_id}", response_model=StockLotRead)

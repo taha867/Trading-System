@@ -3,13 +3,21 @@ import { Loader2, Inbox, Boxes, SlidersHorizontal } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { StockAdjustmentDialog } from '@/components/inventory/StockAdjustmentDialog';
+import { ModelCombobox } from '@/components/custom';
 import { useStockLots } from '@/hooks/inventoryHooks/inventoryQueries';
+import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
+import { useBrands } from '@/hooks/catalogHooks/brandQueries';
+import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const PAGE_SIZE = 20;
+// Radix Select can't represent "no selection" as an empty-string item value —
+// matches CrudTable.jsx's own sentinel convention for the same reason.
+const ALL_VALUE = '__all__';
 
 function itemSubLabel(lot) {
   const parts = [lot.category_name, lot.item_sku].filter(Boolean);
@@ -19,14 +27,29 @@ function itemSubLabel(lot) {
 export function StockLotTable() {
   const [page, setPage] = useState(1);
   const [includeDepleted, setIncludeDepleted] = useState(false);
+  const [categoryId, setCategoryId] = useState('');
+  const [brandId, setBrandId] = useState('');
+  const [modelId, setModelId] = useState('');
   const [adjustingLot, setAdjustingLot] = useState(null);
+
+  // Category/Brand are true small lookup tables — LOOKUP_PAGE is fine forever.
+  // Model is large and growing (past 400) — ModelCombobox searches it server-side.
+  const { data: categoriesData } = useCategories(LOOKUP_PAGE);
+  const { data: brandsData } = useBrands(LOOKUP_PAGE);
 
   // Real pagination — StockLotRead now carries its own item_sku/model_name/
   // category_name (see backend/src/inventory/schemas.py), so no more
   // whole-Items/Models/Categories-catalog LOOKUP_PAGE fetch is needed just to
   // label a page of rows. Grouping by model is a per-page display concern
   // now, not a whole-table one — a model's lots can span two pages.
-  const { data, isLoading, isError } = useStockLots({ page, page_size: PAGE_SIZE, include_depleted: includeDepleted });
+  const { data, isLoading, isError } = useStockLots({
+    page,
+    page_size: PAGE_SIZE,
+    include_depleted: includeDepleted,
+    category_id: categoryId || undefined,
+    brand_id: brandId || undefined,
+    model_id: modelId || undefined,
+  });
   const lots = data?.items ?? [];
   const total = data?.total ?? 0;
 
@@ -43,6 +66,18 @@ export function StockLotTable() {
 
   const handleIncludeDepletedChange = (checked) => {
     setIncludeDepleted(Boolean(checked));
+    setPage(1);
+  };
+  const handleCategoryChange = (value) => {
+    setCategoryId(value === ALL_VALUE ? '' : value);
+    setPage(1);
+  };
+  const handleBrandChange = (value) => {
+    setBrandId(value === ALL_VALUE ? '' : value);
+    setPage(1);
+  };
+  const handleModelChange = (value) => {
+    setModelId(value);
     setPage(1);
   };
 
@@ -67,6 +102,37 @@ export function StockLotTable() {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Select value={categoryId || ALL_VALUE} onValueChange={handleCategoryChange}>
+            <SelectTrigger className="w-full sm:w-48" aria-label="Category">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_VALUE}>All categories</SelectItem>
+              {(categoriesData?.items ?? []).map((c) => (
+                <SelectItem key={c.id} value={String(c.id)}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={brandId || ALL_VALUE} onValueChange={handleBrandChange}>
+            <SelectTrigger className="w-full sm:w-48" aria-label="Brand">
+              <SelectValue placeholder="All brands" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_VALUE}>All brands</SelectItem>
+              {(brandsData?.items ?? []).map((b) => (
+                <SelectItem key={b.id} value={String(b.id)}>
+                  {b.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="w-full sm:w-56">
+            <ModelCombobox value={modelId} onChange={handleModelChange} label={null} />
+          </div>
+        </div>
         <div className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>

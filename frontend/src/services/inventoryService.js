@@ -1,8 +1,24 @@
 import { fetchClient } from '@/middleware/fetchClient';
 import { buildQueryString } from '@/utils/queryParams';
 
-export async function listStockLots({ page, page_size, item_id, include_depleted } = {}) {
-  const qs = buildQueryString({ page, page_size, item_id, include_depleted: include_depleted || undefined });
+export async function listStockLots({
+  page,
+  page_size,
+  item_id,
+  include_depleted,
+  category_id,
+  brand_id,
+  model_id,
+} = {}) {
+  const qs = buildQueryString({
+    page,
+    page_size,
+    item_id,
+    include_depleted: include_depleted || undefined,
+    category_id,
+    brand_id,
+    model_id,
+  });
   const { data } = await fetchClient.get(`/inventory/stock-lots${qs}`);
   return data;
 }

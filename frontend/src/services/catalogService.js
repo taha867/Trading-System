@@ -44,6 +44,11 @@ export async function listModels(params) {
   return data;
 }
 
+export async function getModel(id) {
+  const { data } = await fetchClient.get(`/catalog/models/${id}`);
+  return data;
+}
+
 export async function createModel(payload) {
   const { data } = await fetchClient.post('/catalog/models', payload);
   return data;

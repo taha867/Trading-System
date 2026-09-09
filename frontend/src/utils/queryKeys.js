@@ -31,6 +31,7 @@ export const modelKeys = {
   all: ['models'],
   lists: () => [...modelKeys.all, 'list'],
   list: (params) => [...modelKeys.lists(), params],
+  detail: (id) => [...modelKeys.all, 'detail', id],
 };
 
 export const itemKeys = {
