@@ -39,4 +39,7 @@ export const expenseCreateSchema = object({
   expense_date: string().required('Date is required'),
   description: string().max(255).nullable().default(null),
 });
-// No expenseUpdateSchema — Expense has no update endpoint.
+// No separate expenseUpdateSchema — ExpenseForm's edit mode always submits every
+// field (prefilled from the expense being edited, not a partial patch a user
+// builds up field-by-field like the lookup-table CrudDrawer forms), so the same
+// all-required shape as create applies unchanged.

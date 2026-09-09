@@ -66,6 +66,11 @@ export async function createExpense(payload) {
   return data;
 }
 
+export async function updateExpense({ id, ...payload }) {
+  const { data } = await fetchClient.patch(`/expenses/entries/${id}`, payload);
+  return data;
+}
+
 export async function confirmExpense(id) {
   const { data } = await fetchClient.post(`/expenses/entries/${id}/confirm`);
   return data;

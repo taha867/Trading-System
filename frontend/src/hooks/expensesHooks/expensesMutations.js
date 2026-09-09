@@ -76,6 +76,23 @@ export function useCreateExpense() {
   });
 }
 
+// Editing a confirmed expense can change its amount/account (see
+// backend's update_expense — it keeps the linked PaymentTransaction/
+// LedgerEntry in sync in place), so this needs the same paired invalidation
+// as create/confirm; editing a still-draft expense never touched a balance,
+// but invalidating balances() unconditionally here is harmless (a no-op
+// refetch) and keeps this hook simple regardless of which case applies.
+export function useUpdateExpense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: expensesService.updateExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: expenseKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: paymentAccountKeys.balances() });
+    },
+  });
+}
+
 // Confirming a draft is the other moment money actually moves — same paired
 // invalidation as create, above.
 export function useConfirmExpense() {

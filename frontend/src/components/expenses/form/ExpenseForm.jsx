@@ -3,14 +3,18 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { Button } from '@/components/ui/button';
 import { FormField, FormSelect } from '@/components/custom';
 import { expenseCreateSchema } from '@/validations/expensesSchemas';
-import { useCreateExpense } from '@/hooks/expensesHooks/expensesMutations';
+import { useCreateExpense, useUpdateExpense } from '@/hooks/expensesHooks/expensesMutations';
 import { useExpenseCategories } from '@/hooks/expensesHooks/expensesQueries';
 import { usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
-export function ExpenseForm({ onSuccess }) {
+// `expense` present -> edit mode: prefilled from that row, submits go through
+// PATCH /expenses/entries/{id} instead of POST. Same fields either way (see
+// expensesSchemas.js), so one form/schema covers both.
+export function ExpenseForm({ expense, onSuccess }) {
+  const isEditing = Boolean(expense);
   const { data: categoriesData } = useExpenseCategories(LOOKUP_PAGE);
   const { data: accountsData } = usePaymentAccounts(LOOKUP_PAGE);
   const categoryOptions = (categoriesData?.items ?? []).map((c) => ({ value: String(c.id), label: c.name }));
@@ -22,9 +26,18 @@ export function ExpenseForm({ onSuccess }) {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(expenseCreateSchema, {}, { raw: true }),
-    defaultValues: { category_id: '', payment_account_id: '', amount: '', expense_date: todayIso(), description: '' },
+    defaultValues: isEditing
+      ? {
+          category_id: expense.category_id,
+          payment_account_id: expense.payment_account_id,
+          amount: expense.amount,
+          expense_date: expense.expense_date,
+          description: expense.description ?? '',
+        }
+      : { category_id: '', payment_account_id: '', amount: '', expense_date: todayIso(), description: '' },
   });
   const createMutation = useCreateExpense();
+  const updateMutation = useUpdateExpense();
 
   const onSubmit = async (values) => {
     try {
@@ -37,7 +50,11 @@ export function ExpenseForm({ onSuccess }) {
         expense_date: values.expense_date,
         ...(values.description ? { description: values.description } : {}),
       };
-      await createMutation.mutateAsync(payload);
+      if (isEditing) {
+        await updateMutation.mutateAsync({ id: expense.id, ...payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
       onSuccess?.();
     } catch {
       // fetchClient already toasted the backend's error detail — keep the
@@ -77,7 +94,7 @@ export function ExpenseForm({ onSuccess }) {
         render={({ field }) => <FormField {...field} label="Description (optional)" error={errors.description?.message} />}
       />
       <Button type="submit" size="lg" disabled={isSubmitting} className="self-end">
-        {isSubmitting ? 'Saving…' : 'Record expense'}
+        {isSubmitting ? 'Saving…' : isEditing ? 'Save changes' : 'Record expense'}
       </Button>
     </form>
   );

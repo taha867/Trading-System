@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -7,11 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.exceptions import ConflictException, NotFoundException
 from src.expenses.exceptions import ExpenseNotFound, RecurringExpenseTemplateNotFound
 from src.expenses.models import Expense, ExpenseCategory, RecurringExpenseTemplate
-from src.expenses.schemas import ExpenseCreate, ExpenseRead
-from src.pagination import PaginatedResponse, PaginationParams
+from src.expenses.schemas import ExpenseCreate, ExpenseListRead, ExpenseUpdate
+from src.ledger.models import LedgerEntry
+from src.pagination import PaginationParams
 from src.payments import service as payments_service
 from src.payments.models import PaymentTransaction
 from src.payments.schemas import PaymentTransactionCreate
+from src.payments.utils import money as payment_money
 
 
 async def get_active_expense_category(db: AsyncSession, category_id: int) -> ExpenseCategory:
@@ -127,7 +130,7 @@ async def list_expenses(
     recurring_template_id: int | None = None,
     expense_date_from: date | None = None,
     expense_date_to: date | None = None,
-) -> PaginatedResponse[ExpenseRead]:
+) -> ExpenseListRead:
     offset = (pagination.page - 1) * pagination.page_size
 
     filters = []
@@ -145,6 +148,9 @@ async def list_expenses(
         filters.append(Expense.expense_date <= expense_date_to)
 
     total = await db.scalar(select(func.count()).select_from(Expense).where(*filters))
+    # Same filters, no offset/limit — the filter bar's "total spent" has to sum every
+    # matching row, not just the page being rendered.
+    total_amount = await db.scalar(select(func.coalesce(func.sum(Expense.amount), 0)).where(*filters))
     result = await db.execute(
         select(Expense)
         .where(*filters)
@@ -154,6 +160,63 @@ async def list_expenses(
     )
     items = result.scalars().all()
 
-    return PaginatedResponse[ExpenseRead](
-        items=items, total=total or 0, page=pagination.page, page_size=pagination.page_size
+    return ExpenseListRead(
+        items=items,
+        total=total or 0,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        total_amount=payment_money(total_amount or Decimal(0)),
     )
+
+
+async def update_expense(db: AsyncSession, expense: Expense, payload: ExpenseUpdate) -> Expense:
+    updates = payload.model_dump(exclude_unset=True)
+
+    if "category_id" in updates:
+        await get_active_expense_category(db, updates["category_id"])
+    account = None
+    if "payment_account_id" in updates:
+        account = await payments_service.get_active_payment_account(db, updates["payment_account_id"])
+
+    for field, value in updates.items():
+        setattr(expense, field, value)
+
+    # A draft has never posted anything (see generate_expense_from_template) — a plain
+    # field update is all that's needed. A confirmed expense already moved money via
+    # exactly one PaymentTransaction + one LedgerEntry (see _post_expense_payment); per
+    # this app's convention (no soft-delete/void column on either table, unlike every
+    # other domain — see CLAUDE.md's ledger non-negotiables), those two rows are kept
+    # in sync in place rather than reversed-and-recreated, so every report reading
+    # either table stays consistent with the corrected expense.
+    if expense.status == "confirmed":
+        txn = await db.scalar(
+            select(PaymentTransaction).where(
+                PaymentTransaction.reference_type == "expense", PaymentTransaction.reference_id == expense.id
+            )
+        )
+        if txn is not None:
+            if account is None:
+                account = await payments_service.get_active_payment_account(db, expense.payment_account_id)
+            txn.payment_account_id = expense.payment_account_id
+            txn.amount = expense.amount
+            txn.transaction_date = expense.expense_date
+            txn.note = expense.description
+
+            entry = await db.scalar(
+                select(LedgerEntry).where(
+                    LedgerEntry.reference_type == "payment_transaction", LedgerEntry.reference_id == txn.id
+                )
+            )
+            if entry is not None:
+                entry.account = account.label
+                entry.credit = expense.amount
+                entry.payment_account_id = expense.payment_account_id
+                entry.entry_date = expense.expense_date
+
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise ConflictException("Expense could not be saved") from exc
+    await db.refresh(expense)
+    return expense

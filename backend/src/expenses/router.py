@@ -16,12 +16,14 @@ from src.expenses.schemas import (
     ExpenseCategoryRead,
     ExpenseCategoryUpdate,
     ExpenseCreate,
+    ExpenseListRead,
     ExpenseRead,
+    ExpenseUpdate,
     RecurringExpenseTemplateCreate,
     RecurringExpenseTemplateRead,
     RecurringExpenseTemplateUpdate,
 )
-from src.pagination import PaginatedResponse, PaginationParams
+from src.pagination import PaginationParams
 
 expense_category_router = build_crud_router(
     model=ExpenseCategory,
@@ -60,7 +62,7 @@ async def generate_expense(
 expense_router = APIRouter(prefix="/entries", tags=["expenses"])
 
 
-@expense_router.get("", response_model=PaginatedResponse[ExpenseRead])
+@expense_router.get("", response_model=ExpenseListRead)
 async def list_expenses(
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
@@ -107,6 +109,16 @@ async def get_expense(
     _current_user: Annotated[User, Depends(get_current_user)],
 ):
     return expense
+
+
+@expense_router.patch("/{expense_id}", response_model=ExpenseRead)
+async def update_expense(
+    payload: ExpenseUpdate,
+    expense: Annotated[Expense, Depends(valid_expense)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+):
+    return await service.update_expense(db, expense, payload)
 
 
 @expense_router.post("/{expense_id}/confirm", response_model=ExpenseRead)
