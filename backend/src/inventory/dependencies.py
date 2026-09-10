@@ -8,7 +8,7 @@ from sqlalchemy.orm import joinedload
 from src.catalog.models import Item
 from src.database import get_db
 from src.inventory.exceptions import StockLotNotFound
-from src.inventory.models import StockLot
+from src.inventory.models import StockLot, StockMovement
 
 # Reused everywhere a StockLot is loaded — StockLotRead's item_sku/item_variant/
 # model_name/category_name properties need this whole chain eagerly loaded
@@ -16,6 +16,13 @@ from src.inventory.models import StockLot
 STOCK_LOT_LOAD_OPTIONS = (
     joinedload(StockLot.item).joinedload(Item.model),
     joinedload(StockLot.item).joinedload(Item.category),
+)
+
+# Same reasoning, one hop further — StockMovementRead's embedded fields read
+# through movement.stock_lot.item.model/category.
+STOCK_MOVEMENT_LOAD_OPTIONS = (
+    joinedload(StockMovement.stock_lot).joinedload(StockLot.item).joinedload(Item.model),
+    joinedload(StockMovement.stock_lot).joinedload(StockLot.item).joinedload(Item.category),
 )
 
 

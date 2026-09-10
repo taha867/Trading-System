@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { Loader2, Inbox, Boxes, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Inbox, Boxes, SlidersHorizontal, TriangleAlert } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { StockAdjustmentDialog } from '@/components/inventory/StockAdjustmentDialog';
+import { MarkDamagedDialog } from '@/components/inventory/MarkDamagedDialog';
 import { ModelCombobox } from '@/components/custom';
 import { useStockLots } from '@/hooks/inventoryHooks/inventoryQueries';
 import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
@@ -31,6 +32,7 @@ export function StockLotTable() {
   const [brandId, setBrandId] = useState('');
   const [modelId, setModelId] = useState('');
   const [adjustingLot, setAdjustingLot] = useState(null);
+  const [damagingLot, setDamagingLot] = useState(null);
 
   // Category/Brand are true small lookup tables — LOOKUP_PAGE is fine forever.
   // Model is large and growing (past 400) — ModelCombobox searches it server-side.
@@ -154,7 +156,7 @@ export function StockLotTable() {
                 <TableHead className="text-right">Qty remaining</TableHead>
                 <TableHead className="text-right">Landed cost/unit</TableHead>
                 <TableHead className="text-right">Value remaining</TableHead>
-                <TableHead className="w-10" />
+                <TableHead className="w-20" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -210,14 +212,24 @@ export function StockLotTable() {
                           <CurrencyAmount value={lot.value_remaining_pkr} />
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={`Adjust stock lot #${lot.id}`}
-                            onClick={() => setAdjustingLot(lot)}
-                          >
-                            <SlidersHorizontal />
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`Adjust stock lot #${lot.id}`}
+                              onClick={() => setAdjustingLot(lot)}
+                            >
+                              <SlidersHorizontal />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`Mark stock lot #${lot.id} as damaged`}
+                              onClick={() => setDamagingLot(lot)}
+                            >
+                              <TriangleAlert className="text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -236,6 +248,13 @@ export function StockLotTable() {
           open={Boolean(adjustingLot)}
           onOpenChange={(open) => !open && setAdjustingLot(null)}
           lot={adjustingLot}
+        />
+      )}
+      {damagingLot && (
+        <MarkDamagedDialog
+          open={Boolean(damagingLot)}
+          onOpenChange={(open) => !open && setDamagingLot(null)}
+          lot={damagingLot}
         />
       )}
     </Card>

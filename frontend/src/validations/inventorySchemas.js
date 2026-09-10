@@ -25,3 +25,18 @@ export function buildStockAdjustmentSchema(lot) {
     movement_date: string().required('Movement date is required'),
   });
 }
+
+// Same shape as buildStockAdjustmentSchema, but `qty` is always positive
+// ("how many units are damaged") — the service applies it as a reduction
+// against qty_remaining, unlike qty_delta above which is a signed value.
+export function buildStockDamageSchema(lot) {
+  return object({
+    qty: number()
+      .typeError('Enter a number')
+      .required('Enter a quantity')
+      .moreThan(0, 'Quantity must be greater than 0')
+      .max(Number(lot.qty_remaining), `Only ${lot.qty_remaining} remaining on this lot`),
+    reason: string().required('Reason is required').max(255, 'Max 255 characters'),
+    movement_date: string().required('Movement date is required'),
+  });
+}

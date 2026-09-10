@@ -54,3 +54,26 @@ class StockMovement(Base):
     reason: Mapped[str | None] = mapped_column(nullable=True)
     movement_date: Mapped[date] = mapped_column(Date)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Read-only navigation for display purposes (StockMovementRead embeds the
+    # lot's own item/model/category, needed for the Damaged Stock list) —
+    # every read path must joinedload the whole chain (stock_lot -> item ->
+    # model, stock_lot -> item -> category), same lazy="raise" discipline as
+    # StockLot's own `item` relationship above.
+    stock_lot: Mapped["StockLot"] = relationship(lazy="raise")
+
+    @property
+    def item_sku(self) -> str:
+        return self.stock_lot.item.sku
+
+    @property
+    def item_variant(self) -> str | None:
+        return self.stock_lot.item.variant
+
+    @property
+    def model_name(self) -> str:
+        return self.stock_lot.item.model.name
+
+    @property
+    def category_name(self) -> str:
+        return self.stock_lot.item.category.name

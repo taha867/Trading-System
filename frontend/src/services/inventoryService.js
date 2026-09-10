@@ -33,13 +33,26 @@ export async function receiveStockLot(payload) {
   return data;
 }
 
-export async function listStockMovements({ page, page_size, stock_lot_id } = {}) {
-  const qs = buildQueryString({ page, page_size, stock_lot_id });
+export async function listStockMovements({
+  page,
+  page_size,
+  stock_lot_id,
+  movement_type,
+  category_id,
+  brand_id,
+  model_id,
+} = {}) {
+  const qs = buildQueryString({ page, page_size, stock_lot_id, movement_type, category_id, brand_id, model_id });
   const { data } = await fetchClient.get(`/inventory/stock-movements${qs}`);
   return data;
 }
 
 export async function createStockMovement(payload) {
   const { data } = await fetchClient.post('/inventory/stock-movements', payload);
+  return data;
+}
+
+export async function markStockLotDamaged(payload) {
+  const { data } = await fetchClient.post('/inventory/stock-movements/damage', payload);
   return data;
 }

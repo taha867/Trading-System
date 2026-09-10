@@ -8,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.models import Item, Model
 from src.exceptions import ConflictException
-from src.inventory.dependencies import STOCK_LOT_LOAD_OPTIONS
+from src.inventory.dependencies import (
+    STOCK_LOT_LOAD_OPTIONS,
+    STOCK_MOVEMENT_LOAD_OPTIONS,
+)
 from src.inventory.exceptions import (
     InsufficientStock,
     InvalidAdjustment,
@@ -19,14 +22,15 @@ from src.inventory.exceptions import (
 )
 from src.inventory.models import StockLot, StockMovement
 from src.inventory.schemas import (
+    StockLotDamageCreate,
     StockLotListRead,
     StockLotReceiveCreate,
     StockMovementCreate,
-    StockMovementRead,
+    StockMovementListRead,
 )
 from src.inventory.utils import money
 from src.ledger import service as ledger_service
-from src.pagination import PaginatedResponse, PaginationParams
+from src.pagination import PaginationParams
 from src.purchasing.models import PurchaseOrder, PurchaseOrderLine
 
 
@@ -128,6 +132,40 @@ async def create_adjustment(db: AsyncSession, payload: StockMovementCreate) -> S
 
     await db.refresh(movement)
     return movement
+
+
+async def mark_stock_lot_damaged(db: AsyncSession, payload: StockLotDamageCreate) -> StockMovement:
+    lot = await db.get(StockLot, payload.stock_lot_id)
+    if not lot:
+        raise StockLotNotFound()
+    if payload.qty > lot.qty_remaining:
+        raise InvalidAdjustment(
+            f"Cannot mark {payload.qty} damaged — only {lot.qty_remaining} remaining on this lot"
+        )
+
+    lot.qty_remaining -= payload.qty
+    movement = StockMovement(
+        stock_lot_id=lot.id,
+        movement_type="damaged",
+        qty_delta=-payload.qty,
+        reason=payload.reason,
+        movement_date=payload.movement_date,
+    )
+    db.add(movement)
+
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise ConflictException("Damage record could not be saved") from exc
+
+    # movement's own columns survive commit fine, but `stock_lot` (needed for
+    # StockMovementRead's embedded sku/model/category) was never touched —
+    # re-fetch with the same eager-load chain every other read path uses.
+    result = await db.execute(
+        select(StockMovement).options(*STOCK_MOVEMENT_LOAD_OPTIONS).where(StockMovement.id == movement.id)
+    )
+    return result.unique().scalar_one()
 
 
 class FifoConsumption(NamedTuple):
@@ -239,26 +277,59 @@ async def list_stock_movements(
     db: AsyncSession,
     pagination: PaginationParams,
     stock_lot_id: int | None,
-) -> PaginatedResponse[StockMovementRead]:
+    movement_type: str | None = None,
+    category_id: int | None = None,
+    brand_id: int | None = None,
+    model_id: int | None = None,
+) -> StockMovementListRead:
     offset = (pagination.page - 1) * pagination.page_size
 
     filters = []
     if stock_lot_id is not None:
         filters.append(StockMovement.stock_lot_id == stock_lot_id)
+    if movement_type is not None:
+        filters.append(StockMovement.movement_type == movement_type)
+    if category_id is not None:
+        filters.append(Item.category_id == category_id)
+    if model_id is not None:
+        filters.append(Item.model_id == model_id)
+    if brand_id is not None:
+        filters.append(Model.brand_id == brand_id)
 
-    total = await db.scalar(select(func.count()).select_from(StockMovement).where(*filters))
+    # category_id/model_id only need Item; brand_id needs the further Item -> Model
+    # hop — join both whenever either filter is in play, same reasoning as
+    # list_stock_lots above.
+    needs_join = category_id is not None or model_id is not None or brand_id is not None
+
+    count_stmt = select(func.count()).select_from(StockMovement).where(*filters)
+    # Same filters, no offset/limit — "how many units total" (the Damaged Stock
+    # page's own summary) has to sum every matching row, not just the page
+    # being rendered. qty_delta is negative for "damaged"/most adjustments, so
+    # this sums the magnitude, not the signed value.
+    total_qty_stmt = select(func.coalesce(func.sum(-StockMovement.qty_delta), 0)).where(*filters)
+    list_stmt = select(StockMovement).options(*STOCK_MOVEMENT_LOAD_OPTIONS).where(*filters)
+    if needs_join:
+        count_stmt = count_stmt.join(StockLot, StockLot.id == StockMovement.stock_lot_id).join(
+            Item, Item.id == StockLot.item_id
+        ).join(Model, Model.id == Item.model_id)
+        total_qty_stmt = total_qty_stmt.join(StockLot, StockLot.id == StockMovement.stock_lot_id).join(
+            Item, Item.id == StockLot.item_id
+        ).join(Model, Model.id == Item.model_id)
+        list_stmt = list_stmt.join(StockLot, StockLot.id == StockMovement.stock_lot_id).join(
+            Item, Item.id == StockLot.item_id
+        ).join(Model, Model.id == Item.model_id)
+
+    total = await db.scalar(count_stmt)
+    total_qty = await db.scalar(total_qty_stmt)
     result = await db.execute(
-        select(StockMovement)
-        .where(*filters)
-        .order_by(StockMovement.id)
-        .offset(offset)
-        .limit(pagination.page_size)
+        list_stmt.order_by(StockMovement.id.desc()).offset(offset).limit(pagination.page_size)
     )
-    items = result.scalars().all()
+    items = result.unique().scalars().all()
 
-    return PaginatedResponse[StockMovementRead](
+    return StockMovementListRead(
         items=items,
         total=total or 0,
         page=pagination.page,
         page_size=pagination.page_size,
+        total_qty=money(total_qty or Decimal(0)),
     )

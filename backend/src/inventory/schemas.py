@@ -52,7 +52,17 @@ class StockMovementCreate(BaseModel):
     movement_date: date
     # movement_type is not client-settable — every row created through this schema
     # is an "adjustment"; "receipt" rows are only ever created internally by
-    # service.receive_purchase_order_line.
+    # service.receive_purchase_order_line, and "damaged" rows only ever through
+    # StockLotDamageCreate below.
+
+
+class StockLotDamageCreate(BaseModel):
+    stock_lot_id: int
+    # Always positive — "how many units are damaged", not a signed delta like
+    # StockMovementCreate's qty_delta. The service applies it as a reduction.
+    qty: Annotated[Decimal, Field(gt=0, decimal_places=2)]
+    reason: Annotated[str, Field(max_length=255)]
+    movement_date: date
 
 
 class StockMovementRead(BaseModel):
@@ -65,3 +75,16 @@ class StockMovementRead(BaseModel):
     reason: str | None
     movement_date: date
     created_at: datetime
+    # Embedded so the Damaged Stock list never needs a separate lookup fetch
+    # against the whole Items/Models/Categories catalog.
+    item_sku: str
+    item_variant: str | None = None
+    model_name: str
+    category_name: str
+
+
+class StockMovementListRead(PaginatedResponse[StockMovementRead]):
+    # `total` (from PaginatedResponse) is a row count — the Damaged Stock
+    # page's "how many units total" needs the sum of qty magnitudes across
+    # every matching row, not just the page being rendered.
+    total_qty: Decimal

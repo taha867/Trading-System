@@ -10,13 +10,15 @@ from src.inventory import service
 from src.inventory.dependencies import valid_stock_lot
 from src.inventory.models import StockLot
 from src.inventory.schemas import (
+    StockLotDamageCreate,
     StockLotListRead,
     StockLotRead,
     StockLotReceiveCreate,
     StockMovementCreate,
+    StockMovementListRead,
     StockMovementRead,
 )
-from src.pagination import PaginatedResponse, PaginationParams
+from src.pagination import PaginationParams
 
 stock_lot_router = APIRouter(prefix="/stock-lots", tags=["inventory"])
 
@@ -71,7 +73,16 @@ async def create_adjustment(
     return await service.create_adjustment(db, payload)
 
 
-@stock_movement_router.get("", response_model=PaginatedResponse[StockMovementRead])
+@stock_movement_router.post("/damage", response_model=StockMovementRead, status_code=201)
+async def mark_stock_lot_damaged(
+    payload: StockLotDamageCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+):
+    return await service.mark_stock_lot_damaged(db, payload)
+
+
+@stock_movement_router.get("", response_model=StockMovementListRead)
 async def list_stock_movements(
     # PaginationParams uses Depends() here rather than crud.py/other routers' Query() —
     # this endpoint also takes plain filter params (item_id/stock_lot_id/
@@ -82,8 +93,14 @@ async def list_stock_movements(
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
     stock_lot_id: int | None = None,
+    movement_type: str | None = None,
+    category_id: int | None = None,
+    brand_id: int | None = None,
+    model_id: int | None = None,
 ):
-    return await service.list_stock_movements(db, pagination, stock_lot_id)
+    return await service.list_stock_movements(
+        db, pagination, stock_lot_id, movement_type=movement_type, category_id=category_id, brand_id=brand_id, model_id=model_id
+    )
 
 
 router = APIRouter()

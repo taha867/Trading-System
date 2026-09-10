@@ -28,3 +28,20 @@ export function useCreateStockMovement() {
     },
   });
 }
+
+// Same invalidation shape as useCreateStockMovement above — marking a lot
+// damaged reduces its qty_remaining exactly like a generic adjustment does,
+// just through its own dedicated endpoint (see inventory/service.py's
+// mark_stock_lot_damaged) so it's precisely queryable as its own movement_type
+// instead of a free-text "reason" on a generic adjustment.
+export function useMarkStockLotDamaged() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: inventoryService.markStockLotDamaged,
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: stockLotKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: stockLotKeys.detail(variables.stock_lot_id) });
+      queryClient.invalidateQueries({ queryKey: stockMovementKeys.lists() });
+    },
+  });
+}

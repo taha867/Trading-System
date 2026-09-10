@@ -1,3 +1,3 @@
 from typing import Literal
 
-StockMovementType = Literal["receipt", "adjustment", "sale"]
+StockMovementType = Literal["receipt", "adjustment", "sale", "damaged"]
