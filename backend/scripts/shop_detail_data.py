@@ -89,16 +89,30 @@ TOKEN_OVERRIDES = {
     "A16": ("Samsung", "Galaxy A16"),  # 2025 Galaxy A-series, not yet in catalog; no Oppo A16 exists
     "A17": ("Samsung", "Galaxy A17"),
     "A26": ("Samsung", "Galaxy A26"),
+    "A35": ("Samsung", "Galaxy A35"),  # matches the catalog's existing "Galaxy A35" exactly
     "GO 1": ("Tecno", "Spark Go 1"),  # confirmed with the user: Tecno's "Spark Go 1"
     "GO1": ("Tecno", "Spark Go 1"),
     "PAVIOUR 4": ("Tecno", "Paviour 4"),  # confirmed with the user: a Tecno model
+    # 2026-09-10 batch -- bare iPhone shorthand the resolver's patterns don't
+    # cover (no digit run to anchor on, unlike "IP13"/"IP15").
+    "IPX": ("iPhone", "iPhone X"),
+    "IPXR": ("iPhone", "iPhone XR"),
+    "IPXS MAX": ("iPhone", "iPhone XS Max"),
+    "S24 U": ("Samsung", "Galaxy S24 Ultra"),  # "U" = Ultra, confirmed with the user
+    "S25 U": ("Samsung", "Galaxy S25 Ultra"),
+    "A7 2017": ("Samsung", "Galaxy A7 (2017)"),
+    "HONOR 9 LITE": ("Huawei", "Honor 9 Lite"),  # confirmed with the user: Huawei brand, not a separate Honor brand
+    # No override needed for the sheet's "MATE10 LITE" -- the existing
+    # r"^MATE\s*\d" -> "Huawei" pattern below already resolves it (confirmed
+    # with the user: Huawei brand).
+    "NOTE EDGE": ("Samsung", "Galaxy Note Edge"),
 }
 
 # Sheets where a bare ambiguous number (matches both an existing Redmi model
 # and an existing iPhone model, e.g. "12", "15") should default to iPhone --
 # these are camera-lens/membrane-screen-protector categories where every
 # other row in the sheet is unambiguously iPhone.
-IPHONE_DEFAULT_SHEETS = {"CAMERA GLASS", "MEMBRANE SHEET", "BOLT LENZ", "SIMPLE LENS"}
+IPHONE_DEFAULT_SHEETS = {"CAMERA GLASS", "MEMBRANE SHEET", "BOLT LENZ", "SIMPLE LENS", "MATT PRIVACY GLASS"}
 
 # Exact DB brand spelling for each DUST PLUG/TPU section header -- NOT
 # `.title()`, which mangles "IPHONE" -> "Iphone" instead of the catalog's
