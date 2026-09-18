@@ -44,7 +44,7 @@ BRAND_PATTERNS: list[tuple[str, str]] = [
     (r"^SPARK", "Tecno"),
     (r"^CAM(ON)?\s*\d", "Tecno"),
     (r"^1\+", "OnePlus"),
-    (r"^PIX(EL)?\b", "Google"),
+    (r"^PIX(EL)?\b", "Google Pixel"),  # matches the catalog's brand name (renamed from "Google" 2026-09-10)
     (r"^REDMI\s+", "Redmi"),
     (r"^R[MNC]?\s*\d", "Redmi"),
     (r"^MI\s+", "Redmi"),  # "MI Note 10" / "MI 15C" -- Xiaomi folded into Redmi (see brand cleanup)
@@ -299,7 +299,7 @@ REDUNDANT_PREFIXES = {
     "Infinix": [r"^INF(INIX)?\s+"],
 }
 EXPAND_PREFIXES = {
-    "Google": [(r"^PIX(EL)?\s+", "Pixel ")],
+    "Google Pixel": [(r"^PIX(EL)?\s+", "Pixel ")],
     "Tecno": [(r"^CAM\s+", "Camon "), (r"^CAM(?=\d)", "Camon ")],
 }
 

@@ -130,7 +130,7 @@ BRAND_HEADER_ALIASES = {
     "SAMSUNG": "Samsung",
     "ONEPLUS": "OnePlus",
     "REALME": "Realme",
-    "PIXEL": "Google",
+    "PIXEL": "Google Pixel",  # matches the catalog's brand name (renamed from "Google" 2026-09-10)
     "ITEL": "Itel",
     "DAMAG YELLOW PCS": None,
 }
