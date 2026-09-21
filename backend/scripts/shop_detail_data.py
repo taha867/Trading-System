@@ -28,6 +28,7 @@ SHEET_TO_CATEGORY = {
     "DUST PROOF PRIVACY": "Dust Proof Privacy Protector",
     "SIMPLE PRIVACY": "Simple Privacy Protector",
     "ITS ME PRIVACY": "Its Me Privacy Protector",
+    "ITS ME UV": "Its Me UV Glass Protector",
 }
 
 # Sheets whose layout is (PRODUCT/BRAND, MODEL, RECEIVED PCS) -- brand given
@@ -54,6 +55,7 @@ CATEGORY_AVG_RATE = {
     "Polish Glass Protector": 22.01,
     "TPU Case": 66.04,
     "Dust Plug": 82.51,
+    "Its Me UV Glass Protector": 87.6,
 }
 
 # NOTE: the summary sheet actually splits "JUN BEST LENZ" into two separate
