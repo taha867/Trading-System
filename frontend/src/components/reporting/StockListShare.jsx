@@ -24,7 +24,7 @@ function groupByCategoryAndBrand(entries) {
     if (!categories.has(entry.category)) categories.set(entry.category, new Map());
     const brands = categories.get(entry.category);
     if (!brands.has(entry.brand)) brands.set(entry.brand, []);
-    brands.get(entry.brand).push({ model: entry.model, modelId: entry.model_id });
+    brands.get(entry.brand).push({ model: entry.model, modelId: entry.model_id, qtyRemaining: entry.qty_remaining });
   }
   return Array.from(categories.entries()).map(([category, brands]) => ({
     category,
@@ -411,7 +411,8 @@ export function StockListShare() {
                                   checked={!excludedModelIds.has(m.modelId)}
                                   onCheckedChange={() => toggleModel(m.modelId)}
                                 />
-                                {m.model}
+                                <span className="flex-1">{m.model}</span>
+                                <span className="text-xs text-muted-foreground">{m.qtyRemaining} left</span>
                               </label>
                             ))}
                           </div>

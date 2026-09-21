@@ -88,6 +88,10 @@ class StockListEntryRead(BaseModel):
     # spaces can never collide. Only used by the frontend as a stable React/
     # exclusion-set key, never round-tripped back to the API.
     model_id: int
+    # Units currently on hand for this row -- the item's own StockLot.qty_remaining
+    # sum for a primary row, or the summed qty_remaining of every item this model
+    # is compatible with for a secondary row (it has no stock lots of its own).
+    qty_remaining: Decimal
 
 
 class StockListRead(BaseModel):

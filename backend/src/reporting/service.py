@@ -229,6 +229,15 @@ async def get_stock_list(db: AsyncSession, in_stock_only: bool = True) -> StockL
         in_stock_item_ids = select(StockLot.item_id).where(StockLot.qty_remaining > 0).distinct()
         extra_conditions.append(Item.id.in_(in_stock_item_ids))
 
+    # Per-item stock on hand, reused by both queries below so a compatible
+    # row can report the same "how much do I actually have" figure as the
+    # item(s) it shares physical stock with.
+    stock_by_item = (
+        select(StockLot.item_id.label("item_id"), func.sum(StockLot.qty_remaining).label("qty_remaining"))
+        .group_by(StockLot.item_id)
+        .subquery()
+    )
+
     # Primary rows: one row PER ITEM, not deduplicated by model -- two
     # differently-colored items of the same phone model (e.g. a Bolt Lens
     # Protector in Silver vs. Golden) are two distinct physical products and
@@ -242,21 +251,23 @@ async def get_stock_list(db: AsyncSession, in_stock_only: bool = True) -> StockL
                 Model.name.label("model"),
                 Item.variant.label("variant"),
                 Item.id.label("entry_key"),
+                func.coalesce(stock_by_item.c.qty_remaining, 0).label("qty_remaining"),
             )
             .select_from(Item)
             .join(Category, Category.id == Item.category_id)
             .join(Model, Model.id == Item.model_id)
             .join(Brand, Brand.id == Model.brand_id)
+            .outerjoin(stock_by_item, stock_by_item.c.item_id == Item.id)
             .where(Item.is_active.is_(True), *extra_conditions)
             .order_by(Category.name, Brand.name, Model.name)
         )
     ).all()
 
     # Compatible rows: "this model also fits one of this category's items" --
-    # a per-link variant was never tracked (item_compatible_model has no
-    # variant column), so these are deduplicated by model as before. Keyed by
-    # the negative of the model id so it can never collide with an item id
-    # from the primary rows above.
+    # it carries no StockLot of its own, so its qty_remaining is the sum of
+    # every item it's compatible with (grouping replaces the old .distinct(),
+    # since a model compatible with several items now aggregates their stock
+    # into one row instead of one row per item).
     compatible_rows = (
         await db.execute(
             select(
@@ -264,14 +275,16 @@ async def get_stock_list(db: AsyncSession, in_stock_only: bool = True) -> StockL
                 Brand.name.label("brand"),
                 Model.name.label("model"),
                 Model.id.label("model_id"),
+                func.coalesce(func.sum(func.coalesce(stock_by_item.c.qty_remaining, 0)), 0).label("qty_remaining"),
             )
             .select_from(Item)
             .join(Category, Category.id == Item.category_id)
             .join(ItemCompatibleModel, ItemCompatibleModel.item_id == Item.id)
             .join(Model, Model.id == ItemCompatibleModel.model_id)
             .join(Brand, Brand.id == Model.brand_id)
+            .outerjoin(stock_by_item, stock_by_item.c.item_id == Item.id)
             .where(Item.is_active.is_(True), *extra_conditions)
-            .distinct()
+            .group_by(Category.name, Brand.name, Model.name, Model.id)
             .order_by(Category.name, Brand.name, Model.name)
         )
     ).all()
@@ -282,10 +295,13 @@ async def get_stock_list(db: AsyncSession, in_stock_only: bool = True) -> StockL
             brand=r.brand,
             model=f"{r.model} {r.variant}" if r.variant else r.model,
             model_id=r.entry_key,
+            qty_remaining=r.qty_remaining,
         )
         for r in primary_rows
     ] + [
-        StockListEntryRead(category=r.category, brand=r.brand, model=r.model, model_id=-r.model_id)
+        StockListEntryRead(
+            category=r.category, brand=r.brand, model=r.model, model_id=-r.model_id, qty_remaining=r.qty_remaining
+        )
         for r in compatible_rows
     ]
     entries.sort(key=lambda e: (e.category, e.brand, e.model))
