@@ -6,29 +6,31 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.dependencies import get_current_user
 from src.auth.models import User
 from src.database import get_db
-from src.pagination import PaginatedResponse, PaginationParams
+from src.pagination import PaginationParams
 from src.parties import service
+from src.parties.constants import PartyRole
 from src.parties.dependencies import valid_party
 from src.parties.models import Party
-from src.parties.schemas import PartyCreate, PartyRead, PartyStatementRead, PartyUpdate
+from src.parties.schemas import PartyCreate, PartyListRead, PartyRead, PartyStatementRead, PartyUpdate
 
 router = APIRouter(tags=["parties"])
 
 
-@router.get("", response_model=PaginatedResponse[PartyRead])
+@router.get("", response_model=PartyListRead)
 async def list_parties(
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=500)] = 20,
     search: str | None = None,
+    role: PartyRole | None = None,
 ):
     # Plain scalar params, not Annotated[PaginationParams, Query()] — mixing that
     # model-exploding Query() with an additional sibling Query() scalar param breaks
     # FastAPI's flattening for the model entirely (see catalog/router.py::list_items
     # and expenses/router.py::list_expenses for the same documented workaround).
     pagination = PaginationParams(page=page, page_size=page_size)
-    return await service.list_parties(db, pagination, search)
+    return await service.list_parties(db, pagination, search, role.value if role else None)
 
 
 @router.post("", response_model=PartyRead, status_code=201)
@@ -43,9 +45,10 @@ async def create_party(
 @router.get("/{party_id}", response_model=PartyRead)
 async def get_party(
     party: Annotated[Party, Depends(valid_party)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
 ):
-    return party
+    return await service.attach_balance(db, party)
 
 
 @router.put("/{party_id}", response_model=PartyRead)

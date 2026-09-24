@@ -4,6 +4,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.pagination import PaginatedResponse
 from src.parties.constants import PartyRole
 
 
@@ -25,6 +26,12 @@ class PartyRead(BaseModel):
     roles: list[PartyRole]
     opening_balance: Decimal
     is_active: bool
+    # Current running balance (opening balance + every ledger entry since) --
+    # positive = the party owes the business (receivable), negative = the
+    # business owes the party (payable). Attached by the service layer
+    # (never a real ORM column) via a plain attribute set on the Party
+    # instance before it's serialized.
+    balance_pkr: Decimal
 
 
 class PartyUpdate(BaseModel):
@@ -55,3 +62,10 @@ class PartyStatementRead(BaseModel):
     opening_balance: Decimal
     entries: list[PartyStatementEntryRead]
     closing_balance: Decimal
+
+
+class PartyListRead(PaginatedResponse[PartyRead]):
+    # Totals across every party matching the current filters, not just the
+    # current page -- what the Parties list's summary bar shows.
+    total_receivable_pkr: Decimal
+    total_payable_pkr: Decimal

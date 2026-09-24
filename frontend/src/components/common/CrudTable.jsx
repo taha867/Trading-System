@@ -95,7 +95,15 @@ function CrudTableFilters({ filters, values, onChange }) {
   );
 }
 
-export function CrudTable({ config, title, description, icon: Icon, addLabel = 'Add', entityLabel = 'record' }) {
+export function CrudTable({
+  config,
+  title,
+  description,
+  icon: Icon,
+  addLabel = 'Add',
+  entityLabel = 'record',
+  renderSummary,
+}) {
   const [page, setPage] = useState(1);
   const [filterValues, setFilterValues] = useState({});
   const [drawerState, setDrawerState] = useState(null); // { mode: 'create' | 'edit', row? }
@@ -136,6 +144,7 @@ export function CrudTable({ config, title, description, icon: Icon, addLabel = '
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
+        {renderSummary && !isLoading && !isError && renderSummary(data)}
         <CrudTableFilters filters={config.filters} values={filterValues} onChange={handleFilterChange} />
         <div className="overflow-x-auto rounded-lg border">
           <Table>

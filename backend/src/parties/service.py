@@ -8,12 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.exceptions import ConflictException
 from src.ledger import service as ledger_service
 from src.ledger.models import LedgerEntry
-from src.pagination import PaginatedResponse, PaginationParams
+from src.pagination import PaginationParams
 from src.parties.constants import PartyRole
 from src.parties.exceptions import PartyNotFound, PartyRoleMismatch
 from src.parties.models import Party
 from src.parties.schemas import (
     PartyCreate,
+    PartyListRead,
     PartyRead,
     PartyStatementEntryRead,
     PartyStatementRead,
@@ -41,27 +42,69 @@ def ensure_any_role(party: Party, roles: tuple[PartyRole, ...]) -> Party:
     return party
 
 
+def _balance_subquery():
+    return (
+        select(LedgerEntry.party_id.label("party_id"), func.sum(LedgerEntry.debit - LedgerEntry.credit).label("balance"))
+        .group_by(LedgerEntry.party_id)
+        .subquery()
+    )
+
+
 async def list_parties(
-    db: AsyncSession, pagination: PaginationParams, search: str | None = None
-) -> PaginatedResponse[PartyRead]:
+    db: AsyncSession, pagination: PaginationParams, search: str | None = None, role: str | None = None
+) -> PartyListRead:
     offset = (pagination.page - 1) * pagination.page_size
 
     conditions = [Party.is_active.is_(True)]
     if search is not None:
         conditions.append(Party.name.ilike(f"%{search}%"))
+    if role is not None:
+        conditions.append(Party.roles.contains([role]))
 
     total = await db.scalar(select(func.count()).select_from(Party).where(*conditions))
-    result = await db.execute(
-        select(Party).where(*conditions).order_by(Party.id).offset(offset).limit(pagination.page_size)
-    )
-    items = result.scalars().all()
 
-    return PaginatedResponse[PartyRead](
+    balance_subq = _balance_subquery()
+    balance_col = func.coalesce(balance_subq.c.balance, 0)
+    rows = (
+        await db.execute(
+            select(Party, balance_col.label("balance_pkr"))
+            .outerjoin(balance_subq, balance_subq.c.party_id == Party.id)
+            .where(*conditions)
+            .order_by(Party.id)
+            .offset(offset)
+            .limit(pagination.page_size)
+        )
+    ).all()
+    items = []
+    for party, balance_pkr in rows:
+        party.balance_pkr = balance_pkr
+        items.append(party)
+
+    # Totals across every party matching the filters, not just this page.
+    all_balances = (
+        await db.execute(
+            select(balance_col).select_from(Party).outerjoin(balance_subq, balance_subq.c.party_id == Party.id).where(*conditions)
+        )
+    ).scalars().all()
+    total_receivable_pkr = sum((b for b in all_balances if b > 0), Decimal(0))
+    total_payable_pkr = -sum((b for b in all_balances if b < 0), Decimal(0))
+
+    return PartyListRead(
         items=items,
         total=total or 0,
         page=pagination.page,
         page_size=pagination.page_size,
+        total_receivable_pkr=total_receivable_pkr,
+        total_payable_pkr=total_payable_pkr,
     )
+
+
+async def attach_balance(db: AsyncSession, party: Party) -> Party:
+    balance = await db.scalar(
+        select(func.sum(LedgerEntry.debit - LedgerEntry.credit)).where(LedgerEntry.party_id == party.id)
+    )
+    party.balance_pkr = balance or Decimal(0)
+    return party
 
 
 async def create_party(db: AsyncSession, payload: PartyCreate) -> Party:
@@ -97,7 +140,7 @@ async def create_party(db: AsyncSession, payload: PartyCreate) -> Party:
         await db.rollback()
         raise ConflictException("Party could not be saved") from exc
     await db.refresh(party)
-    return party
+    return await attach_balance(db, party)
 
 
 async def update_party(db: AsyncSession, party: Party, payload: PartyUpdate) -> Party:
@@ -113,7 +156,7 @@ async def update_party(db: AsyncSession, party: Party, payload: PartyUpdate) -> 
         await db.rollback()
         raise ConflictException("Party could not be saved") from exc
     await db.refresh(party)
-    return party
+    return await attach_balance(db, party)
 
 
 async def soft_delete_party(db: AsyncSession, party: Party) -> None:
@@ -153,6 +196,10 @@ async def get_party_statement(db: AsyncSession, party: Party) -> PartyStatementR
             )
         )
 
+    # `running` at this point already equals the same figure attach_balance would
+    # compute (opening_balance plus every real ledger entry) -- reuse it instead
+    # of a second query.
+    party.balance_pkr = running
     return PartyStatementRead(
         party=PartyRead.model_validate(party),
         opening_balance=party.opening_balance,
