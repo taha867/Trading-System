@@ -122,9 +122,16 @@ async def soft_delete_party(db: AsyncSession, party: Party) -> None:
 
 
 async def get_party_statement(db: AsyncSession, party: Party) -> PartyStatementRead:
+    # The "party_opening_balance" ledger entry (posted once, at party creation --
+    # see create_party) exists so aggregate reports that sum LedgerEntry rows
+    # (e.g. reporting.get_balance_statement) see the opening balance without any
+    # special-casing. Here it must be excluded from `entries`: `running` already
+    # seeds from party.opening_balance below, so including that same entry too
+    # would double-count it -- the frontend's own separate "Opening balance" row
+    # already represents it.
     result = await db.execute(
         select(LedgerEntry)
-        .where(LedgerEntry.party_id == party.id)
+        .where(LedgerEntry.party_id == party.id, LedgerEntry.reference_type != "party_opening_balance")
         .order_by(LedgerEntry.entry_date, LedgerEntry.id)
     )
     rows = result.scalars().all()
