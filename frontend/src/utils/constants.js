@@ -54,12 +54,23 @@ export const CARGO_COST_BASIS_CODE_OPTIONS = [
 export const PURCHASE_ORDER_SOURCE = {
   CHINA: 'china',
   LOCAL: 'local',
+  MOHSIN: 'mohsin',
 };
 
 export const PURCHASE_ORDER_SOURCE_OPTIONS = [
   { value: PURCHASE_ORDER_SOURCE.CHINA, label: 'China (RMB)' },
   { value: PURCHASE_ORDER_SOURCE.LOCAL, label: 'Local vendor (PKR)' },
+  { value: PURCHASE_ORDER_SOURCE.MOHSIN, label: 'Mohsin (inherited stock)' },
 ];
+
+// Shared lookup for the Source badge on the Purchase Orders list/detail screens —
+// keyed by the same values as PURCHASE_ORDER_SOURCE so a new source can't silently
+// fall through to the wrong label the way a binary ternary did before "mohsin" existed.
+export const PURCHASE_ORDER_SOURCE_BADGE_LABEL = {
+  [PURCHASE_ORDER_SOURCE.CHINA]: 'China',
+  [PURCHASE_ORDER_SOURCE.LOCAL]: 'Local',
+  [PURCHASE_ORDER_SOURCE.MOHSIN]: 'Mohsin',
+};
 
 export const PAYMENT_DIRECTION = {
   IN: 'in',

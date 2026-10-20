@@ -3,3 +3,5 @@
 credentials.md
 __pycache__/
 *.pyc
+.vercel
+.env*.local

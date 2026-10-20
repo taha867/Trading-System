@@ -45,16 +45,16 @@ async def create_shipment(db: AsyncSession, payload: CargoShipmentCreate) -> Car
         raise PurchaseOrderNotFound(f"Purchase order id(s) not found: {sorted(missing)}")
 
     for line in lines:
-        # source == "local" is checked explicitly (not just status != "draft") as a
-        # belt-and-suspenders backstop: local orders are created straight into
-        # "allocated" and normally never reach this check at all, but if some future
-        # reopen/correction path ever resets a PO back to "draft", this still keeps a
-        # local order from being attached to a shipment and having its landed_cost_pkr
-        # silently overwritten with a wrong, freight-inflated value.
-        if line.purchase_order.source == "local" or line.purchase_order.status != "draft":
+        # source in ("local", "mohsin") is checked explicitly (not just status != "draft")
+        # as a belt-and-suspenders backstop: both are created straight into "allocated"
+        # and normally never reach this check at all, but if some future reopen/correction
+        # path ever resets a PO back to "draft", this still keeps a non-china order from
+        # being attached to a shipment and having its landed_cost_pkr silently overwritten
+        # with a wrong, freight-inflated value.
+        if line.purchase_order.source in ("local", "mohsin") or line.purchase_order.status != "draft":
             raise PurchaseOrderNotOpen(
                 f"Purchase order {line.purchase_order_id} cannot be attached to a cargo shipment "
-                "(local-sourced orders skip cargo entirely; china-sourced orders must be in 'draft' status)"
+                "(local/mohsin-sourced orders skip cargo entirely; china-sourced orders must be in 'draft' status)"
             )
 
     basis_values: dict[int, Decimal] = {}

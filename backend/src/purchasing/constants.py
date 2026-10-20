@@ -9,8 +9,13 @@ PurchaseOrderStatus = Literal["draft", "allocated", "received"]
 
 # "china" orders go through the RMB/exchange-rate lookup above and must pass through
 # cargo.service.create_shipment to earn a landed cost before they can reach "allocated".
-# "local" orders are quoted directly in PKR and skip both — they're created straight into
-# "allocated" with landed_cost_pkr already set (src.purchasing.service.create_purchase_order),
-# which also means they can never be attached to a shipment (cargo.service.create_shipment
-# rejects any PO that isn't "draft", and now source == "local" explicitly, too).
-PurchaseOrderSource = Literal["china", "local"]
+# "local" and "mohsin" orders are quoted directly in PKR and skip both — they're created
+# straight into "allocated" with landed_cost_pkr already set
+# (src.purchasing.service.create_purchase_order), which also means they can never be
+# attached to a shipment (cargo.service.create_shipment rejects any PO that isn't "draft",
+# and now source in ("local", "mohsin") explicitly, too).
+# "mohsin" is not a commercial vendor relationship like "local" — it tags stock Shakeel
+# received as his share when he and Mohsin split their formerly-joint business, so it
+# needs to stay visually/reportably distinct from ongoing local-vendor purchasing even
+# though it's priced/received identically.
+PurchaseOrderSource = Literal["china", "local", "mohsin"]

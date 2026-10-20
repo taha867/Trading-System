@@ -86,7 +86,7 @@ async def create_purchase_order(db: AsyncSession, payload: PurchaseOrderCreate) 
         # than "draft") reuses cargo.service.create_shipment's existing status=="draft"
         # gate (hardened to also check source == "local" explicitly) to keep them from
         # ever being attached to a shipment. See phase-5-backend.md §2.5.
-        status="allocated" if payload.source == "local" else "draft",
+        status="allocated" if payload.source in ("local", "mohsin") else "draft",
         lines=lines,
     )
     db.add(po)

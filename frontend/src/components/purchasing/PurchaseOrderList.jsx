@@ -10,6 +10,7 @@ import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { usePurchaseOrders } from '@/hooks/purchasingHooks/purchasingQueries';
 import { useParties } from '@/hooks/partyHooks/partyQueries';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
+import { PURCHASE_ORDER_SOURCE_BADGE_LABEL } from '@/utils/constants';
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -113,7 +114,9 @@ export function PurchaseOrderList() {
                     <Badge variant="secondary">{order.status}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{order.source === 'local' ? 'Local' : 'China'}</Badge>
+                    <Badge variant="secondary">
+                      {PURCHASE_ORDER_SOURCE_BADGE_LABEL[order.source] ?? order.source}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <CurrencyAmount value={order.total_pkr} />

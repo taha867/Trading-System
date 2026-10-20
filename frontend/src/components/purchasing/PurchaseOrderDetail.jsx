@@ -8,6 +8,7 @@ import { ReceiveStockLotDialog } from '@/components/inventory/ReceiveStockLotDia
 import { useParties } from '@/hooks/partyHooks/partyQueries';
 import { useReceivedLineIds } from '@/hooks/inventoryHooks/inventoryQueries';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
+import { PURCHASE_ORDER_SOURCE_BADGE_LABEL } from '@/utils/constants';
 
 function lineItemLabel(line) {
   const parts = [line.model_name, line.category_name, line.item_sku];
@@ -32,7 +33,7 @@ export function PurchaseOrderDetail({ order }) {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{order.status}</Badge>
-          <Badge variant="secondary">{order.source === 'local' ? 'Local' : 'China'}</Badge>
+          <Badge variant="secondary">{PURCHASE_ORDER_SOURCE_BADGE_LABEL[order.source] ?? order.source}</Badge>
         </div>
       </div>
 

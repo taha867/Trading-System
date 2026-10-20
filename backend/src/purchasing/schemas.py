@@ -80,7 +80,7 @@ class PurchaseOrderCreate(BaseModel):
                     raise ValueError(f"line {i}: china-sourced lines must set rate_rmb, not rate_pkr")
             else:
                 if line.rate_pkr is None or line.rate_rmb is not None:
-                    raise ValueError(f"line {i}: local-sourced lines must set rate_pkr, not rate_rmb")
+                    raise ValueError(f"line {i}: non-china (local/mohsin) lines must set rate_pkr, not rate_rmb")
         return self
 
 
