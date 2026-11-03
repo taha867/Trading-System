@@ -56,7 +56,7 @@ from src.ledger.models import LedgerEntry
 from src.models import Setting  # noqa: F401
 from src.parties.models import Party
 from src.payments.models import PaymentAccount, PaymentMethod, PaymentTransaction  # noqa: F401
-from src.purchasing.models import ExchangeRate, PurchaseOrder, PurchaseOrderLine  # noqa: F401
+from src.purchasing.models import ExchangeRate, PurchaseLogException, PurchaseOrder, PurchaseOrderLine  # noqa: F401
 from src.sales.models import SalesLogException, SalesOrder, SalesOrderLine, SalesOrderLineLot  # noqa: F401
 
 SRC = "/home/m-taha/Desktop/upwork/shakeel accesories/Daily Cash Book/Daily Cash Book (Sept 2026).xlsx"
@@ -177,6 +177,10 @@ def read_missing_rows(wb) -> list[Row]:
             ld, sup, inv, sold = new_ld, None, None, None
         if raw.get("Supplier") not in (None, ""):
             sup = str(raw["Supplier"])
+            # A new supplier cell starts a new block: the previous supplier's invoice number and resale
+            # buyer must not carry down into it (this once put S&A's invoice 488/506/541 on AlNafeh,
+            # AMT and Javed orders). It only gets a number if its own Invoice # cell gives one, below.
+            inv, sold = None, None
         if raw.get("Invoice #") not in (None, ""):
             if str(raw["Invoice #"]) != str(inv):
                 sold = None  # a new invoice has its own buyer; never inherit the previous one's
@@ -361,10 +365,18 @@ async def apply_plans(db, plans: list[Plan], totals: dict) -> None:
         supplier = await party(row.supplier, SUPPLIER_NAMES)
 
         if plan.kind == "B":
-            await ledger_service.post_entry(
+            entry = await ledger_service.post_entry(
                 db, entry_date=row.date, account="Accounts Payable", credit=row.amount,
                 reference_type="local_purchase_exception", reference_id=row.sheet_row, party_id=supplier.id,
             )
+            await db.flush()  # assigns entry.id for the audit row below
+            # The audit row keeps what the ledger entry alone can't say: the category, quantity, rate
+            # and supplier invoice of goods that were bought with no model (so no stock exists).
+            db.add(PurchaseLogException(
+                entry_date=row.date, kind="no_model", party_id=supplier.id, category_name=row.category,
+                qty=row.qty, rate_pkr=row.rate, amount_pkr=row.amount, invoice_number=row.invoice,
+                note=f"Day-book row {row.sheet_row}: category given, no model", ledger_entry_id=entry.id,
+            ))
             payable_total += row.amount
             continue
 
@@ -401,7 +413,9 @@ async def apply_plans(db, plans: list[Plan], totals: dict) -> None:
 
         if row.sold_to:
             buyer = await party(row.sold_to, BUYER_NAMES)
-            so = SalesOrder(party_id=buyer.id, order_date=row.date, invoice_number=row.invoice)
+            # No invoice number: row.invoice is the SUPPLIER's invoice for the purchase. The sheet gives this
+            # resale none of its own, and copying the supplier's number made 9 sales show "541" in the app.
+            so = SalesOrder(party_id=buyer.id, order_date=row.date, invoice_number=None)
             db.add(so)
             await db.flush()
             consumptions = await inventory_service.consume_stock_fifo(db, item_id=item.id, qty_needed=row.qty, movement_date=row.date)
