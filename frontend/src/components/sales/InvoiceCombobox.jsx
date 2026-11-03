@@ -5,6 +5,15 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
+// One number can cover several sales (numbers aren't unique), and a cancelled invoice has no sale at
+// all — only a day-book entry — so say which it is rather than hide it.
+function optionLabel({ invoice_number: number, sale_count: sales, cancelled_count: cancelled }) {
+  const notes = [];
+  if (sales > 1) notes.push(`${sales} sales`);
+  if (cancelled > 0) notes.push(sales > 0 ? `${cancelled} cancelled` : 'cancelled');
+  return notes.length ? `${number} (${notes.join(', ')})` : number;
+}
+
 // Pick one invoice number from a list instead of typing a "contains" search — choosing "5" shows
 // only invoice 5, not 35, 541 and 25. The list is fetched from the server (most recently used
 // first) and narrowed as you type; "All invoices" clears the filter.
@@ -20,8 +29,7 @@ export function InvoiceCombobox({ value, onChange, label = 'Invoice' }) {
     { value: '', label: 'All invoices' },
     ...(data ?? []).map((option) => ({
       value: option.invoice_number,
-      // One number can cover several sales (numbers aren't unique) — say so rather than hide it.
-      label: option.sale_count > 1 ? `${option.invoice_number} (${option.sale_count} sales)` : option.invoice_number,
+      label: optionLabel(option),
     })),
   ];
   if (value && !options.some((option) => option.value === value)) {

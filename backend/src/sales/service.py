@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import exists, func, or_, select
+from sqlalchemy import exists, func, literal, or_, select, union_all
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, joinedload
@@ -14,7 +14,7 @@ from src.ledger.models import LedgerEntry
 from src.pagination import PaginationParams
 from src.parties import service as parties_service
 from src.parties.constants import PartyRole
-from src.sales.constants import MAX_INVOICE_NUMBER_LOOKUP_IDS, MAX_INVOICE_OPTIONS
+from src.sales.constants import MAX_CANCELLED_ENTRIES, MAX_INVOICE_NUMBER_LOOKUP_IDS, MAX_INVOICE_OPTIONS
 from src.sales.dependencies import SALES_ORDER_LOAD_OPTIONS
 from src.sales.exceptions import InvalidSalesFilter, InvalidSalesOrderItem
 from src.sales.models import SalesLogException, SalesOrder, SalesOrderLine, SalesOrderLineLot
@@ -161,6 +161,46 @@ def _order_filter_clauses(
     return clauses
 
 
+async def _list_cancelled_entries(
+    db: AsyncSession,
+    *,
+    search: str | None,
+    invoice_number: str | None,
+    party_id: int | None,
+    date_from: date | None,
+    date_to: date | None,
+    item_id: int | None,
+) -> tuple[list[SalesLogException], int]:
+    """Cancelled invoices matching the sales list's own filters (same meaning, mapped onto the day-book
+    columns). They have no items, so an item filter matches none of them."""
+    if item_id is not None:
+        return [], 0
+
+    filters = [SalesLogException.kind == "cancelled_invoice"]
+    if invoice_number is not None and invoice_number.strip():
+        filters.append(SalesLogException.invoice_number == invoice_number.strip())
+    if search is not None and search.strip():
+        filters.append(
+            SalesLogException.invoice_number.ilike(f"%{escape_like(search.strip())}%", escape="\\")
+        )
+    if party_id is not None:
+        filters.append(SalesLogException.party_id == party_id)
+    if date_from is not None:
+        filters.append(SalesLogException.entry_date >= date_from)
+    if date_to is not None:
+        filters.append(SalesLogException.entry_date <= date_to)
+
+    total = await db.scalar(select(func.count()).select_from(SalesLogException).where(*filters))
+    result = await db.execute(
+        select(SalesLogException)
+        .options(joinedload(SalesLogException.party))
+        .where(*filters)
+        .order_by(SalesLogException.entry_date.desc(), SalesLogException.id.desc())
+        .limit(MAX_CANCELLED_ENTRIES)
+    )
+    return list(result.scalars().all()), total or 0
+
+
 async def list_sales_orders(
     db: AsyncSession,
     pagination: PaginationParams,
@@ -211,6 +251,16 @@ async def list_sales_orders(
     )
     items = result.unique().scalars().all()
 
+    cancelled_entries, cancelled_total = await _list_cancelled_entries(
+        db,
+        search=search,
+        invoice_number=invoice_number,
+        party_id=party_id,
+        date_from=date_from,
+        date_to=date_to,
+        item_id=item_id,
+    )
+
     return SalesOrderListRead(
         items=items,
         total=total or 0,
@@ -218,6 +268,8 @@ async def list_sales_orders(
         page_size=pagination.page_size,
         total_sales_pkr=money(sales_total),
         total_margin_pkr=money(sales_total - cost_total),
+        cancelled_entries=cancelled_entries,
+        cancelled_total=cancelled_total,
     )
 
 
@@ -248,21 +300,52 @@ async def get_invoice_numbers(db: AsyncSession, ids: list[int]) -> list[InvoiceN
 
 
 async def list_invoice_options(db: AsyncSession, search: str | None = None) -> list[InvoiceOptionRead]:
-    """Distinct invoice numbers for the Sales Orders dropdown — most recently used first, narrowed by
-    what the user types (contains, case-insensitive). Capped: the dropdown is a picker, not a report."""
-    stmt = select(SalesOrder.invoice_number, func.count(SalesOrder.id)).where(
-        SalesOrder.invoice_number.is_not(None), SalesOrder.invoice_number != ""
+    """Distinct invoice numbers for the Sales Orders dropdown — real sales AND cancelled invoices (a
+    cancelled invoice can't be a sales order, but it must stay findable by its number). Most recently
+    used first, narrowed by what the user types (contains, case-insensitive). Capped: the dropdown is a
+    picker, not a report."""
+    pattern = f"%{escape_like(search.strip())}%" if search is not None and search.strip() else None
+
+    sales_part = select(
+        SalesOrder.invoice_number.label("invoice_number"),
+        func.count(SalesOrder.id).label("sale_count"),
+        literal(0).label("cancelled_count"),
+        func.max(SalesOrder.order_date).label("last_date"),
+    ).where(SalesOrder.invoice_number.is_not(None), SalesOrder.invoice_number != "")
+    cancelled_part = select(
+        SalesLogException.invoice_number.label("invoice_number"),
+        literal(0).label("sale_count"),
+        func.count(SalesLogException.id).label("cancelled_count"),
+        func.max(SalesLogException.entry_date).label("last_date"),
+    ).where(
+        SalesLogException.kind == "cancelled_invoice",
+        SalesLogException.invoice_number.is_not(None),
+        SalesLogException.invoice_number != "",
     )
-    if search is not None and search.strip():
-        stmt = stmt.where(SalesOrder.invoice_number.ilike(f"%{escape_like(search.strip())}%", escape="\\"))
+    if pattern is not None:
+        sales_part = sales_part.where(SalesOrder.invoice_number.ilike(pattern, escape="\\"))
+        cancelled_part = cancelled_part.where(SalesLogException.invoice_number.ilike(pattern, escape="\\"))
+
+    combined = union_all(
+        sales_part.group_by(SalesOrder.invoice_number), cancelled_part.group_by(SalesLogException.invoice_number)
+    ).subquery()
     rows = (
         await db.execute(
-            stmt.group_by(SalesOrder.invoice_number)
-            .order_by(func.max(SalesOrder.order_date).desc(), SalesOrder.invoice_number)
+            select(
+                combined.c.invoice_number,
+                func.sum(combined.c.sale_count),
+                func.sum(combined.c.cancelled_count),
+                func.max(combined.c.last_date),
+            )
+            .group_by(combined.c.invoice_number)
+            .order_by(func.max(combined.c.last_date).desc(), combined.c.invoice_number)
             .limit(MAX_INVOICE_OPTIONS)
         )
     ).all()
-    return [InvoiceOptionRead(invoice_number=number, sale_count=count) for number, count in rows]
+    return [
+        InvoiceOptionRead(invoice_number=number, sale_count=int(sales), cancelled_count=int(cancelled))
+        for number, sales, cancelled, _last_date in rows
+    ]
 
 
 async def list_sales_log_exceptions(

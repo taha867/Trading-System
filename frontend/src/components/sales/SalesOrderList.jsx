@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Plus, Loader2, Inbox, Receipt, X } from 'lucide-react';
+import { Plus, Loader2, Inbox, Receipt, X, Ban } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,6 +54,19 @@ export function SalesOrderList() {
 
   const orders = data?.items ?? [];
   const total = data?.total ?? 0;
+  const cancelledEntries = data?.cancelled_entries ?? [];
+  const cancelledTotal = data?.cancelled_total ?? 0;
+
+  // The same customer/month narrowing, applied to the day-book list of cancelled invoices.
+  const otherEntriesLink = `/sales-orders?${new URLSearchParams({
+    tab: 'other',
+    kind: 'cancelled_invoice',
+    ...(party ? { party } : {}),
+    ...(month ? { month } : {}),
+  })}`;
+  const noMatchMessage = cancelledTotal > 0
+    ? 'No sales match — see the cancelled invoice(s) above.'
+    : 'No sales match these filters.';
 
   return (
     <Card>
@@ -126,6 +140,39 @@ export function SalesOrderList() {
           </Button>
         )}
 
+        {cancelledTotal > 0 && (
+          // key remounts the <details> when the invoice filter changes, so it opens by itself when a
+          // cancelled invoice was picked from the dropdown and stays closed for a plain browse.
+          <details key={invoice || 'all'} open={Boolean(invoice)} className="rounded-lg border bg-muted/30">
+            <summary className="flex cursor-pointer flex-wrap items-center gap-x-2 gap-y-1 px-4 py-3 text-sm font-medium text-foreground">
+              <Ban className="size-4 text-muted-foreground" />
+              {cancelledTotal} cancelled {cancelledTotal === 1 ? 'invoice' : 'invoices'}
+              {hasActiveFilter ? ' matching the filters' : ''}
+              <span className="font-normal text-muted-foreground">
+                — no items and no money; kept so every invoice number stays accounted for
+              </span>
+            </summary>
+            <ul className="flex flex-col divide-y border-t">
+              {cancelledEntries.map((entry) => (
+                <li key={entry.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm">
+                  <span className="font-medium text-foreground">Invoice {entry.invoice_number}</span>
+                  <Badge variant="outline">Cancelled</Badge>
+                  <span className="text-muted-foreground">{entry.entry_date}</span>
+                  <span>{entry.party_name ?? 'No customer recorded'}</span>
+                  {entry.note && <span className="text-xs text-muted-foreground">{entry.note}</span>}
+                </li>
+              ))}
+            </ul>
+            <p className="border-t px-4 py-2 text-xs text-muted-foreground">
+              {cancelledTotal > cancelledEntries.length &&
+                `Showing the latest ${cancelledEntries.length} of ${cancelledTotal}. `}
+              <Link to={otherEntriesLink} className="text-primary hover:underline">
+                Open these in Other entries
+              </Link>
+            </p>
+          </details>
+        )}
+
         {/* sm and up: table */}
         <div className="hidden overflow-x-auto rounded-lg border sm:block">
           <Table>
@@ -164,9 +211,7 @@ export function SalesOrderList() {
                   <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Inbox className="size-6 text-muted-foreground/60" />
-                      {hasActiveFilter
-                        ? 'No sales match these filters.'
-                        : 'No sales orders yet — create the first one above.'}
+                      {hasActiveFilter ? noMatchMessage : 'No sales orders yet — create the first one above.'}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -214,7 +259,7 @@ export function SalesOrderList() {
           {!isLoading && !isError && orders.length === 0 && (
             <div className="flex h-32 flex-col items-center justify-center gap-2 text-center text-muted-foreground">
               <Inbox className="size-6 text-muted-foreground/60" />
-              {hasActiveFilter ? 'No sales match these filters.' : 'No sales orders yet.'}
+              {hasActiveFilter ? noMatchMessage : 'No sales orders yet.'}
             </div>
           )}
           {orders.map((order) => (

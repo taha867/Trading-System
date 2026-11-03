@@ -94,14 +94,6 @@ class SalesOrderRead(BaseModel):
         return money(sum((line.margin_pkr for line in self.lines), Decimal(0)))
 
 
-class SalesOrderListRead(PaginatedResponse[SalesOrderRead]):
-    # Totals across every sale matching the current filters, not just the current page --
-    # what the Sales Orders list's summary bar shows. With an item filter these are the
-    # whole sales that contain that item, not just that item's lines.
-    total_sales_pkr: Decimal
-    total_margin_pkr: Decimal
-
-
 class SalesOrderDetailRead(SalesOrderRead):
     # The LedgerEntry rows this sale posted (reference_type="sales_order", reference_id=id) --
     # only on the single-sale endpoint, so the list stays light.
@@ -116,6 +108,7 @@ class InvoiceNumberRead(BaseModel):
 class InvoiceOptionRead(BaseModel):
     invoice_number: str
     sale_count: int  # invoice numbers are not unique — one number can cover several sales
+    cancelled_count: int  # day-book entries (sales_log_exception, kind="cancelled_invoice") with this number
 
 
 class SalesLogExceptionRead(BaseModel):
@@ -146,3 +139,16 @@ class SalesLogExceptionKindTotalRead(BaseModel):
 class SalesLogExceptionListRead(PaginatedResponse[SalesLogExceptionRead]):
     total_amount_pkr: Decimal  # across every entry matching the filters, not just this page
     totals_by_kind: list[SalesLogExceptionKindTotalRead]
+
+
+class SalesOrderListRead(PaginatedResponse[SalesOrderRead]):
+    # Totals across every sale matching the current filters, not just the current page --
+    # what the Sales Orders list's summary bar shows. With an item filter these are the
+    # whole sales that contain that item, not just that item's lines.
+    total_sales_pkr: Decimal
+    total_margin_pkr: Decimal
+    # Cancelled invoices (no items, no money — they can't be sales orders) matching the same
+    # filters, so an invoice number picked from the dropdown is never a dead end. Capped; the
+    # real count is cancelled_total. Always empty when an item filter is set (they have no item).
+    cancelled_entries: list[SalesLogExceptionRead]
+    cancelled_total: int
