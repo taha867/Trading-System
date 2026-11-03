@@ -1,9 +1,11 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
+from src.ledger.schemas import LedgerEntryRead
+from src.pagination import PaginatedResponse
 from src.purchasing.constants import PurchaseOrderSource
 from src.purchasing.utils import money
 
@@ -73,6 +75,16 @@ class PurchaseOrderCreate(BaseModel):
     invoice_number: Annotated[str, Field(max_length=64)] | None = None
     lines: Annotated[list[PurchaseOrderLineCreate], Field(min_length=1)]
 
+    @field_validator("invoice_number", mode="before")
+    @classmethod
+    def blank_invoice_number_is_none(cls, value):
+        # "no invoice number" has exactly one representation (NULL), so a blank or
+        # whitespace-only form value can never become an unsearchable empty-string row.
+        if isinstance(value, str):
+            value = value.strip()
+            return value or None
+        return value
+
     @model_validator(mode="after")
     def _validate_line_rates_match_source(self) -> "PurchaseOrderCreate":
         for i, line in enumerate(self.lines):
@@ -90,10 +102,12 @@ class PurchaseOrderRead(BaseModel):
 
     id: int
     party_id: int
+    party_name: str  # embedded so no screen needs to download the parties list just to show a name
     order_date: date
     source: PurchaseOrderSource
     status: str
     invoice_number: str | None = None
+    created_at: datetime
     lines: list[PurchaseOrderLineRead]
 
     @computed_field
@@ -112,3 +126,63 @@ class PurchaseOrderRead(BaseModel):
     @property
     def total_pkr(self) -> Decimal:
         return money(sum((line.amount_pkr for line in self.lines), Decimal(0)))
+
+
+class PurchaseLogExceptionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    entry_date: date
+    kind: str
+    party_id: int
+    party_name: str
+    category_name: str | None
+    qty: Decimal | None
+    rate_pkr: Decimal | None
+    amount_pkr: Decimal
+    invoice_number: str | None
+    note: str | None
+    ledger_entry_id: int | None
+    ledger_posted: bool
+    created_at: datetime
+
+
+class PurchaseOrderListRead(PaginatedResponse[PurchaseOrderRead]):
+    # Totals across every purchase order matching the current filters, not just the current page —
+    # what the Purchase Orders list's summary bar shows. With an item filter these are the whole
+    # orders that contain that item, not just that item's lines. total_rmb only counts lines that
+    # were priced in RMB (china orders); it is 0 for an all-local selection.
+    total_amount_pkr: Decimal
+    total_rmb: Decimal
+
+
+class PurchaseOrderLineDetailRead(PurchaseOrderLineRead):
+    # What happened to this line after it was ordered — all null until it happens. Read from
+    # StockLot (one per line, unique) and CargoAllocation (china lines only).
+    stock_lot_id: int | None = None
+    received_date: date | None = None
+    qty_received: Decimal | None = None
+    qty_remaining: Decimal | None = None
+    cargo_shipment_id: int | None = None
+    cargo_shipment_date: date | None = None
+    allocated_cost_pkr: Decimal | None = None
+
+
+class PurchaseOrderDetailRead(PurchaseOrderRead):
+    # Only on the single-order endpoint, so the list stays light.
+    lines: list[PurchaseOrderLineDetailRead]
+    ledger_entries: list[LedgerEntryRead]  # the Accounts Payable row this order posted
+
+
+class InvoiceNumberRead(BaseModel):
+    id: int
+    invoice_number: str | None
+
+
+class InvoiceOptionRead(BaseModel):
+    invoice_number: str
+    order_count: int  # one supplier invoice can cover several purchase orders
+
+
+class PurchaseLogExceptionListRead(PaginatedResponse[PurchaseLogExceptionRead]):
+    total_amount_pkr: Decimal  # across every entry matching the filters, not just this page

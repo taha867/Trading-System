@@ -19,3 +19,12 @@ PurchaseOrderStatus = Literal["draft", "allocated", "received"]
 # needs to stay visually/reportably distinct from ongoing local-vendor purchasing even
 # though it's priced/received identically.
 PurchaseOrderSource = Literal["china", "local", "mohsin"]
+
+MAX_INVOICE_NUMBER_LOOKUP_IDS = 500  # matches PaginationParams' page_size ceiling — one statement page can't exceed it
+MAX_INVOICE_OPTIONS = 30  # how many invoice numbers the Purchase Orders dropdown lists at once (search narrows it)
+
+# Why a PurchaseLogException exists instead of a PurchaseOrder: "no_model" — the day book gave a
+# category (e.g. "TPU", "Borderless") but no phone model, so no specific Item/StockLot can be
+# created. Only the money owed to the supplier is recorded (a plain str column, same convention
+# as SalesLogExceptionKind — the Literal is enforced at the Pydantic layer).
+PurchaseLogExceptionKind = Literal["no_model"]

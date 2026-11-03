@@ -9,11 +9,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent }
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { FormSelect, ItemCombobox } from '@/components/custom';
-import { InvoiceCombobox } from '@/components/sales/InvoiceCombobox';
-import { useSalesOrders } from '@/hooks/salesHooks/salesQueries';
+import { InvoiceCombobox } from '@/components/common/InvoiceCombobox';
+import { useSalesOrders, useInvoiceOptions } from '@/hooks/salesHooks/salesQueries';
 import { useCustomerParties } from '@/hooks/partyHooks/partyQueries';
 import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
 import { monthBounds, formatDateTime } from '@/utils/dateUtils';
+import { salesInvoiceOptionLabel } from '@/utils/invoiceOptionLabels';
 import { SELECT_ALL_VALUE } from '@/utils/constants';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -103,7 +104,12 @@ export function SalesOrderList() {
         )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <InvoiceCombobox value={invoice} onChange={(value) => filters.setFilters({ invoice: value })} />
+          <InvoiceCombobox
+            value={invoice}
+            onChange={(value) => filters.setFilters({ invoice: value })}
+            useOptions={useInvoiceOptions}
+            optionLabel={salesInvoiceOptionLabel}
+          />
           <FormSelect
             name="customer_filter"
             label="Customer"

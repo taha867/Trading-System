@@ -44,6 +44,16 @@ export function useLocalVendorParties() {
   return { ...query, vendors };
 }
 
+// Every vendor, whichever side they supply from — for the Purchase Orders list's vendor filter, where a
+// filter should offer anyone who can appear on an order (the create form still picks per source).
+export function useVendorParties() {
+  const query = useParties(LOOKUP_PAGE);
+  const vendors = (query.data?.items ?? []).filter(
+    (party) => party.roles.includes(PARTY_ROLE.CHINA_VENDOR) || party.roles.includes(PARTY_ROLE.LOCAL_VENDOR),
+  );
+  return { ...query, vendors };
+}
+
 export function usePartyStatement(id) {
   return useQuery({
     queryKey: partyKeys.statement(id),

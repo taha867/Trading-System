@@ -73,6 +73,24 @@ export const PURCHASE_ORDER_SOURCE_BADGE_LABEL = {
   [PURCHASE_ORDER_SOURCE.MOHSIN]: 'Mohsin',
 };
 
+// A purchase order stays "draft" until freight is allocated (china orders), then "allocated", then
+// "received" once every line is in stock — see the backend's PurchaseOrderStatus.
+export const PURCHASE_ORDER_STATUS = {
+  DRAFT: 'draft',
+  ALLOCATED: 'allocated',
+  RECEIVED: 'received',
+};
+
+export const PURCHASE_ORDER_STATUS_LABEL = {
+  [PURCHASE_ORDER_STATUS.DRAFT]: 'Draft',
+  [PURCHASE_ORDER_STATUS.ALLOCATED]: 'Allocated',
+  [PURCHASE_ORDER_STATUS.RECEIVED]: 'Received',
+};
+
+export const PURCHASE_ORDER_STATUS_OPTIONS = Object.entries(PURCHASE_ORDER_STATUS_LABEL).map(
+  ([value, label]) => ({ value, label }),
+);
+
 export const PAYMENT_DIRECTION = {
   IN: 'in',
   OUT: 'out',

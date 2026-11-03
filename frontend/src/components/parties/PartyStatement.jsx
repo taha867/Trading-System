@@ -4,6 +4,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { PartyRoleBadges } from '@/components/parties/PartyRoleBadges';
 import { useInvoiceNumbers } from '@/hooks/salesHooks/salesQueries';
+import { usePurchaseInvoiceNumbers } from '@/hooks/purchasingHooks/purchasingQueries';
 
 // Sign convention per backend spec §2.6: positive closing_balance means the party
 // owes the business (receivable); negative means the business owes the party
@@ -22,6 +23,9 @@ export function PartyStatement({ statement }) {
   // batched call (a sales-owned endpoint — the parties domain never imports sales).
   const saleIds = entries.filter((e) => e.reference_type === 'sales_order').map((e) => e.reference_id);
   const { data: invoiceNumberBySaleId } = useInvoiceNumbers(saleIds);
+  // Same for a vendor's purchase orders (a purchasing-owned endpoint, for the same reason).
+  const purchaseIds = entries.filter((e) => e.reference_type === 'purchase_order').map((e) => e.reference_id);
+  const { data: invoiceNumberByPurchaseId } = usePurchaseInvoiceNumbers(purchaseIds);
 
   return (
     <div className="flex flex-col gap-6">
@@ -80,6 +84,16 @@ export function PartyStatement({ statement }) {
                     <Link to={`/sales-orders/${entry.reference_id}`} className="text-primary hover:underline">
                       Sale #{entry.reference_id}
                       {invoiceNumberBySaleId?.[entry.reference_id] ? ` · Invoice ${invoiceNumberBySaleId[entry.reference_id]}` : ''}
+                    </Link>
+                  ) : entry.reference_type === 'purchase_order' ? (
+                    <Link to={`/purchase-orders/${entry.reference_id}`} className="text-primary hover:underline">
+                      Purchase #{entry.reference_id}
+                      {invoiceNumberByPurchaseId?.[entry.reference_id] ? ` · Invoice ${invoiceNumberByPurchaseId[entry.reference_id]}` : ''}
+                    </Link>
+                  ) : entry.reference_type === 'local_purchase_exception' ? (
+                    // reference_id is the day-book sheet row here, not an order id — never link it as one.
+                    <Link to={`/purchase-orders?tab=other&party=${party.id}`} className="text-primary hover:underline">
+                      Payable-only entry (day-book row {entry.reference_id})
                     </Link>
                   ) : entry.reference_type ? (
                     `${entry.reference_type} #${entry.reference_id}`

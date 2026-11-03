@@ -13,3 +13,8 @@ class ExchangeRateMissingForDate(AppException):
 class InvalidPurchaseOrderItem(AppException):
     status_code = 422
     detail = "One or more items on this purchase order are unknown or inactive"
+
+
+class InvalidPurchaseFilter(AppException):
+    status_code = 422
+    detail = "Invalid purchase filter"

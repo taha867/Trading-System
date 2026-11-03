@@ -1,6 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
-import { exchangeRateKeys, purchaseOrderKeys } from '@/utils/queryKeys';
-import { listExchangeRates, listPurchaseOrders, getPurchaseOrder } from '@/services/purchasingService';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { exchangeRateKeys, purchaseOrderKeys, purchaseLogExceptionKeys } from '@/utils/queryKeys';
+import { PURCHASE_ORDER_STATUS } from '@/utils/constants';
+import {
+  listExchangeRates,
+  listPurchaseOrders,
+  getPurchaseOrder,
+  listPurchaseInvoiceOptions,
+  getPurchaseInvoiceNumbers,
+  listPurchaseLogExceptions,
+} from '@/services/purchasingService';
 
 export function useExchangeRates(params) {
   return useQuery({
@@ -18,10 +26,14 @@ export function useExchangeRateForDate(rateDate) {
   return { ...query, rate };
 }
 
-export function usePurchaseOrders(params) {
+// keepPrevious is opt-in: the filtered list screen wants the last results to stay on screen while
+// the next set loads, but the cargo and payment pickers that share this hook behave as before.
+export function usePurchaseOrders(params, { enabled = true, keepPrevious = false } = {}) {
   return useQuery({
     queryKey: purchaseOrderKeys.list(params),
     queryFn: () => listPurchaseOrders(params),
+    enabled,
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
   });
 }
 
@@ -37,7 +49,34 @@ export function usePurchaseOrder(id) {
 // realistically never number in the hundreds at once, so page_size=100 here
 // is a reasonable cap, not a silent-truncation risk like the old unfiltered fetch.
 export function useDraftPurchaseOrders() {
-  const query = usePurchaseOrders({ page: 1, page_size: 100, status: 'draft' });
+  const query = usePurchaseOrders({ page: 1, page_size: 100, status: PURCHASE_ORDER_STATUS.DRAFT });
   const draftOrders = query.data?.items ?? [];
   return { ...query, draftOrders };
+}
+
+export function usePurchaseInvoiceOptions(search) {
+  return useQuery({
+    queryKey: purchaseOrderKeys.invoiceOptions(search),
+    queryFn: () => listPurchaseInvoiceOptions(search),
+    placeholderData: keepPreviousData,
+  });
+}
+
+// Returns { [orderId]: invoiceNumber | null } for the given purchase order ids; idle when there are none.
+export function usePurchaseInvoiceNumbers(ids) {
+  const sortedIds = [...ids].sort((a, b) => a - b);
+  return useQuery({
+    queryKey: purchaseOrderKeys.invoiceNumbers(sortedIds),
+    queryFn: () => getPurchaseInvoiceNumbers(sortedIds),
+    enabled: sortedIds.length > 0,
+    select: (rows) => Object.fromEntries(rows.map((row) => [row.id, row.invoice_number])),
+  });
+}
+
+export function usePurchaseLogExceptions(params) {
+  return useQuery({
+    queryKey: purchaseLogExceptionKeys.list(params),
+    queryFn: () => listPurchaseLogExceptions(params),
+    placeholderData: keepPreviousData,
+  });
 }

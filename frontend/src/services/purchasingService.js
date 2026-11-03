@@ -34,3 +34,26 @@ export async function createPurchaseOrder(payload) {
   const { data } = await fetchClient.post('/purchasing/purchase-orders', payload);
   return data;
 }
+
+// Distinct invoice numbers for the Purchase Orders dropdown, most recent first; `search` narrows them.
+export async function listPurchaseInvoiceOptions(search) {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  const { data } = await fetchClient.get(`/purchasing/purchase-orders/invoice-options?${params}`);
+  return data; // [{ invoice_number, order_count }]
+}
+
+// id -> invoice number for a batch of purchase orders (the vendor statement lists orders by id only).
+// Repeated `ids` params, which is how FastAPI reads a list query param; not buildQueryString, which
+// is shaped for page/page_size filters.
+export async function getPurchaseInvoiceNumbers(ids) {
+  const params = new URLSearchParams();
+  ids.forEach((id) => params.append('ids', String(id)));
+  const { data } = await fetchClient.get(`/purchasing/purchase-orders/invoice-numbers?${params}`);
+  return data; // [{ id, invoice_number }]
+}
+
+export async function listPurchaseLogExceptions(params) {
+  const { data } = await fetchClient.get(`/purchasing/purchase-log-exceptions${buildQueryString(params)}`);
+  return data;
+}

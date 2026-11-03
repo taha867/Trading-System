@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Plus, Trash2 } from 'lucide-react';
@@ -5,13 +6,15 @@ import { Button } from '@/components/ui/button';
 import { FormField, FormSelect, ItemCombobox } from '@/components/custom';
 import { purchaseOrderCreateSchema } from '@/validations/purchasingSchemas';
 import { useCreatePurchaseOrder } from '@/hooks/purchasingHooks/purchasingMutations';
-import { useExchangeRateForDate } from '@/hooks/purchasingHooks/purchasingQueries';
+import { useExchangeRateForDate, usePurchaseOrders } from '@/hooks/purchasingHooks/purchasingQueries';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useChinaVendorParties, useLocalVendorParties } from '@/hooks/partyHooks/partyQueries';
 import { toMoney, computeRmbAmount, computePkrAmount, computeSaleAmount, formatRMB, formatPKR } from '@/utils/currencyUtils';
 import { PURCHASE_ORDER_SOURCE, PURCHASE_ORDER_SOURCE_OPTIONS } from '@/utils/constants';
 
 const EMPTY_LINE = { item_id: '', qty: '', rate_rmb: '', rate_pkr: '' };
 const todayIso = () => new Date().toISOString().slice(0, 10);
+const INVOICE_HINT_DEBOUNCE_MS = 300;
 
 export function PurchaseOrderForm({ onSuccess }) {
   const { vendors: chinaVendors } = useChinaVendorParties();
@@ -25,7 +28,13 @@ export function PurchaseOrderForm({ onSuccess }) {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(purchaseOrderCreateSchema, {}, { raw: true }),
-    defaultValues: { party_id: '', order_date: todayIso(), source: PURCHASE_ORDER_SOURCE.CHINA, lines: [EMPTY_LINE] },
+    defaultValues: {
+      party_id: '',
+      order_date: todayIso(),
+      source: PURCHASE_ORDER_SOURCE.CHINA,
+      invoice_number: '',
+      lines: [EMPTY_LINE],
+    },
   });
   const { fields, append, remove, replace } = useFieldArray({ control, name: 'lines' });
   const createMutation = useCreatePurchaseOrder();
@@ -34,6 +43,20 @@ export function PurchaseOrderForm({ onSuccess }) {
   const isChina = source === PURCHASE_ORDER_SOURCE.CHINA;
   const orderDate = watch('order_date');
   const lines = watch('lines') ?? [];
+
+  // Non-blocking duplicate hint only — a supplier invoice can legitimately cover several orders, so
+  // this never stops the form from saving.
+  const partyId = watch('party_id');
+  const typedInvoice = useDebouncedValue((watch('invoice_number') ?? '').trim(), INVOICE_HINT_DEBOUNCE_MS);
+  const { data: invoiceMatches } = usePurchaseOrders(
+    { search: typedInvoice, party_id: partyId, page_size: 20 },
+    { enabled: Boolean(typedInvoice && partyId) },
+  );
+  // The search is "contains"; the hint is only for an exact match.
+  const duplicateOrders = typedInvoice
+    ? (invoiceMatches?.items ?? []).filter((o) => o.invoice_number === typedInvoice)
+    : [];
+
   // Always called (Rules of Hooks) — only used to gate submit / render the warning
   // when isChina is true. A local order never needs this lookup.
   const { rate: exchangeRate, isLoading: isRateLoading } = useExchangeRateForDate(orderDate);
@@ -70,6 +93,8 @@ export function PurchaseOrderForm({ onSuccess }) {
         party_id: values.party_id,
         order_date: values.order_date,
         source: values.source,
+        // Blank -> omitted (the backend stores NULL); the Yup schema is validated raw, so trim here.
+        invoice_number: values.invoice_number?.trim() || undefined,
         lines: values.lines.map(({ item_id, qty, rate_rmb, rate_pkr }) =>
           values.source === PURCHASE_ORDER_SOURCE.CHINA
             ? { item_id, qty, rate_rmb }
@@ -85,7 +110,7 @@ export function PurchaseOrderForm({ onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Controller
           name="source"
           control={control}
@@ -119,6 +144,34 @@ export function PurchaseOrderForm({ onSuccess }) {
             <FormField {...field} type="date" label="Order date" error={errors.order_date?.message} />
           )}
         />
+        <div className="flex flex-col gap-1">
+          <Controller
+            name="invoice_number"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                {...field}
+                label="Invoice number (optional)"
+                placeholder="Vendor's invoice no."
+                error={errors.invoice_number?.message}
+              />
+            )}
+          />
+          {duplicateOrders.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Already used for this vendor:{' '}
+              {duplicateOrders.map((order, index) => (
+                <span key={order.id}>
+                  {index > 0 && ', '}
+                  <Link to={`/purchase-orders/${order.id}`} className="text-primary hover:underline">
+                    #{order.id}
+                  </Link>
+                </span>
+              ))}
+              . You can still save.
+            </p>
+          )}
+        </div>
       </div>
 
       {isChina && !isRateLoading && !exchangeRate && (

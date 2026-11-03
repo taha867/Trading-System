@@ -23,10 +23,11 @@ from src.parties.models import Party  # noqa: F401
 from src.payments.models import PaymentAccount, PaymentMethod, PaymentTransaction  # noqa: F401
 from src.purchasing.models import (  # noqa: F401
     ExchangeRate,
+    PurchaseLogException,
     PurchaseOrder,
     PurchaseOrderLine,
 )
-from src.sales.models import SalesOrder, SalesOrderLine, SalesOrderLineLot  # noqa: F401
+from src.sales.models import SalesLogException, SalesOrder, SalesOrderLine, SalesOrderLineLot  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

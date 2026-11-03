@@ -53,6 +53,14 @@ export const purchaseOrderKeys = {
   lists: () => [...purchaseOrderKeys.all, 'list'],
   list: (params) => [...purchaseOrderKeys.lists(), params],
   detail: (id) => [...purchaseOrderKeys.all, 'detail', id],
+  invoiceNumbers: (ids) => [...purchaseOrderKeys.all, 'invoice-numbers', ids],
+  invoiceOptions: (search) => [...purchaseOrderKeys.all, 'invoice-options', search],
+};
+
+export const purchaseLogExceptionKeys = {
+  all: ['purchaseLogExceptions'],
+  lists: () => [...purchaseLogExceptionKeys.all, 'list'],
+  list: (params) => [...purchaseLogExceptionKeys.lists(), params],
 };
 
 export const cargoModeKeys = {

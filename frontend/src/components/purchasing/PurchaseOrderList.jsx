@@ -1,18 +1,30 @@
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Loader2, Inbox, ShoppingCart } from 'lucide-react';
+import { Plus, Loader2, Inbox, ShoppingCart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
-import { usePurchaseOrders } from '@/hooks/purchasingHooks/purchasingQueries';
-import { useParties } from '@/hooks/partyHooks/partyQueries';
-import { LOOKUP_PAGE } from '@/utils/queryParams';
-import { PURCHASE_ORDER_SOURCE_BADGE_LABEL } from '@/utils/constants';
+import { InvoiceCombobox } from '@/components/common/InvoiceCombobox';
+import { FormSelect, ItemCombobox } from '@/components/custom';
+import { usePurchaseOrders, usePurchaseInvoiceOptions } from '@/hooks/purchasingHooks/purchasingQueries';
+import { useVendorParties } from '@/hooks/partyHooks/partyQueries';
+import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
+import { monthBounds, formatDateTime } from '@/utils/dateUtils';
+import { purchaseInvoiceOptionLabel } from '@/utils/invoiceOptionLabels';
+import {
+  SELECT_ALL_VALUE,
+  PURCHASE_ORDER_SOURCE_OPTIONS,
+  PURCHASE_ORDER_SOURCE_BADGE_LABEL,
+  PURCHASE_ORDER_STATUS_OPTIONS,
+  PURCHASE_ORDER_STATUS_LABEL,
+} from '@/utils/constants';
 
 const DEFAULT_PAGE_SIZE = 20;
+const FILTER_KEYS = ['invoice', 'vendor', 'source', 'status', 'month', 'item'];
 
 // A PO's own lines already carry their category_name (embedded — see
 // purchasing/schemas.py's PurchaseOrderLineRead), so no per-row lookup fetch
@@ -26,13 +38,47 @@ function categoryLabel(order) {
   return `${names[0]} +${names.length - 1} more`;
 }
 
-export function PurchaseOrderList() {
-  const [page, setPage] = useState(1);
-  const navigate = useNavigate();
-  const { data, isLoading, isError } = usePurchaseOrders({ page, page_size: DEFAULT_PAGE_SIZE });
-  const { data: partiesData } = useParties(LOOKUP_PAGE);
+const sourceLabel = (order) => PURCHASE_ORDER_SOURCE_BADGE_LABEL[order.source] ?? order.source;
+const statusLabel = (order) => PURCHASE_ORDER_STATUS_LABEL[order.status] ?? order.status;
 
-  const vendorNameById = Object.fromEntries((partiesData?.items ?? []).map((p) => [p.id, p.name]));
+export function PurchaseOrderList() {
+  const filters = useSearchParamFilters();
+  const navigate = useNavigate();
+  const { vendors } = useVendorParties();
+
+  const invoice = filters.get('invoice');
+  const vendor = filters.get('vendor');
+  const source = filters.get('source');
+  const status = filters.get('status');
+  const month = filters.get('month');
+  const item = filters.get('item');
+  const bounds = monthBounds(month);
+  const hasActiveFilter = Boolean(invoice || vendor || source || status || month || item);
+
+  // buildQueryString (the service) drops undefined/empty values, so unset filters never reach the URL.
+  const { data, isLoading, isError } = usePurchaseOrders(
+    {
+      page: filters.page,
+      page_size: DEFAULT_PAGE_SIZE,
+      invoice_number: invoice || undefined,
+      party_id: vendor || undefined,
+      source: source || undefined,
+      status: status || undefined,
+      date_from: bounds?.from,
+      date_to: bounds?.to,
+      item_id: item || undefined,
+    },
+    { keepPrevious: true },
+  );
+
+  const vendorOptions = [
+    { value: SELECT_ALL_VALUE, label: 'All vendors' },
+    ...vendors.map((v) => ({ value: String(v.id), label: v.name })),
+  ];
+  const sourceOptions = [{ value: SELECT_ALL_VALUE, label: 'All sources' }, ...PURCHASE_ORDER_SOURCE_OPTIONS];
+  const statusOptions = [{ value: SELECT_ALL_VALUE, label: 'All statuses' }, ...PURCHASE_ORDER_STATUS_OPTIONS];
+  const fromAll = (value) => (value === SELECT_ALL_VALUE ? '' : value);
+
   const orders = data?.items ?? [];
   const total = data?.total ?? 0;
 
@@ -45,7 +91,10 @@ export function PurchaseOrderList() {
           </span>
           <div>
             <CardTitle className="text-base">Purchase Orders</CardTitle>
-            <CardDescription>Every order placed with a China vendor, in RMB and its snapshotted PKR cost.</CardDescription>
+            <CardDescription>
+              Every order placed with a vendor — China orders in RMB with their snapshotted PKR cost, local and Mohsin
+              orders in PKR.
+            </CardDescription>
           </div>
         </div>
         <CardAction>
@@ -59,14 +108,86 @@ export function PurchaseOrderList() {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
-        <div className="overflow-x-auto rounded-lg border">
+        {!isLoading && !isError && data && (
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3">
+            <CurrencyAmount value={data.total_amount_pkr} className="text-2xl font-semibold text-foreground" />
+            <span className="text-sm text-muted-foreground">
+              purchased{hasActiveFilter ? ' matching the filters below' : ' across every order'} · {total}{' '}
+              {total === 1 ? 'order' : 'orders'}
+              {Number(data.total_rmb) > 0 && (
+                <>
+                  {' '}
+                  · <CurrencyAmount value={data.total_rmb} currency="RMB" /> on China orders
+                </>
+              )}
+              {item && ' · whole orders that contain the chosen item'}
+            </span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <InvoiceCombobox
+            value={invoice}
+            onChange={(value) => filters.setFilters({ invoice: value })}
+            useOptions={usePurchaseInvoiceOptions}
+            optionLabel={purchaseInvoiceOptionLabel}
+          />
+          <FormSelect
+            name="vendor_filter"
+            label="Vendor"
+            options={vendorOptions}
+            value={vendor || SELECT_ALL_VALUE}
+            onChange={(value) => filters.setFilters({ vendor: fromAll(value) })}
+          />
+          <FormSelect
+            name="source_filter"
+            label="Source"
+            options={sourceOptions}
+            value={source || SELECT_ALL_VALUE}
+            onChange={(value) => filters.setFilters({ source: fromAll(value) })}
+          />
+          <FormSelect
+            name="status_filter"
+            label="Status"
+            options={statusOptions}
+            value={status || SELECT_ALL_VALUE}
+            onChange={(value) => filters.setFilters({ status: fromAll(value) })}
+          />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="purchase_month">Month</Label>
+            <Input
+              id="purchase_month"
+              type="month"
+              value={month}
+              onChange={(event) => filters.setFilters({ month: event.target.value })}
+            />
+          </div>
+          <ItemCombobox
+            label="Item"
+            placeholder="Any item"
+            value={item}
+            onChange={(value) => filters.setFilters({ item: value })}
+          />
+        </div>
+
+        {hasActiveFilter && (
+          <Button variant="outline" size="sm" className="self-start" onClick={() => filters.clearFilters(FILTER_KEYS)}>
+            <X />
+            Clear filters
+          </Button>
+        )}
+
+        {/* sm and up: table */}
+        <div className="hidden overflow-x-auto rounded-lg border sm:block">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
+                <TableHead>Invoice no.</TableHead>
                 <TableHead>ID</TableHead>
                 <TableHead>Vendor</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Order date</TableHead>
+                <TableHead>Entered on</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead className="text-right">Total PKR</TableHead>
@@ -75,7 +196,7 @@ export function PurchaseOrderList() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Loader2 className="size-5 animate-spin" />
                       Loading…
@@ -85,17 +206,19 @@ export function PurchaseOrderList() {
               )}
               {isError && (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-destructive">
+                  <TableCell colSpan={9} className="h-32 text-center text-destructive">
                     Failed to load.
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && !isError && orders.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Inbox className="size-6 text-muted-foreground/60" />
-                      No purchase orders yet — create the first one above.
+                      {hasActiveFilter
+                        ? 'No purchase orders match these filters.'
+                        : 'No purchase orders yet — create the first one above.'}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -106,17 +229,26 @@ export function PurchaseOrderList() {
                   className="cursor-pointer hover:bg-muted/40"
                   onClick={() => navigate(`/purchase-orders/${order.id}`)}
                 >
+                  <TableCell className="font-medium text-foreground">{order.invoice_number || '—'}</TableCell>
                   <TableCell className="font-medium text-primary">#{order.id}</TableCell>
-                  <TableCell>{vendorNameById[order.party_id] ?? `Party #${order.party_id}`}</TableCell>
+                  <TableCell>
+                    {/* stopPropagation: the row itself opens the order; the vendor name opens the vendor. */}
+                    <Link
+                      to={`/parties/${order.party_id}`}
+                      className="hover:underline"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {order.party_name}
+                    </Link>
+                  </TableCell>
                   <TableCell>{categoryLabel(order)}</TableCell>
                   <TableCell>{order.order_date}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDateTime(order.created_at)}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{order.status}</Badge>
+                    <Badge variant="secondary">{statusLabel(order)}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">
-                      {PURCHASE_ORDER_SOURCE_BADGE_LABEL[order.source] ?? order.source}
-                    </Badge>
+                    <Badge variant="secondary">{sourceLabel(order)}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <CurrencyAmount value={order.total_pkr} />
@@ -127,7 +259,43 @@ export function PurchaseOrderList() {
           </Table>
         </div>
 
-        <PaginationControls page={page} pageSize={DEFAULT_PAGE_SIZE} total={total} onPageChange={setPage} />
+        {/* below sm: one card per order, invoice number / vendor / date / total first (CLAUDE.md §3.7) */}
+        <div className="flex flex-col gap-2 sm:hidden">
+          {isLoading && (
+            <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
+              <Loader2 className="size-5 animate-spin" />
+              Loading…
+            </div>
+          )}
+          {isError && <div className="flex h-32 items-center justify-center text-destructive">Failed to load.</div>}
+          {!isLoading && !isError && orders.length === 0 && (
+            <div className="flex h-32 flex-col items-center justify-center gap-2 text-center text-muted-foreground">
+              <Inbox className="size-6 text-muted-foreground/60" />
+              {hasActiveFilter ? 'No purchase orders match these filters.' : 'No purchase orders yet.'}
+            </div>
+          )}
+          {orders.map((order) => (
+            <Link key={order.id} to={`/purchase-orders/${order.id}`} className="rounded-lg border p-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="font-medium text-foreground">
+                  {order.invoice_number ? `Invoice ${order.invoice_number}` : `Order #${order.id}`}
+                </span>
+                <CurrencyAmount value={order.total_pkr} className="font-semibold" />
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {order.party_name} · {order.order_date}
+              </p>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                #{order.id} · {categoryLabel(order)}
+                <Badge variant="secondary">{statusLabel(order)}</Badge>
+                <Badge variant="secondary">{sourceLabel(order)}</Badge>
+                entered {formatDateTime(order.created_at)}
+              </p>
+            </Link>
+          ))}
+        </div>
+
+        <PaginationControls page={filters.page} pageSize={DEFAULT_PAGE_SIZE} total={total} onPageChange={filters.setPage} />
       </CardContent>
     </Card>
   );
