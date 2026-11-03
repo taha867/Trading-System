@@ -9,6 +9,7 @@ from src.auth.models import User
 from src.crud import build_crud_router
 from src.database import get_db
 from src.pagination import PaginationParams
+from src.sorting import SortDirection
 from src.purchasing import service
 from src.purchasing.constants import PurchaseOrderSource, PurchaseOrderStatus
 from src.purchasing.dependencies import valid_purchase_order
@@ -65,6 +66,7 @@ async def list_purchase_orders(
     date_from: date | None = None,
     date_to: date | None = None,
     item_id: int | None = None,
+    sort: SortDirection = "newest",
 ):
     return await service.list_purchase_orders(
         db,
@@ -77,6 +79,7 @@ async def list_purchase_orders(
         date_from=date_from,
         date_to=date_to,
         item_id=item_id,
+        sort=sort,
     )
 
 
@@ -118,9 +121,10 @@ async def list_purchase_log_exceptions(
     party_id: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    sort: SortDirection = "newest",
 ):
     return await service.list_purchase_log_exceptions(
-        db, pagination, search=search, party_id=party_id, date_from=date_from, date_to=date_to
+        db, pagination, search=search, party_id=party_id, date_from=date_from, date_to=date_to, sort=sort
     )
 
 

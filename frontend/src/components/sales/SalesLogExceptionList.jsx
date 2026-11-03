@@ -15,6 +15,8 @@ import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
 import { monthBounds, formatDateTime } from '@/utils/dateUtils';
 import {
   SELECT_ALL_VALUE,
+  SORT_OPTIONS,
+  DEFAULT_SORT,
   SALES_LOG_EXCEPTION_KIND_LABELS,
   SALES_LOG_EXCEPTION_KIND_OPTIONS,
 } from '@/utils/constants';
@@ -30,6 +32,7 @@ export function SalesLogExceptionList() {
   const { customers } = useCustomerParties();
 
   const kind = filters.get('kind');
+  const sort = filters.get('sort');  // a display choice, not a filter: not in FILTER_KEYS
   const party = filters.get('party');
   const month = filters.get('month');
   const search = filters.get('search');
@@ -44,6 +47,7 @@ export function SalesLogExceptionList() {
     party_id: party || undefined,
     date_from: bounds?.from,
     date_to: bounds?.to,
+    sort: sort || undefined,
   });
 
   const kindOptions = [{ value: SELECT_ALL_VALUE, label: 'All kinds' }, ...SALES_LOG_EXCEPTION_KIND_OPTIONS];
@@ -95,7 +99,7 @@ export function SalesLogExceptionList() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="exceptions_search">Invoice no. or note</Label>
             <Input
@@ -129,6 +133,13 @@ export function SalesLogExceptionList() {
               onChange={(event) => filters.setFilters({ month: event.target.value })}
             />
           </div>
+          <FormSelect
+            name="sort_filter"
+            label="Sort by date"
+            options={SORT_OPTIONS}
+            value={sort || DEFAULT_SORT}
+            onChange={(value) => filters.setFilters({ sort: value === DEFAULT_SORT ? '' : value })}
+          />
         </div>
 
         {hasActiveFilter && (

@@ -15,7 +15,7 @@ import { useCustomerParties } from '@/hooks/partyHooks/partyQueries';
 import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
 import { monthBounds, formatDateTime } from '@/utils/dateUtils';
 import { salesInvoiceOptionLabel } from '@/utils/invoiceOptionLabels';
-import { SELECT_ALL_VALUE } from '@/utils/constants';
+import { SELECT_ALL_VALUE, SORT_OPTIONS, DEFAULT_SORT } from '@/utils/constants';
 
 const DEFAULT_PAGE_SIZE = 20;
 const FILTER_KEYS = ['invoice', 'party', 'month', 'item'];
@@ -34,6 +34,7 @@ export function SalesOrderList() {
   const month = filters.get('month');
   const item = filters.get('item');
   const invoice = filters.get('invoice');
+  const sort = filters.get('sort');  // a display choice, not a filter: not in FILTER_KEYS, so Clear filters keeps it
   const bounds = monthBounds(month);
   const hasActiveFilter = Boolean(invoice || party || month || item);
 
@@ -46,6 +47,7 @@ export function SalesOrderList() {
     date_from: bounds?.from,
     date_to: bounds?.to,
     item_id: item || undefined,
+    sort: sort || undefined,
   });
 
   const customerOptions = [
@@ -103,7 +105,7 @@ export function SalesOrderList() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <InvoiceCombobox
             value={invoice}
             onChange={(value) => filters.setFilters({ invoice: value })}
@@ -131,6 +133,13 @@ export function SalesOrderList() {
             placeholder="Any item"
             value={item}
             onChange={(value) => filters.setFilters({ item: value })}
+          />
+          <FormSelect
+            name="sort_filter"
+            label="Sort by date"
+            options={SORT_OPTIONS}
+            value={sort || DEFAULT_SORT}
+            onChange={(value) => filters.setFilters({ sort: value === DEFAULT_SORT ? '' : value })}
           />
         </div>
 

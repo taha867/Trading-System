@@ -17,6 +17,8 @@ import { monthBounds, formatDateTime } from '@/utils/dateUtils';
 import { purchaseInvoiceOptionLabel } from '@/utils/invoiceOptionLabels';
 import {
   SELECT_ALL_VALUE,
+  SORT_OPTIONS,
+  DEFAULT_SORT,
   PURCHASE_ORDER_SOURCE_OPTIONS,
   PURCHASE_ORDER_SOURCE_BADGE_LABEL,
   PURCHASE_ORDER_STATUS_OPTIONS,
@@ -47,6 +49,7 @@ export function PurchaseOrderList() {
   const { vendors } = useVendorParties();
 
   const invoice = filters.get('invoice');
+  const sort = filters.get('sort');  // a display choice, not a filter: not in FILTER_KEYS, so Clear filters keeps it
   const vendor = filters.get('vendor');
   const source = filters.get('source');
   const status = filters.get('status');
@@ -67,6 +70,7 @@ export function PurchaseOrderList() {
       date_from: bounds?.from,
       date_to: bounds?.to,
       item_id: item || undefined,
+      sort: sort || undefined,
     },
     { keepPrevious: true },
   );
@@ -125,7 +129,7 @@ export function PurchaseOrderList() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <InvoiceCombobox
             value={invoice}
             onChange={(value) => filters.setFilters({ invoice: value })}
@@ -167,6 +171,13 @@ export function PurchaseOrderList() {
             placeholder="Any item"
             value={item}
             onChange={(value) => filters.setFilters({ item: value })}
+          />
+          <FormSelect
+            name="sort_filter"
+            label="Sort by date"
+            options={SORT_OPTIONS}
+            value={sort || DEFAULT_SORT}
+            onChange={(value) => filters.setFilters({ sort: value === DEFAULT_SORT ? '' : value })}
           />
         </div>
 

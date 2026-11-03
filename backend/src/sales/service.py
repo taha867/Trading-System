@@ -12,6 +12,7 @@ from src.inventory import service as inventory_service
 from src.ledger import service as ledger_service
 from src.ledger.models import LedgerEntry
 from src.pagination import PaginationParams
+from src.sorting import SortDirection, date_ordering
 from src.parties import service as parties_service
 from src.parties.constants import PartyRole
 from src.sales.constants import MAX_CANCELLED_ENTRIES, MAX_INVOICE_NUMBER_LOOKUP_IDS, MAX_INVOICE_OPTIONS
@@ -211,6 +212,7 @@ async def list_sales_orders(
     date_from: date | None = None,
     date_to: date | None = None,
     item_id: int | None = None,
+    sort: SortDirection = "newest",
 ) -> SalesOrderListRead:
     offset = (pagination.page - 1) * pagination.page_size
     clauses = _order_filter_clauses(
@@ -245,7 +247,7 @@ async def list_sales_orders(
         select(SalesOrder)
         .options(*SALES_ORDER_LOAD_OPTIONS)
         .where(*clauses)
-        .order_by(SalesOrder.order_date.desc(), SalesOrder.id.desc())
+        .order_by(*date_ordering(SalesOrder.order_date, SalesOrder.id, sort))
         .offset(offset)
         .limit(pagination.page_size)
     )
@@ -357,6 +359,7 @@ async def list_sales_log_exceptions(
     party_id: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    sort: SortDirection = "newest",
 ) -> SalesLogExceptionListRead:
     _validate_date_range(date_from, date_to)
     offset = (pagination.page - 1) * pagination.page_size
@@ -397,7 +400,7 @@ async def list_sales_log_exceptions(
         select(SalesLogException)
         .options(joinedload(SalesLogException.party))
         .where(*filters)
-        .order_by(SalesLogException.entry_date.desc(), SalesLogException.id.desc())
+        .order_by(*date_ordering(SalesLogException.entry_date, SalesLogException.id, sort))
         .offset(offset)
         .limit(pagination.page_size)
     )

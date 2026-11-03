@@ -73,6 +73,14 @@ export const PURCHASE_ORDER_SOURCE_BADGE_LABEL = {
   [PURCHASE_ORDER_SOURCE.MOHSIN]: 'Mohsin',
 };
 
+// The one sort choice the list screens offer (the backend's SortDirection): by date, either way.
+// "newest" is the default, so it is left out of the URL.
+export const DEFAULT_SORT = 'newest';
+export const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+];
+
 // A purchase order stays "draft" until freight is allocated (china orders), then "allocated", then
 // "received" once every line is in stock — see the backend's PurchaseOrderStatus.
 export const PURCHASE_ORDER_STATUS = {

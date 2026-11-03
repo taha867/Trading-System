@@ -13,6 +13,7 @@ from src.inventory.models import StockLot
 from src.ledger import service as ledger_service
 from src.ledger.models import LedgerEntry
 from src.pagination import PaginationParams
+from src.sorting import SortDirection, date_ordering
 from src.parties import service as parties_service
 from src.parties.constants import PartyRole
 from src.purchasing.constants import MAX_INVOICE_NUMBER_LOOKUP_IDS, MAX_INVOICE_OPTIONS
@@ -199,6 +200,7 @@ async def list_purchase_orders(
     date_from: date | None = None,
     date_to: date | None = None,
     item_id: int | None = None,
+    sort: SortDirection = "newest",
 ) -> PurchaseOrderListRead:
     offset = (pagination.page - 1) * pagination.page_size
     clauses = _order_filter_clauses(
@@ -233,7 +235,7 @@ async def list_purchase_orders(
         select(PurchaseOrder)
         .options(*PURCHASE_ORDER_LOAD_OPTIONS)
         .where(*clauses)
-        .order_by(PurchaseOrder.order_date.desc(), PurchaseOrder.id.desc())
+        .order_by(*date_ordering(PurchaseOrder.order_date, PurchaseOrder.id, sort))
         .offset(offset)
         .limit(pagination.page_size)
     )
@@ -335,6 +337,7 @@ async def list_purchase_log_exceptions(
     party_id: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    sort: SortDirection = "newest",
 ) -> PurchaseLogExceptionListRead:
     _validate_date_range(date_from, date_to)
     offset = (pagination.page - 1) * pagination.page_size
@@ -363,7 +366,7 @@ async def list_purchase_log_exceptions(
         select(PurchaseLogException)
         .options(joinedload(PurchaseLogException.party))
         .where(*filters)
-        .order_by(PurchaseLogException.entry_date.desc(), PurchaseLogException.id.desc())
+        .order_by(*date_ordering(PurchaseLogException.entry_date, PurchaseLogException.id, sort))
         .offset(offset)
         .limit(pagination.page_size)
     )
