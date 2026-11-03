@@ -9,6 +9,9 @@ export const salesOrderLineSchema = object({
 export const salesOrderCreateSchema = object({
   party_id: number().typeError('Select a customer').required('Select a customer'),
   order_date: string().required('Order date is required'),
+  // Optional; mirrors the backend's max_length=64 (SalesOrderCreate). Blank is fine — the form
+  // trims it and omits it, and the backend stores NULL.
+  invoice_number: string().max(64, 'Invoice number must be 64 characters or fewer'),
   lines: array()
     .of(salesOrderLineSchema)
     .min(1, 'Add at least one line')

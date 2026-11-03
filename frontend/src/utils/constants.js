@@ -130,6 +130,20 @@ export const EXPENSE_STATUS_OPTIONS = [
   { value: EXPENSE_STATUS.CONFIRMED, label: 'Confirmed' },
 ];
 
+// Plain-English names for SalesLogException.kind (the backend's SalesLogExceptionKind) — the
+// day-book entries that couldn't become a real SalesOrder. Unknown kinds fall back to the raw value.
+export const SALES_LOG_EXCEPTION_KIND_LABELS = {
+  cancelled_invoice: 'Cancelled invoice',
+  bulk_mixed_models: 'Bulk / mixed models',
+  blank_model: 'No model given',
+  correction: 'Price correction',
+  discount: 'Discount',
+};
+
+export const SALES_LOG_EXCEPTION_KIND_OPTIONS = Object.entries(SALES_LOG_EXCEPTION_KIND_LABELS).map(
+  ([value, label]) => ({ value, label }),
+);
+
 export const WINDOW_DAYS_OPTIONS = [
   { value: '7', label: 'Last 7 days' },
   { value: '30', label: 'Last 30 days' },

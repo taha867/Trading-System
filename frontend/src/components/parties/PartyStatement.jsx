@@ -1,7 +1,9 @@
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { PartyRoleBadges } from '@/components/parties/PartyRoleBadges';
+import { useInvoiceNumbers } from '@/hooks/salesHooks/salesQueries';
 
 // Sign convention per backend spec §2.6: positive closing_balance means the party
 // owes the business (receivable); negative means the business owes the party
@@ -15,6 +17,11 @@ function balanceLabel(value) {
 
 export function PartyStatement({ statement }) {
   const { party, opening_balance, entries, closing_balance } = statement;
+
+  // The statement only knows a sale by id; fetch the invoice numbers for the sales on it in one
+  // batched call (a sales-owned endpoint — the parties domain never imports sales).
+  const saleIds = entries.filter((e) => e.reference_type === 'sales_order').map((e) => e.reference_id);
+  const { data: invoiceNumberBySaleId } = useInvoiceNumbers(saleIds);
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,7 +76,16 @@ export function PartyStatement({ statement }) {
                 <TableCell>{entry.entry_date}</TableCell>
                 <TableCell>{entry.account}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {entry.reference_type ? `${entry.reference_type} #${entry.reference_id}` : '—'}
+                  {entry.reference_type === 'sales_order' ? (
+                    <Link to={`/sales-orders/${entry.reference_id}`} className="text-primary hover:underline">
+                      Sale #{entry.reference_id}
+                      {invoiceNumberBySaleId?.[entry.reference_id] ? ` · Invoice ${invoiceNumberBySaleId[entry.reference_id]}` : ''}
+                    </Link>
+                  ) : entry.reference_type ? (
+                    `${entry.reference_type} #${entry.reference_id}`
+                  ) : (
+                    '—'
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   {Number(entry.debit) > 0 ? <CurrencyAmount value={entry.debit} /> : '—'}

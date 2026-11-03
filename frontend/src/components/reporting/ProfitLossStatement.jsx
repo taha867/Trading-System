@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   TrendingUp,
   Receipt,
@@ -200,6 +201,14 @@ export function ProfitLossStatement({ month, onMonthChange }) {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {Number(current.unitemised_sales_pkr) !== 0 && (
+              <p className="text-sm print:hidden">
+                <Link to={`/sales-orders?tab=other&month=${month}`} className="text-primary hover:underline">
+                  View the sales without item data for {monthLabel(month)}
+                </Link>
+              </p>
             )}
 
             {/* sm and up: statement table */}

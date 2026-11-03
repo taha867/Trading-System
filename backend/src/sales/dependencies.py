@@ -3,18 +3,21 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from src.catalog.models import Item
 from src.database import get_db
 from src.sales.exceptions import SalesOrderNotFound
-from src.sales.models import SalesOrder, SalesOrderLine
+from src.sales.models import SalesOrder, SalesOrderLine, SalesOrderLineLot
 
 # Reused everywhere a SalesOrder's lines are loaded — SalesOrderLineRead's
 # item_sku/item_variant/model_name/category_name properties need this whole
 # chain eagerly loaded (lazy="raise" on every hop) or serialization blows up.
+# `party` feeds SalesOrderRead.party_name; each lot's `stock_lot` feeds
+# SalesOrderLineLotRead.lot_received_date.
 SALES_ORDER_LOAD_OPTIONS = (
-    selectinload(SalesOrder.lines).selectinload(SalesOrderLine.consumptions),
+    joinedload(SalesOrder.party),
+    selectinload(SalesOrder.lines).selectinload(SalesOrderLine.consumptions).joinedload(SalesOrderLineLot.stock_lot),
     selectinload(SalesOrder.lines).joinedload(SalesOrderLine.item).joinedload(Item.model),
     selectinload(SalesOrder.lines).joinedload(SalesOrderLine.item).joinedload(Item.category),
 )

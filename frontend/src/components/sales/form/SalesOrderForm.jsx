@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Plus, Trash2 } from 'lucide-react';
@@ -5,12 +6,15 @@ import { Button } from '@/components/ui/button';
 import { FormField, FormSelect, ItemCombobox } from '@/components/custom';
 import { salesOrderCreateSchema } from '@/validations/salesSchemas';
 import { useCreateSalesOrder } from '@/hooks/salesHooks/salesMutations';
+import { useSalesOrders } from '@/hooks/salesHooks/salesQueries';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useCustomerParties } from '@/hooks/partyHooks/partyQueries';
 import { useStockLots } from '@/hooks/inventoryHooks/inventoryQueries';
 import { toMoney, computeSaleAmount, formatPKR } from '@/utils/currencyUtils';
 
 const EMPTY_LINE = { item_id: '', qty: '', rate_pkr: '' };
 const todayIso = () => new Date().toISOString().slice(0, 10);
+const INVOICE_HINT_DEBOUNCE_MS = 300;
 
 export function SalesOrderForm({ onSuccess }) {
   const { customers } = useCustomerParties();
@@ -34,10 +38,21 @@ export function SalesOrderForm({ onSuccess }) {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(salesOrderCreateSchema, {}, { raw: true }),
-    defaultValues: { party_id: '', order_date: todayIso(), lines: [EMPTY_LINE] },
+    defaultValues: { party_id: '', order_date: todayIso(), invoice_number: '', lines: [EMPTY_LINE] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'lines' });
   const createMutation = useCreateSalesOrder();
+
+  // Non-blocking duplicate hint only — invoice numbers are deliberately NOT unique (a day-book
+  // correction or discount reuses its sale's number), so this never stops the form from saving.
+  const partyId = watch('party_id');
+  const typedInvoice = useDebouncedValue((watch('invoice_number') ?? '').trim(), INVOICE_HINT_DEBOUNCE_MS);
+  const { data: invoiceMatches } = useSalesOrders(
+    { search: typedInvoice, party_id: partyId, page_size: 20 },
+    { enabled: Boolean(typedInvoice && partyId) },
+  );
+  // The search is "contains"; the hint is only for an exact match.
+  const duplicateOrders = typedInvoice ? (invoiceMatches?.items ?? []).filter((o) => o.invoice_number === typedInvoice) : [];
 
   const lines = watch('lines') ?? [];
   const rows = fields.map((field, index) => ({ ...field, ...(lines[index] ?? {}) }));
@@ -48,6 +63,8 @@ export function SalesOrderForm({ onSuccess }) {
       const created = await createMutation.mutateAsync({
         party_id: values.party_id,
         order_date: values.order_date,
+        // Blank -> omitted (the backend stores NULL); the Yup schema is validated raw, so trim here.
+        invoice_number: values.invoice_number?.trim() || undefined,
         lines: values.lines.map(({ item_id, qty, rate_pkr }) => ({ item_id, qty, rate_pkr })),
       });
       onSuccess?.(created);
@@ -59,7 +76,7 @@ export function SalesOrderForm({ onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Controller
           name="party_id"
           control={control}
@@ -80,6 +97,34 @@ export function SalesOrderForm({ onSuccess }) {
             <FormField {...field} type="date" label="Order date" error={errors.order_date?.message} />
           )}
         />
+        <div className="flex flex-col gap-1">
+          <Controller
+            name="invoice_number"
+            control={control}
+            render={({ field }) => (
+              <FormField
+                {...field}
+                label="Invoice number (optional)"
+                placeholder="From your day book"
+                error={errors.invoice_number?.message}
+              />
+            )}
+          />
+          {duplicateOrders.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Already used for this customer:{' '}
+              {duplicateOrders.map((order, index) => (
+                <span key={order.id}>
+                  {index > 0 && ', '}
+                  <Link to={`/sales-orders/${order.id}`} className="text-primary hover:underline">
+                    #{order.id}
+                  </Link>
+                </span>
+              ))}
+              . You can still save.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-3">

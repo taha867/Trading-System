@@ -92,6 +92,13 @@ export const salesOrderKeys = {
   lists: () => [...salesOrderKeys.all, 'list'],
   list: (params) => [...salesOrderKeys.lists(), params],
   detail: (id) => [...salesOrderKeys.all, 'detail', id],
+  invoiceNumbers: (ids) => [...salesOrderKeys.all, 'invoice-numbers', ids],
+};
+
+export const salesLogExceptionKeys = {
+  all: ['salesLogExceptions'],
+  lists: () => [...salesLogExceptionKeys.all, 'list'],
+  list: (params) => [...salesLogExceptionKeys.lists(), params],
 };
 
 export const paymentAccountKeys = {

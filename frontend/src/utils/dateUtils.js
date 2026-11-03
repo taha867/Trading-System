@@ -36,3 +36,10 @@ export function monthLabel(month) {
   const [year, monthNumber] = month.split('-').map(Number);
   return new Date(year, monthNumber - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
 }
+
+// An ISO timestamp from the API (e.g. a row's created_at) -> "22 Oct 2026, 3:41 pm" in the
+// browser's local time. Returns "—" for a missing value so callers can render it unconditionally.
+export function formatDateTime(isoString) {
+  if (!isoString) return '—';
+  return new Date(isoString).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+}

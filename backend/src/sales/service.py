@@ -1,21 +1,33 @@
+from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased, joinedload
 
 from src.catalog.models import Item
 from src.exceptions import ConflictException
 from src.inventory import service as inventory_service
 from src.ledger import service as ledger_service
-from src.pagination import PaginatedResponse, PaginationParams
+from src.ledger.models import LedgerEntry
+from src.pagination import PaginationParams
 from src.parties import service as parties_service
 from src.parties.constants import PartyRole
+from src.sales.constants import MAX_INVOICE_NUMBER_LOOKUP_IDS
 from src.sales.dependencies import SALES_ORDER_LOAD_OPTIONS
-from src.sales.exceptions import InvalidSalesOrderItem
-from src.sales.models import SalesOrder, SalesOrderLine, SalesOrderLineLot
-from src.sales.schemas import SalesOrderCreate, SalesOrderRead
-from src.sales.utils import money
+from src.sales.exceptions import InvalidSalesFilter, InvalidSalesOrderItem
+from src.sales.models import SalesLogException, SalesOrder, SalesOrderLine, SalesOrderLineLot
+from src.sales.schemas import (
+    InvoiceNumberRead,
+    SalesLogExceptionKindTotalRead,
+    SalesLogExceptionListRead,
+    SalesOrderCreate,
+    SalesOrderDetailRead,
+    SalesOrderListRead,
+    SalesOrderRead,
+)
+from src.sales.utils import escape_like, money
 
 
 async def create_sales_order(db: AsyncSession, payload: SalesOrderCreate) -> SalesOrder:
@@ -101,22 +113,188 @@ async def create_sales_order(db: AsyncSession, payload: SalesOrderCreate) -> Sal
     return result.unique().scalar_one()
 
 
-async def list_sales_orders(db: AsyncSession, pagination: PaginationParams) -> PaginatedResponse[SalesOrderRead]:
-    offset = (pagination.page - 1) * pagination.page_size
+def _validate_date_range(date_from: date | None, date_to: date | None) -> None:
+    if date_from is not None and date_to is not None and date_from > date_to:
+        raise InvalidSalesFilter("date_from must be on or before date_to")
 
-    total = await db.scalar(select(func.count()).select_from(SalesOrder))
+
+def _order_filter_clauses(
+    *,
+    search: str | None,
+    party_id: int | None,
+    date_from: date | None,
+    date_to: date | None,
+    item_id: int | None,
+) -> list:
+    """WHERE clauses over SalesOrder, shared by the count, both totals and the page query so the
+    summary bar can never disagree with the rows (same idea as inventory.list_stock_lots)."""
+    _validate_date_range(date_from, date_to)
+
+    clauses = []
+    if party_id is not None:
+        clauses.append(SalesOrder.party_id == party_id)
+    if date_from is not None:
+        clauses.append(SalesOrder.order_date >= date_from)
+    if date_to is not None:
+        clauses.append(SalesOrder.order_date <= date_to)
+    if item_id is not None:
+        # EXISTS over an ALIASED line table: the totals queries already have SalesOrderLine in
+        # their FROM, and an un-aliased subquery would auto-correlate to it and stop meaning
+        # "this order has a line for item_id". EXISTS (not a join) also keeps each sale once.
+        line = aliased(SalesOrderLine)
+        clauses.append(exists().where(line.sales_order_id == SalesOrder.id, line.item_id == item_id))
+    if search is not None and search.strip():
+        text = search.strip()
+        contains = SalesOrder.invoice_number.ilike(f"%{escape_like(text)}%", escape="\\")
+        # All-digits input could be a "#57" order id as well as part of an invoice number.
+        # The length cap keeps the int() inside Postgres' integer range.
+        if text.isascii() and text.isdigit() and len(text) <= 9:
+            clauses.append(or_(SalesOrder.id == int(text), contains))
+        else:
+            clauses.append(contains)
+    return clauses
+
+
+async def list_sales_orders(
+    db: AsyncSession,
+    pagination: PaginationParams,
+    *,
+    search: str | None = None,
+    party_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    item_id: int | None = None,
+) -> SalesOrderListRead:
+    offset = (pagination.page - 1) * pagination.page_size
+    clauses = _order_filter_clauses(
+        search=search, party_id=party_id, date_from=date_from, date_to=date_to, item_id=item_id
+    )
+
+    total = await db.scalar(select(func.count()).select_from(SalesOrder).where(*clauses))
+
+    # Same filters, no offset/limit — "total sales" has to cover every matching sale, not just the
+    # page being rendered. Revenue and cost are SEPARATE aggregates on purpose: joining the lot rows
+    # into the revenue query would multiply qty * rate_pkr by the number of lots a line drew from.
+    sales_total = await db.scalar(
+        select(func.coalesce(func.sum(SalesOrderLine.qty * SalesOrderLine.rate_pkr), 0))
+        .select_from(SalesOrderLine)
+        .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
+        .where(*clauses)
+    )
+    cost_total = await db.scalar(
+        select(func.coalesce(func.sum(SalesOrderLineLot.qty_consumed * SalesOrderLineLot.unit_cost_pkr), 0))
+        .select_from(SalesOrderLineLot)
+        .join(SalesOrderLine, SalesOrderLine.id == SalesOrderLineLot.sales_order_line_id)
+        .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
+        .where(*clauses)
+    )
+
     result = await db.execute(
         select(SalesOrder)
         .options(*SALES_ORDER_LOAD_OPTIONS)
+        .where(*clauses)
         .order_by(SalesOrder.order_date.desc(), SalesOrder.id.desc())
         .offset(offset)
         .limit(pagination.page_size)
     )
     items = result.unique().scalars().all()
 
-    return PaginatedResponse[SalesOrderRead](
+    return SalesOrderListRead(
         items=items,
         total=total or 0,
         page=pagination.page,
         page_size=pagination.page_size,
+        total_sales_pkr=money(sales_total),
+        total_margin_pkr=money(sales_total - cost_total),
+    )
+
+
+async def get_sales_order_detail(db: AsyncSession, sales_order: SalesOrder) -> SalesOrderDetailRead:
+    """The sale plus the LedgerEntry rows it posted. Read-only."""
+    entries = (
+        await db.scalars(
+            select(LedgerEntry)
+            .where(LedgerEntry.reference_type == "sales_order", LedgerEntry.reference_id == sales_order.id)
+            .order_by(LedgerEntry.entry_date, LedgerEntry.id)
+        )
+    ).all()
+    base = SalesOrderRead.model_validate(sales_order)
+    return SalesOrderDetailRead(
+        **{name: getattr(base, name) for name in SalesOrderRead.model_fields}, ledger_entries=entries
+    )
+
+
+async def get_invoice_numbers(db: AsyncSession, ids: list[int]) -> list[InvoiceNumberRead]:
+    """Batched id -> invoice number lookup for other screens (the customer statement lists
+    sales by id only). Lives here, not in parties/, because parties/ never imports sales/."""
+    if len(ids) > MAX_INVOICE_NUMBER_LOOKUP_IDS:
+        raise InvalidSalesFilter(f"At most {MAX_INVOICE_NUMBER_LOOKUP_IDS} ids per lookup")
+    if not ids:
+        return []
+    rows = (await db.execute(select(SalesOrder.id, SalesOrder.invoice_number).where(SalesOrder.id.in_(ids)))).all()
+    return [InvoiceNumberRead(id=order_id, invoice_number=invoice_number) for order_id, invoice_number in rows]
+
+
+async def list_sales_log_exceptions(
+    db: AsyncSession,
+    pagination: PaginationParams,
+    *,
+    search: str | None = None,
+    kind: str | None = None,
+    party_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> SalesLogExceptionListRead:
+    _validate_date_range(date_from, date_to)
+    offset = (pagination.page - 1) * pagination.page_size
+
+    filters = []
+    if kind is not None:
+        filters.append(SalesLogException.kind == kind)
+    if party_id is not None:
+        filters.append(SalesLogException.party_id == party_id)
+    if date_from is not None:
+        filters.append(SalesLogException.entry_date >= date_from)
+    if date_to is not None:
+        filters.append(SalesLogException.entry_date <= date_to)
+    if search is not None and search.strip():
+        pattern = f"%{escape_like(search.strip())}%"
+        filters.append(
+            or_(
+                SalesLogException.invoice_number.ilike(pattern, escape="\\"),
+                SalesLogException.note.ilike(pattern, escape="\\"),
+            )
+        )
+
+    total = await db.scalar(select(func.count()).select_from(SalesLogException).where(*filters))
+    kind_rows = (
+        await db.execute(
+            select(SalesLogException.kind, func.count(), func.coalesce(func.sum(SalesLogException.amount_pkr), 0))
+            .where(*filters)
+            .group_by(SalesLogException.kind)
+            .order_by(SalesLogException.kind)
+        )
+    ).all()
+    totals_by_kind = [
+        SalesLogExceptionKindTotalRead(kind=row_kind, count=count, total_pkr=money(amount))
+        for row_kind, count, amount in kind_rows
+    ]
+
+    result = await db.execute(
+        select(SalesLogException)
+        .options(joinedload(SalesLogException.party))
+        .where(*filters)
+        .order_by(SalesLogException.entry_date.desc(), SalesLogException.id.desc())
+        .offset(offset)
+        .limit(pagination.page_size)
+    )
+    items = result.scalars().all()
+
+    return SalesLogExceptionListRead(
+        items=items,
+        total=total or 0,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        total_amount_pkr=money(sum((entry.total_pkr for entry in totals_by_kind), Decimal(0))),
+        totals_by_kind=totals_by_kind,
     )
