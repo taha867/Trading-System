@@ -5,24 +5,29 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.catalog.models import Brand, Category, Item, ItemCompatibleModel, Model
-from src.inventory.models import StockLot
+from src.expenses.models import Expense, ExpenseCategory
+from src.inventory.models import StockLot, StockMovement
 from src.ledger.models import LedgerEntry
 from src.parties.models import Party
 from src.payments import service as payments_service
 from src.reporting.schemas import (
     BalanceStatementRead,
+    ExpenseCategoryTotalRead,
     MarginReportEntryRead,
     MarginReportRead,
     PartyBalanceRead,
+    ProfitLossPeriodRead,
+    ProfitLossRead,
     ReorderPriorityEntryRead,
     ReorderPriorityRead,
     SellThroughEntryRead,
     SellThroughRead,
     StockListEntryRead,
     StockListRead,
+    UnitemisedSalesKindRead,
 )
-from src.reporting.utils import money
-from src.sales.models import SalesOrder, SalesOrderLine, SalesOrderLineLot
+from src.reporting.utils import money, previous_period, validate_period
+from src.sales.models import SalesLogException, SalesOrder, SalesOrderLine, SalesOrderLineLot
 
 
 async def get_balance_statement(db: AsyncSession) -> BalanceStatementRead:
@@ -137,11 +142,10 @@ async def recalculate_reorder_priority(db: AsyncSession, window_days: int) -> Re
     )
 
 
-async def get_margin_report(db: AsyncSession, window_days: int) -> MarginReportRead:
-    end_date = date.today()
-    start_date = end_date - timedelta(days=window_days)
-
-    revenue_by_item = (
+def _revenue_by_item_subquery(start_date: date, end_date: date):
+    """Per-item units and revenue for sales dated in [start_date, end_date]. Shared by the margin report and
+    the profit-loss report so their revenue can never drift apart."""
+    return (
         select(
             SalesOrderLine.item_id.label("item_id"),
             func.sum(SalesOrderLine.qty).label("qty_sold"),
@@ -152,7 +156,13 @@ async def get_margin_report(db: AsyncSession, window_days: int) -> MarginReportR
         .group_by(SalesOrderLine.item_id)
         .subquery()
     )
-    cost_by_item = (
+
+
+def _cost_by_item_subquery(start_date: date, end_date: date):
+    """Per-item FIFO cost of goods for sales dated in [start_date, end_date], from the unit cost snapshotted
+    on each SalesOrderLineLot at sale time. Kept a separate aggregate from revenue on purpose: joining the lot
+    rows into the revenue query would multiply qty * rate_pkr by the number of lots a line drew from."""
+    return (
         select(
             SalesOrderLine.item_id.label("item_id"),
             func.sum(SalesOrderLineLot.qty_consumed * SalesOrderLineLot.unit_cost_pkr).label("cost_pkr"),
@@ -164,6 +174,14 @@ async def get_margin_report(db: AsyncSession, window_days: int) -> MarginReportR
         .group_by(SalesOrderLine.item_id)
         .subquery()
     )
+
+
+async def get_margin_report(db: AsyncSession, window_days: int) -> MarginReportRead:
+    end_date = date.today()
+    start_date = end_date - timedelta(days=window_days)
+
+    revenue_by_item = _revenue_by_item_subquery(start_date, end_date)
+    cost_by_item = _cost_by_item_subquery(start_date, end_date)
 
     rows = (
         await db.execute(
@@ -216,6 +234,160 @@ async def get_margin_report(db: AsyncSession, window_days: int) -> MarginReportR
         total_cost_pkr=total_cost_pkr,
         total_margin_pkr=total_margin_pkr,
     )
+
+
+def _pct(numerator: Decimal, denominator: Decimal) -> float:
+    return float(round((numerator / denominator) * 100, 2)) if denominator else 0.0
+
+
+async def _compute_period(
+    db: AsyncSession, date_from: date, date_to: date, include_unitemised: bool
+) -> ProfitLossPeriodRead:
+    """One period of the profit & loss statement, read straight from the domain tables (not the ledger — it
+    carries no revenue/COGS/expense accounts). Money in and out of cash (customer payments, vendor payments)
+    and stock purchases are deliberately absent: they are cash/assets, not profit."""
+    revenue_by_item = _revenue_by_item_subquery(date_from, date_to)
+    cost_by_item = _cost_by_item_subquery(date_from, date_to)
+
+    items_revenue, units_sold = (
+        await db.execute(
+            select(
+                func.coalesce(func.sum(revenue_by_item.c.revenue_pkr), 0),
+                func.coalesce(func.sum(revenue_by_item.c.qty_sold), 0),
+            )
+        )
+    ).one()
+    cogs = await db.scalar(select(func.coalesce(func.sum(cost_by_item.c.cost_pkr), 0)))
+
+    order_count = await db.scalar(
+        select(func.count(SalesOrder.id)).where(SalesOrder.order_date >= date_from, SalesOrder.order_date <= date_to)
+    )
+    lines_without_cost = await db.scalar(
+        select(func.count(SalesOrderLine.id))
+        .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
+        .where(
+            SalesOrder.order_date >= date_from,
+            SalesOrder.order_date <= date_to,
+            ~select(SalesOrderLineLot.id).where(SalesOrderLineLot.sales_order_line_id == SalesOrderLine.id).exists(),
+        )
+    )
+
+    # Value of stock that left the shelf without a sale: a damaged write-off is a loss, a negative adjustment is
+    # a loss, a positive adjustment (recount found more) reduces it. "receipt" and "sale" movements are not
+    # losses — receipts add stock, sales are already in COGS.
+    stock_loss = await db.scalar(
+        select(func.coalesce(func.sum(-StockMovement.qty_delta * StockLot.landed_cost_pkr), 0))
+        .select_from(StockMovement)
+        .join(StockLot, StockLot.id == StockMovement.stock_lot_id)
+        .where(
+            StockMovement.movement_type.in_(("damaged", "adjustment")),
+            StockMovement.movement_date >= date_from,
+            StockMovement.movement_date <= date_to,
+        )
+    )
+
+    expense_rows = (
+        await db.execute(
+            select(ExpenseCategory.id, ExpenseCategory.name, ExpenseCategory.frequency, func.sum(Expense.amount))
+            .join(ExpenseCategory, ExpenseCategory.id == Expense.category_id)
+            .where(
+                Expense.status == "confirmed",
+                Expense.expense_date >= date_from,
+                Expense.expense_date <= date_to,
+            )
+            .group_by(ExpenseCategory.id, ExpenseCategory.name, ExpenseCategory.frequency)
+            .order_by(func.sum(Expense.amount).desc(), ExpenseCategory.name)
+        )
+    ).all()
+    expenses_by_category = [
+        ExpenseCategoryTotalRead(category_id=cid, category_name=name, frequency=frequency, total_pkr=money(total))
+        for cid, name, frequency, total in expense_rows
+    ]
+    expenses_total = sum((e.total_pkr for e in expenses_by_category), Decimal(0))
+    draft_expenses = await db.scalar(
+        select(func.coalesce(func.sum(Expense.amount), 0)).where(
+            Expense.status == "draft",
+            Expense.expense_date >= date_from,
+            Expense.expense_date <= date_to,
+        )
+    )
+
+    unitemised_rows = (
+        await db.execute(
+            select(SalesLogException.kind, func.count(SalesLogException.id), func.sum(SalesLogException.amount_pkr))
+            .where(SalesLogException.entry_date >= date_from, SalesLogException.entry_date <= date_to)
+            .group_by(SalesLogException.kind)
+            .order_by(SalesLogException.kind)
+        )
+    ).all()
+    unitemised_by_kind = [
+        UnitemisedSalesKindRead(kind=kind, count=count, total_pkr=money(total)) for kind, count, total in unitemised_rows
+    ]
+    unitemised_total = sum((u.total_pkr for u in unitemised_by_kind), Decimal(0))
+
+    # Unitemised sales carry no cost, so adding them to revenue overstates gross profit — opt-in only.
+    revenue = money(items_revenue) + (unitemised_total if include_unitemised else Decimal(0))
+    cogs = money(cogs)
+    gross_profit = money(revenue - cogs)
+    stock_loss = money(stock_loss)
+    expenses_total = money(expenses_total)
+    net_profit = money(gross_profit - stock_loss - expenses_total)
+
+    return ProfitLossPeriodRead(
+        date_from=date_from,
+        date_to=date_to,
+        revenue_pkr=revenue,
+        cogs_pkr=cogs,
+        gross_profit_pkr=gross_profit,
+        gross_margin_pct=_pct(gross_profit, revenue),
+        stock_loss_pkr=stock_loss,
+        expenses_total_pkr=expenses_total,
+        expenses_by_category=expenses_by_category,
+        net_profit_pkr=net_profit,
+        net_margin_pct=_pct(net_profit, revenue),
+        units_sold=money(units_sold),
+        order_count=order_count or 0,
+        unitemised_sales_pkr=money(unitemised_total),
+        unitemised_sales_by_kind=unitemised_by_kind,
+        draft_expenses_pkr=money(draft_expenses or Decimal(0)),
+        lines_without_cost=lines_without_cost or 0,
+    )
+
+
+async def get_profit_loss(
+    db: AsyncSession,
+    date_from: date,
+    date_to: date,
+    compare_previous: bool = False,
+    include_unitemised: bool = False,
+) -> ProfitLossRead:
+    validate_period(date_from, date_to)
+
+    current = await _compute_period(db, date_from, date_to, include_unitemised)
+    previous = None
+    if compare_previous:
+        prev_from, prev_to = previous_period(date_from, date_to)
+        previous = await _compute_period(db, prev_from, prev_to, include_unitemised)
+
+    warnings = []
+    if current.draft_expenses_pkr > 0:
+        warnings.append(f"Draft expenses of {current.draft_expenses_pkr} are not included — confirm them to count.")
+    if current.unitemised_sales_pkr != 0:
+        if include_unitemised:
+            warnings.append(
+                f"Sales without item data ({current.unitemised_sales_pkr}) are included in revenue with no cost, "
+                "so gross profit is overstated by their unknown cost."
+            )
+        else:
+            warnings.append(
+                f"Sales without item data ({current.unitemised_sales_pkr}) are not included in profit."
+            )
+    if current.lines_without_cost > 0:
+        warnings.append(
+            f"{current.lines_without_cost} sale line(s) have no recorded cost, so their cost is counted as 0."
+        )
+
+    return ProfitLossRead(current=current, previous=previous, warnings=warnings)
 
 
 async def get_stock_list(db: AsyncSession, in_stock_only: bool = True) -> StockListRead:

@@ -74,6 +74,45 @@ class MarginReportRead(BaseModel):
     total_margin_pkr: Decimal
 
 
+class ExpenseCategoryTotalRead(BaseModel):
+    category_id: int
+    category_name: str
+    frequency: str  # "daily" | "monthly", straight from ExpenseCategory
+    total_pkr: Decimal
+
+
+class UnitemisedSalesKindRead(BaseModel):
+    kind: str  # SalesLogException.kind
+    count: int
+    total_pkr: Decimal
+
+
+class ProfitLossPeriodRead(BaseModel):
+    date_from: date
+    date_to: date
+    revenue_pkr: Decimal
+    cogs_pkr: Decimal  # landed cost of the lots the sales drew from (FIFO, snapshotted at sale time)
+    gross_profit_pkr: Decimal
+    gross_margin_pct: float  # a ratio, not currency — same exemption as MarginReportEntryRead.margin_pct
+    stock_loss_pkr: Decimal  # damaged + adjustment movements valued at lot cost; positive = net loss
+    expenses_total_pkr: Decimal  # confirmed expenses only
+    expenses_by_category: list[ExpenseCategoryTotalRead]
+    net_profit_pkr: Decimal
+    net_margin_pct: float
+    units_sold: Decimal
+    order_count: int
+    unitemised_sales_pkr: Decimal  # SalesLogException total — in revenue_pkr only when include_unitemised=true
+    unitemised_sales_by_kind: list[UnitemisedSalesKindRead]
+    draft_expenses_pkr: Decimal  # excluded from profit; returned so nothing is silently hidden
+    lines_without_cost: int  # sale lines in the period with no SalesOrderLineLot rows (cost counted as 0)
+
+
+class ProfitLossRead(BaseModel):
+    current: ProfitLossPeriodRead
+    previous: ProfitLossPeriodRead | None
+    warnings: list[str]
+
+
 class StockListEntryRead(BaseModel):
     category: str
     brand: str

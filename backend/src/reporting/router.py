@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -11,6 +12,7 @@ from src.reporting.constants import DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS, MIN_WI
 from src.reporting.schemas import (
     BalanceStatementRead,
     MarginReportRead,
+    ProfitLossRead,
     ReorderPriorityRead,
     SellThroughRead,
     StockListRead,
@@ -54,6 +56,18 @@ async def margin_report(
     window_days: WindowDays = DEFAULT_WINDOW_DAYS,
 ):
     return await service.get_margin_report(db, window_days)
+
+
+@router.get("/profit-loss", response_model=ProfitLossRead)
+async def profit_loss(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    date_from: date,
+    date_to: date,
+    compare_previous: bool = False,
+    include_unitemised: bool = False,
+):
+    return await service.get_profit_loss(db, date_from, date_to, compare_previous, include_unitemised)
 
 
 @router.get("/stock-list", response_model=StockListRead)

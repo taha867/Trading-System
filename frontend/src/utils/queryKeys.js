@@ -135,6 +135,14 @@ export const reportingKeys = {
   sellThrough: (windowDays) => [...reportingKeys.all, 'sell-through', windowDays],
   reorderPriority: (windowDays) => [...reportingKeys.all, 'reorder-priority', windowDays],
   margin: (windowDays) => [...reportingKeys.all, 'margin', windowDays],
+  profitLoss: (dateFrom, dateTo, comparePrevious, includeUnitemised) => [
+    ...reportingKeys.all,
+    'profit-loss',
+    dateFrom,
+    dateTo,
+    comparePrevious,
+    includeUnitemised,
+  ],
   stockList: (inStockOnly) => [...reportingKeys.all, 'stock-list', inStockOnly],
 };
 

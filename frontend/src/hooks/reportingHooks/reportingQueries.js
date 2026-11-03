@@ -1,10 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { reportingKeys } from '@/utils/queryKeys';
 import {
   getBalanceStatement,
   getSellThrough,
   recalculateReorderPriority,
   getMarginReport,
+  getProfitLoss,
   getStockList,
 } from '@/services/reportingService';
 
@@ -26,6 +27,17 @@ export function useMarginReport(windowDays) {
   return useQuery({
     queryKey: reportingKeys.margin(windowDays),
     queryFn: () => getMarginReport(windowDays),
+  });
+}
+
+// keepPreviousData: paging between months keeps the last statement on screen
+// while the next one loads, instead of flashing back to the loading state.
+export function useProfitLoss({ dateFrom, dateTo, comparePrevious = false, includeUnitemised = false }) {
+  return useQuery({
+    queryKey: reportingKeys.profitLoss(dateFrom, dateTo, comparePrevious, includeUnitemised),
+    queryFn: () => getProfitLoss({ dateFrom, dateTo, comparePrevious, includeUnitemised }),
+    enabled: Boolean(dateFrom && dateTo),
+    placeholderData: keepPreviousData,
   });
 }
 

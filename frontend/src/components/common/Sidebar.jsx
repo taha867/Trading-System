@@ -12,7 +12,7 @@ export function Sidebar() {
   // No logo here — Navbar owns the single brand mark for the app. This rail is
   // navigation only, so it doesn't duplicate it.
   return (
-    <aside className="hidden w-16 shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-4 md:flex">
+    <aside className="hidden w-16 shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-4 md:flex print:hidden">
       <nav className="flex flex-col items-center gap-1">
         {NAV_LINKS.map(({ to, label, icon: Icon }) => (
           <Tooltip key={to}>

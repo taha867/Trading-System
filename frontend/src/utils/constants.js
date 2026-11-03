@@ -11,6 +11,7 @@ import {
   Settings,
   Grid2x2,
   Share2,
+  TrendingUp,
 } from 'lucide-react';
 
 export const HTTP_STATUS = {
@@ -151,6 +152,7 @@ export const NAV_LINKS = [
   { to: '/sales-orders', label: 'Sales Orders', shortLabel: 'Sales', icon: Receipt },
   { to: '/payments', label: 'Payments', icon: Wallet },
   { to: '/expenses', label: 'Expenses', icon: Banknote },
+  { to: '/reports', label: 'Reports', icon: TrendingUp },
   { to: '/parties', label: 'Parties', icon: Users2 },
   { to: '/catalog', label: 'Catalog', icon: Package },
   { to: '/stock-list', label: 'Stock List', icon: Share2 },

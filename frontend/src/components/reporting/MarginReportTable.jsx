@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { PieChart, Loader2, Inbox } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableFooter } from '@/components/ui/table';
@@ -21,7 +22,12 @@ export function MarginReportTable() {
           </span>
           <div>
             <CardTitle className="text-base">Margin by Item</CardTitle>
-            <CardDescription>Sale rate vs. landed cost, per item, for items sold in the selected window.</CardDescription>
+            <CardDescription>
+              Sale rate vs. landed cost, per item, for the last few days — not a calendar month.{' '}
+              <Link to="/reports" className="text-primary hover:underline">
+                See monthly profit
+              </Link>
+            </CardDescription>
           </div>
         </div>
         <CardAction>

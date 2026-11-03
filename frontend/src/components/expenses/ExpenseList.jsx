@@ -17,19 +17,15 @@ import { usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
 import { useConfirmExpense, useDiscardExpense } from '@/hooks/expensesHooks/expensesMutations';
 import { EXPENSE_STATUS, EXPENSE_STATUS_OPTIONS } from '@/utils/constants';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
+import { monthBounds } from '@/utils/dateUtils';
 
 const DEFAULT_PAGE_SIZE = 20;
 const ALL = 'all';
 
-// "2026-09" (an <input type="month"> value) -> that month's first/last date —
-// new Date(year, month, 0)'s day-0 rolls back to the last day of the PREVIOUS
-// index, which is exactly the month typed (JS months are 0-indexed, so the
-// 1-indexed month parsed here already points one index past it).
+// "2026-09" (an <input type="month"> value) -> this endpoint's date-range params.
 function monthToDateRange(monthValue) {
-  if (!monthValue) return {};
-  const [year, month] = monthValue.split('-').map(Number);
-  const lastDay = new Date(year, month, 0).getDate();
-  return { expense_date_from: `${monthValue}-01`, expense_date_to: `${monthValue}-${String(lastDay).padStart(2, '0')}` };
+  const bounds = monthBounds(monthValue);
+  return bounds ? { expense_date_from: bounds.from, expense_date_to: bounds.to } : {};
 }
 
 export function ExpenseList() {
@@ -112,7 +108,8 @@ export function ExpenseList() {
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3">
             <CurrencyAmount value={totalAmount} className="text-2xl font-semibold text-foreground" />
             <span className="text-sm text-muted-foreground">
-              spent{hasActiveFilter ? ' matching the filters below' : ' across every expense'} · {total}{' '}
+              spent{statusFilter === ALL ? ' (drafts included)' : ''}
+              {hasActiveFilter ? ' matching the filters below' : ' across every expense'} · {total}{' '}
               {total === 1 ? 'expense' : 'expenses'}
             </span>
           </div>

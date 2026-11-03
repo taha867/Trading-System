@@ -6,7 +6,7 @@ export function Footer() {
   if (status !== 'authenticated') return null;
 
   return (
-    <footer className="border-t px-4 py-4 text-center text-xs text-muted-foreground">
+    <footer className="border-t px-4 py-4 text-center text-xs text-muted-foreground print:hidden">
       Trading System · China-to-Pakistan mobile accessories trade
     </footer>
   );

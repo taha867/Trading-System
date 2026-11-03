@@ -31,7 +31,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-sm print:hidden">
       <div className="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
         <div className="flex items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

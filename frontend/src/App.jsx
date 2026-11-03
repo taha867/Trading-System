@@ -22,6 +22,7 @@ import { SalesOrderDetailPage } from '@/pages/SalesOrderDetailPage';
 import { PaymentsPage } from '@/pages/PaymentsPage';
 import { ExpensesPage } from '@/pages/ExpensesPage';
 import { StockListPage } from '@/pages/StockListPage';
+import { ReportsPage } from '@/pages/ReportsPage';
 import { PartyDetailPage } from '@/pages/PartyDetailPage';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/common/Sidebar';
@@ -64,6 +65,7 @@ export function App() {
                 <Route path="/payments" element={<PaymentsPage />} />
                 <Route path="/expenses" element={<ExpensesPage />} />
                 <Route path="/stock-list" element={<StockListPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
               </Route>
 
