@@ -71,7 +71,9 @@ async def create_sales_order(db: AsyncSession, payload: SalesOrderCreate) -> Sal
     # Lines are passed through the relationship, not inserted standalone, so so.lines
     # (and each line's .consumptions) stay populated through flush()/commit()
     # (expire_on_commit=False) without a lazy load.
-    so = SalesOrder(party_id=customer.id, order_date=payload.order_date, lines=lines)
+    so = SalesOrder(
+        party_id=customer.id, order_date=payload.order_date, invoice_number=payload.invoice_number, lines=lines
+    )
     db.add(so)
     await db.flush()  # assigns so.id, needed by the ledger reference below
 

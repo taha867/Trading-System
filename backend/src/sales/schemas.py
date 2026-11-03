@@ -16,6 +16,7 @@ class SalesOrderLineCreate(BaseModel):
 class SalesOrderCreate(BaseModel):
     party_id: int
     order_date: date
+    invoice_number: Annotated[str, Field(max_length=64)] | None = None
     lines: Annotated[list[SalesOrderLineCreate], Field(min_length=1)]
 
 
@@ -64,6 +65,7 @@ class SalesOrderRead(BaseModel):
     id: int
     party_id: int
     order_date: date
+    invoice_number: str | None = None
     created_at: datetime
     lines: list[SalesOrderLineRead]
 

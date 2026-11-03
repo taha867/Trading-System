@@ -25,6 +25,9 @@ class PurchaseOrder(Base):
     order_date: Mapped[date] = mapped_column(Date)
     source: Mapped[str] = mapped_column(default="china", server_default="china")
     status: Mapped[str] = mapped_column(default="draft")
+    # Optional — a vendor's own invoice/receipt number, kept only for cross-referencing
+    # against paper records (e.g. the day-book catch-up import); never used as a key.
+    invoice_number: Mapped[str | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     lines: Mapped[list["PurchaseOrderLine"]] = relationship(

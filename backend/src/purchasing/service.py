@@ -82,6 +82,7 @@ async def create_purchase_order(db: AsyncSession, payload: PurchaseOrderCreate) 
         party_id=vendor.id,
         order_date=payload.order_date,
         source=payload.source,
+        invoice_number=payload.invoice_number,
         # Local orders skip the cargo step entirely — starting in "allocated" (rather
         # than "draft") reuses cargo.service.create_shipment's existing status=="draft"
         # gate (hardened to also check source == "local" explicitly) to keep them from

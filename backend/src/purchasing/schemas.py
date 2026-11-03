@@ -70,6 +70,7 @@ class PurchaseOrderCreate(BaseModel):
     party_id: int
     order_date: date
     source: PurchaseOrderSource = "china"
+    invoice_number: Annotated[str, Field(max_length=64)] | None = None
     lines: Annotated[list[PurchaseOrderLineCreate], Field(min_length=1)]
 
     @model_validator(mode="after")
@@ -92,6 +93,7 @@ class PurchaseOrderRead(BaseModel):
     order_date: date
     source: PurchaseOrderSource
     status: str
+    invoice_number: str | None = None
     lines: list[PurchaseOrderLineRead]
 
     @computed_field
