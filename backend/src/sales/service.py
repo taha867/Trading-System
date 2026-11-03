@@ -14,12 +14,13 @@ from src.ledger.models import LedgerEntry
 from src.pagination import PaginationParams
 from src.parties import service as parties_service
 from src.parties.constants import PartyRole
-from src.sales.constants import MAX_INVOICE_NUMBER_LOOKUP_IDS
+from src.sales.constants import MAX_INVOICE_NUMBER_LOOKUP_IDS, MAX_INVOICE_OPTIONS
 from src.sales.dependencies import SALES_ORDER_LOAD_OPTIONS
 from src.sales.exceptions import InvalidSalesFilter, InvalidSalesOrderItem
 from src.sales.models import SalesLogException, SalesOrder, SalesOrderLine, SalesOrderLineLot
 from src.sales.schemas import (
     InvoiceNumberRead,
+    InvoiceOptionRead,
     SalesLogExceptionKindTotalRead,
     SalesLogExceptionListRead,
     SalesOrderCreate,
@@ -121,6 +122,7 @@ def _validate_date_range(date_from: date | None, date_to: date | None) -> None:
 def _order_filter_clauses(
     *,
     search: str | None,
+    invoice_number: str | None,
     party_id: int | None,
     date_from: date | None,
     date_to: date | None,
@@ -131,6 +133,10 @@ def _order_filter_clauses(
     _validate_date_range(date_from, date_to)
 
     clauses = []
+    if invoice_number is not None and invoice_number.strip():
+        # Exact match — what the Sales Orders invoice dropdown sends once one is picked ("5" must
+        # not also return invoices 35, 541 and 25, which the contains-style `search` would).
+        clauses.append(SalesOrder.invoice_number == invoice_number.strip())
     if party_id is not None:
         clauses.append(SalesOrder.party_id == party_id)
     if date_from is not None:
@@ -160,6 +166,7 @@ async def list_sales_orders(
     pagination: PaginationParams,
     *,
     search: str | None = None,
+    invoice_number: str | None = None,
     party_id: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
@@ -167,7 +174,12 @@ async def list_sales_orders(
 ) -> SalesOrderListRead:
     offset = (pagination.page - 1) * pagination.page_size
     clauses = _order_filter_clauses(
-        search=search, party_id=party_id, date_from=date_from, date_to=date_to, item_id=item_id
+        search=search,
+        invoice_number=invoice_number,
+        party_id=party_id,
+        date_from=date_from,
+        date_to=date_to,
+        item_id=item_id,
     )
 
     total = await db.scalar(select(func.count()).select_from(SalesOrder).where(*clauses))
@@ -233,6 +245,24 @@ async def get_invoice_numbers(db: AsyncSession, ids: list[int]) -> list[InvoiceN
         return []
     rows = (await db.execute(select(SalesOrder.id, SalesOrder.invoice_number).where(SalesOrder.id.in_(ids)))).all()
     return [InvoiceNumberRead(id=order_id, invoice_number=invoice_number) for order_id, invoice_number in rows]
+
+
+async def list_invoice_options(db: AsyncSession, search: str | None = None) -> list[InvoiceOptionRead]:
+    """Distinct invoice numbers for the Sales Orders dropdown — most recently used first, narrowed by
+    what the user types (contains, case-insensitive). Capped: the dropdown is a picker, not a report."""
+    stmt = select(SalesOrder.invoice_number, func.count(SalesOrder.id)).where(
+        SalesOrder.invoice_number.is_not(None), SalesOrder.invoice_number != ""
+    )
+    if search is not None and search.strip():
+        stmt = stmt.where(SalesOrder.invoice_number.ilike(f"%{escape_like(search.strip())}%", escape="\\"))
+    rows = (
+        await db.execute(
+            stmt.group_by(SalesOrder.invoice_number)
+            .order_by(func.max(SalesOrder.order_date).desc(), SalesOrder.invoice_number)
+            .limit(MAX_INVOICE_OPTIONS)
+        )
+    ).all()
+    return [InvoiceOptionRead(invoice_number=number, sale_count=count) for number, count in rows]
 
 
 async def list_sales_log_exceptions(

@@ -30,3 +30,11 @@ export async function getInvoiceNumbers(ids) {
   const { data } = await fetchClient.get(`/sales/sales-orders/invoice-numbers?${params}`);
   return data; // [{ id, invoice_number }]
 }
+
+// Distinct invoice numbers for the Sales Orders dropdown, most recent first; `search` narrows them.
+export async function listInvoiceOptions(search) {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  const { data } = await fetchClient.get(`/sales/sales-orders/invoice-options?${params}`);
+  return data; // [{ invoice_number, sale_count }]
+}

@@ -14,6 +14,7 @@ from src.sales.dependencies import valid_sales_order
 from src.sales.models import SalesOrder
 from src.sales.schemas import (
     InvoiceNumberRead,
+    InvoiceOptionRead,
     SalesLogExceptionListRead,
     SalesOrderCreate,
     SalesOrderDetailRead,
@@ -43,14 +44,32 @@ async def list_sales_orders(
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
     search: str | None = None,
+    invoice_number: str | None = None,
     party_id: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
     item_id: int | None = None,
 ):
     return await service.list_sales_orders(
-        db, pagination, search=search, party_id=party_id, date_from=date_from, date_to=date_to, item_id=item_id
+        db,
+        pagination,
+        search=search,
+        invoice_number=invoice_number,
+        party_id=party_id,
+        date_from=date_from,
+        date_to=date_to,
+        item_id=item_id,
     )
+
+
+# Declared before "/{sales_order_id}" (as is "/invoice-numbers" below) so neither is parsed as an order id.
+@sales_order_router.get("/invoice-options", response_model=list[InvoiceOptionRead])
+async def list_invoice_options(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    search: str | None = None,
+):
+    return await service.list_invoice_options(db, search)
 
 
 # Declared before "/{sales_order_id}" so "invoice-numbers" is never parsed as an order id.

@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent }
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { FormSelect, ItemCombobox } from '@/components/custom';
+import { InvoiceCombobox } from '@/components/sales/InvoiceCombobox';
 import { useSalesOrders } from '@/hooks/salesHooks/salesQueries';
 import { useCustomerParties } from '@/hooks/partyHooks/partyQueries';
 import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
@@ -15,7 +16,7 @@ import { monthBounds, formatDateTime } from '@/utils/dateUtils';
 import { SELECT_ALL_VALUE } from '@/utils/constants';
 
 const DEFAULT_PAGE_SIZE = 20;
-const FILTER_KEYS = ['search', 'party', 'month', 'item'];
+const FILTER_KEYS = ['invoice', 'party', 'month', 'item'];
 
 // Display-only ratio of two figures the server already computed.
 function marginPct(order) {
@@ -30,15 +31,15 @@ export function SalesOrderList() {
   const party = filters.get('party');
   const month = filters.get('month');
   const item = filters.get('item');
-  const search = filters.get('search');
+  const invoice = filters.get('invoice');
   const bounds = monthBounds(month);
-  const hasActiveFilter = Boolean(search || party || month || item);
+  const hasActiveFilter = Boolean(invoice || party || month || item);
 
   // buildQueryString (the service) drops undefined/empty values, so unset filters never reach the URL.
   const { data, isLoading, isError } = useSalesOrders({
     page: filters.page,
     page_size: DEFAULT_PAGE_SIZE,
-    search: search || undefined,
+    invoice_number: invoice || undefined,
     party_id: party || undefined,
     date_from: bounds?.from,
     date_to: bounds?.to,
@@ -88,16 +89,7 @@ export function SalesOrderList() {
         )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sales_search">Invoice no. or #ID</Label>
-            <Input
-              id="sales_search"
-              type="search"
-              placeholder="e.g. 1234"
-              value={filters.searchInput}
-              onChange={(event) => filters.handleSearchChange(event.target.value)}
-            />
-          </div>
+          <InvoiceCombobox value={invoice} onChange={(value) => filters.setFilters({ invoice: value })} />
           <FormSelect
             name="customer_filter"
             label="Customer"

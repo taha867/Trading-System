@@ -113,6 +113,11 @@ class InvoiceNumberRead(BaseModel):
     invoice_number: str | None
 
 
+class InvoiceOptionRead(BaseModel):
+    invoice_number: str
+    sale_count: int  # invoice numbers are not unique — one number can cover several sales
+
+
 class SalesLogExceptionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

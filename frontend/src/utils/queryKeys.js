@@ -93,6 +93,7 @@ export const salesOrderKeys = {
   list: (params) => [...salesOrderKeys.lists(), params],
   detail: (id) => [...salesOrderKeys.all, 'detail', id],
   invoiceNumbers: (ids) => [...salesOrderKeys.all, 'invoice-numbers', ids],
+  invoiceOptions: (search) => [...salesOrderKeys.all, 'invoice-options', search],
 };
 
 export const salesLogExceptionKeys = {

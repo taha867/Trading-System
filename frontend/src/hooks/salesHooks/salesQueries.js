@@ -1,6 +1,12 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { salesOrderKeys, salesLogExceptionKeys } from '@/utils/queryKeys';
-import { listSalesOrders, getSalesOrder, listSalesLogExceptions, getInvoiceNumbers } from '@/services/salesService';
+import {
+  listSalesOrders,
+  getSalesOrder,
+  listSalesLogExceptions,
+  getInvoiceNumbers,
+  listInvoiceOptions,
+} from '@/services/salesService';
 
 // keepPreviousData: typing in a filter keeps the last results on screen while the next set
 // loads, instead of flashing back to the loading state on every change.
@@ -37,5 +43,13 @@ export function useInvoiceNumbers(ids) {
     queryFn: () => getInvoiceNumbers(sortedIds),
     enabled: sortedIds.length > 0,
     select: (rows) => Object.fromEntries(rows.map((row) => [row.id, row.invoice_number])),
+  });
+}
+
+export function useInvoiceOptions(search) {
+  return useQuery({
+    queryKey: salesOrderKeys.invoiceOptions(search),
+    queryFn: () => listInvoiceOptions(search),
+    placeholderData: keepPreviousData,
   });
 }

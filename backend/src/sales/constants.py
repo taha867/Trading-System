@@ -6,3 +6,5 @@ from typing import Literal
 SalesLogExceptionKind = Literal["cancelled_invoice", "bulk_mixed_models", "blank_model", "correction", "discount"]
 
 MAX_INVOICE_NUMBER_LOOKUP_IDS = 500  # matches PaginationParams' page_size ceiling — one statement page can't exceed it
+
+MAX_INVOICE_OPTIONS = 30  # how many invoice numbers the Sales Orders dropdown lists at once (search narrows it)
