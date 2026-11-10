@@ -149,7 +149,8 @@ def _revenue_by_item_subquery(start_date: date, end_date: date):
         select(
             SalesOrderLine.item_id.label("item_id"),
             func.sum(SalesOrderLine.qty).label("qty_sold"),
-            func.sum(SalesOrderLine.qty * SalesOrderLine.rate_pkr).label("revenue_pkr"),
+            # Per-line rounding, like the stored line amounts and the ledger debit (see sales.service list totals).
+            func.sum(func.round(SalesOrderLine.qty * SalesOrderLine.rate_pkr, 2)).label("revenue_pkr"),
         )
         .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
         .where(SalesOrder.order_date >= start_date, SalesOrder.order_date <= end_date)
@@ -162,16 +163,24 @@ def _cost_by_item_subquery(start_date: date, end_date: date):
     """Per-item FIFO cost of goods for sales dated in [start_date, end_date], from the unit cost snapshotted
     on each SalesOrderLineLot at sale time. Kept a separate aggregate from revenue on purpose: joining the lot
     rows into the revenue query would multiply qty * rate_pkr by the number of lots a line drew from."""
-    return (
+    # A line's cost is rounded once per LINE (SalesOrderLineRead.cost_pkr), so aggregate per line first,
+    # then sum those rounded line costs per item.
+    per_line = (
         select(
+            SalesOrderLine.id.label("line_id"),
             SalesOrderLine.item_id.label("item_id"),
-            func.sum(SalesOrderLineLot.qty_consumed * SalesOrderLineLot.unit_cost_pkr).label("cost_pkr"),
+            func.round(func.sum(SalesOrderLineLot.qty_consumed * SalesOrderLineLot.unit_cost_pkr), 2).label("cost"),
         )
         .select_from(SalesOrderLineLot)
         .join(SalesOrderLine, SalesOrderLine.id == SalesOrderLineLot.sales_order_line_id)
         .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
         .where(SalesOrder.order_date >= start_date, SalesOrder.order_date <= end_date)
-        .group_by(SalesOrderLine.item_id)
+        .group_by(SalesOrderLine.id, SalesOrderLine.item_id)
+        .subquery()
+    )
+    return (
+        select(per_line.c.item_id.label("item_id"), func.sum(per_line.c.cost).label("cost_pkr"))
+        .group_by(per_line.c.item_id)
         .subquery()
     )
 

@@ -20,6 +20,7 @@ from src.purchasing.schemas import (
     ExchangeRateUpdate,
     InvoiceNumberRead,
     InvoiceOptionRead,
+    LogExceptionInvoiceOptionRead,
     PurchaseLogExceptionListRead,
     PurchaseOrderCreate,
     PurchaseOrderDetailRead,
@@ -112,6 +113,23 @@ async def get_purchase_order(
     return await service.get_purchase_order_detail(db, po)
 
 
+@purchase_log_exception_router.get("/invoice-options", response_model=list[LogExceptionInvoiceOptionRead])
+async def list_log_exception_invoice_options(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    search: str | None = None,
+):
+    return await service.list_log_exception_invoice_options(db, search)
+
+
+@purchase_log_exception_router.get("/categories", response_model=list[str])
+async def list_log_exception_categories(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+):
+    return await service.list_log_exception_categories(db)
+
+
 @purchase_log_exception_router.get("", response_model=PurchaseLogExceptionListRead)
 async def list_purchase_log_exceptions(
     pagination: Annotated[PaginationParams, Depends()],
@@ -121,10 +139,20 @@ async def list_purchase_log_exceptions(
     party_id: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    invoice_number: str | None = None,
+    category: str | None = None,
     sort: SortDirection = "newest",
 ):
     return await service.list_purchase_log_exceptions(
-        db, pagination, search=search, party_id=party_id, date_from=date_from, date_to=date_to, sort=sort
+        db,
+        pagination,
+        search=search,
+        party_id=party_id,
+        date_from=date_from,
+        date_to=date_to,
+        invoice_number=invoice_number,
+        category=category,
+        sort=sort,
     )
 
 

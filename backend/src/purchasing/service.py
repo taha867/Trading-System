@@ -27,6 +27,7 @@ from src.purchasing.models import ExchangeRate, PurchaseLogException, PurchaseOr
 from src.purchasing.schemas import (
     InvoiceNumberRead,
     InvoiceOptionRead,
+    LogExceptionInvoiceOptionRead,
     PurchaseLogExceptionListRead,
     PurchaseOrderCreate,
     PurchaseOrderDetailRead,
@@ -219,11 +220,14 @@ async def list_purchase_orders(
     # Same filters, no offset/limit — the totals have to cover every matching order, not just the
     # page being rendered. One aggregate over the lines (never joined to anything else, so a line
     # can't be counted twice): PKR is every line, RMB is only the lines that were priced in RMB.
+    # Rounded PER LINE (numeric round() is half away from zero == ROUND_HALF_UP for these positive
+    # amounts), exactly as PurchaseOrderLineRead.amount_pkr/amount_rmb and the ledger credit do, so a
+    # total can never differ by a cent from the sum of the rows you can see.
     total_pkr, total_rmb = (
         await db.execute(
             select(
-                func.coalesce(func.sum(PurchaseOrderLine.qty * PurchaseOrderLine.rate_pkr), 0),
-                func.coalesce(func.sum(PurchaseOrderLine.qty * PurchaseOrderLine.rate_rmb), 0),
+                func.coalesce(func.sum(func.round(PurchaseOrderLine.qty * PurchaseOrderLine.rate_pkr, 2)), 0),
+                func.coalesce(func.sum(func.round(PurchaseOrderLine.qty * PurchaseOrderLine.rate_rmb, 2)), 0),
             )
             .select_from(PurchaseOrderLine)
             .join(PurchaseOrder, PurchaseOrder.id == PurchaseOrderLine.purchase_order_id)
@@ -329,6 +333,37 @@ async def list_invoice_options(db: AsyncSession, search: str | None = None) -> l
     return [InvoiceOptionRead(invoice_number=number, order_count=count) for number, count in rows]
 
 
+async def list_log_exception_invoice_options(db: AsyncSession, search: str | None = None) -> list[LogExceptionInvoiceOptionRead]:
+    """Distinct supplier invoice numbers among the "Other entries", most recently used first, narrowed by
+    what the user types. Feeds the Other entries tab's invoice dropdown."""
+    stmt = select(PurchaseLogException.invoice_number, func.count(PurchaseLogException.id)).where(
+        PurchaseLogException.invoice_number.is_not(None), PurchaseLogException.invoice_number != ""
+    )
+    if search is not None and search.strip():
+        stmt = stmt.where(PurchaseLogException.invoice_number.ilike(f"%{escape_like(search.strip())}%", escape="\\"))
+    rows = (
+        await db.execute(
+            stmt.group_by(PurchaseLogException.invoice_number)
+            .order_by(func.max(PurchaseLogException.entry_date).desc(), PurchaseLogException.invoice_number)
+            .limit(MAX_INVOICE_OPTIONS)
+        )
+    ).all()
+    return [LogExceptionInvoiceOptionRead(invoice_number=number, entry_count=count) for number, count in rows]
+
+
+async def list_log_exception_categories(db: AsyncSession) -> list[str]:
+    """The distinct category names the "Other entries" carry (the day book's own words, e.g. "TPU", "Borderless")."""
+    # One entry per case-insensitive spelling (the first alphabetically is the one shown); the filter above
+    # matches all spellings of it.
+    rows = await db.scalars(
+        select(func.min(PurchaseLogException.category_name))
+        .where(PurchaseLogException.category_name.is_not(None), PurchaseLogException.category_name != "")
+        .group_by(func.lower(PurchaseLogException.category_name))
+        .order_by(func.lower(PurchaseLogException.category_name))
+    )
+    return list(rows.all())
+
+
 async def list_purchase_log_exceptions(
     db: AsyncSession,
     pagination: PaginationParams,
@@ -337,12 +372,20 @@ async def list_purchase_log_exceptions(
     party_id: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    invoice_number: str | None = None,
+    category: str | None = None,
     sort: SortDirection = "newest",
 ) -> PurchaseLogExceptionListRead:
     _validate_date_range(date_from, date_to)
     offset = (pagination.page - 1) * pagination.page_size
 
     filters = []
+    if invoice_number is not None and invoice_number.strip():
+        # Exact match — what the invoice dropdown sends once one is picked.
+        filters.append(PurchaseLogException.invoice_number == invoice_number.strip())
+    if category is not None and category.strip():
+        # Case-insensitive: the day book spells the same category differently ("TPU"/"Tpu", "OG Finger Print"/"OG FINGER PRINT").
+        filters.append(func.lower(PurchaseLogException.category_name) == category.strip().lower())
     if party_id is not None:
         filters.append(PurchaseLogException.party_id == party_id)
     if date_from is not None:

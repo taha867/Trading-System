@@ -1,5 +1,7 @@
 # Multi-User Analysis How Login Works Today and How to Make It Multi-User
 
+> **Addendum (2026-11-10):** the sales and purchase search, detail and "Other entries" endpoints added since this was written are open to every logged-in user, and the detail pages show cost and margin. Any per-role restriction designed here must cover them. The Neon connection string was exposed in a tracked script and in a chat transcript: rotate the password.
+
 Written 2026-10-07. This file answers three questions in plain words:
 
 1. Does the app have hardcoded credentials?

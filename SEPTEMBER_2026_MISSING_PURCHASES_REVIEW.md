@@ -1,5 +1,7 @@
 # September 2026 — Missing Local Purchases (review before anything is entered)
 
+> **Status (2026-11-10): applied.** The "Nothing has been written to production" line below was true when written; the Stage 3 import has since been applied (56 purchases). The invoice-number column in the tables shows carry-down values that were later cleared on 21 POs. See `PRODUCTION_CHANGES_LOG.md`.
+
 Prepared 2026-11-04 from `Daily Cash Book (Sept 2026).xlsx` (Local Purchase sheet) compared with the production database, read-only. **Nothing has been written to production.**
 
 ## 1. What is missing

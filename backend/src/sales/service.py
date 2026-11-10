@@ -22,6 +22,7 @@ from src.sales.models import SalesLogException, SalesOrder, SalesOrderLine, Sale
 from src.sales.schemas import (
     InvoiceNumberRead,
     InvoiceOptionRead,
+    LogExceptionInvoiceOptionRead,
     SalesLogExceptionKindTotalRead,
     SalesLogExceptionListRead,
     SalesOrderCreate,
@@ -229,19 +230,26 @@ async def list_sales_orders(
     # Same filters, no offset/limit — "total sales" has to cover every matching sale, not just the
     # page being rendered. Revenue and cost are SEPARATE aggregates on purpose: joining the lot rows
     # into the revenue query would multiply qty * rate_pkr by the number of lots a line drew from.
+    #
+    # Both round PER LINE (Postgres numeric round() is half away from zero == ROUND_HALF_UP for these
+    # positive amounts), exactly as SalesOrderLineRead.amount_pkr/cost_pkr and the ledger debit do, so
+    # a total can never differ by a cent from the sum of the rows you can see.
     sales_total = await db.scalar(
-        select(func.coalesce(func.sum(SalesOrderLine.qty * SalesOrderLine.rate_pkr), 0))
+        select(func.coalesce(func.sum(func.round(SalesOrderLine.qty * SalesOrderLine.rate_pkr, 2)), 0))
         .select_from(SalesOrderLine)
         .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
         .where(*clauses)
     )
-    cost_total = await db.scalar(
-        select(func.coalesce(func.sum(SalesOrderLineLot.qty_consumed * SalesOrderLineLot.unit_cost_pkr), 0))
+    cost_per_line = (
+        select(func.round(func.sum(SalesOrderLineLot.qty_consumed * SalesOrderLineLot.unit_cost_pkr), 2).label("cost"))
         .select_from(SalesOrderLineLot)
         .join(SalesOrderLine, SalesOrderLine.id == SalesOrderLineLot.sales_order_line_id)
         .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
         .where(*clauses)
+        .group_by(SalesOrderLine.id)
+        .subquery()
     )
+    cost_total = await db.scalar(select(func.coalesce(func.sum(cost_per_line.c.cost), 0)))
 
     result = await db.execute(
         select(SalesOrder)
@@ -350,6 +358,37 @@ async def list_invoice_options(db: AsyncSession, search: str | None = None) -> l
     ]
 
 
+async def list_log_exception_invoice_options(db: AsyncSession, search: str | None = None) -> list[LogExceptionInvoiceOptionRead]:
+    """Distinct invoice numbers among the "Other entries" (any kind), most recently used first, narrowed by
+    what the user types. Feeds the Other entries tab's invoice dropdown; capped like the Invoices tab's."""
+    stmt = select(SalesLogException.invoice_number, func.count(SalesLogException.id)).where(
+        SalesLogException.invoice_number.is_not(None), SalesLogException.invoice_number != ""
+    )
+    if search is not None and search.strip():
+        stmt = stmt.where(SalesLogException.invoice_number.ilike(f"%{escape_like(search.strip())}%", escape="\\"))
+    rows = (
+        await db.execute(
+            stmt.group_by(SalesLogException.invoice_number)
+            .order_by(func.max(SalesLogException.entry_date).desc(), SalesLogException.invoice_number)
+            .limit(MAX_INVOICE_OPTIONS)
+        )
+    ).all()
+    return [LogExceptionInvoiceOptionRead(invoice_number=number, entry_count=count) for number, count in rows]
+
+
+async def list_log_exception_categories(db: AsyncSession) -> list[str]:
+    """The distinct category names the "Other entries" carry (the day book's own words, e.g. "OG", "Dust Plug")."""
+    # One entry per case-insensitive spelling (the first alphabetically is the one shown); the filter above
+    # matches all spellings of it.
+    rows = await db.scalars(
+        select(func.min(SalesLogException.category_name))
+        .where(SalesLogException.category_name.is_not(None), SalesLogException.category_name != "")
+        .group_by(func.lower(SalesLogException.category_name))
+        .order_by(func.lower(SalesLogException.category_name))
+    )
+    return list(rows.all())
+
+
 async def list_sales_log_exceptions(
     db: AsyncSession,
     pagination: PaginationParams,
@@ -359,12 +398,20 @@ async def list_sales_log_exceptions(
     party_id: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    invoice_number: str | None = None,
+    category: str | None = None,
     sort: SortDirection = "newest",
 ) -> SalesLogExceptionListRead:
     _validate_date_range(date_from, date_to)
     offset = (pagination.page - 1) * pagination.page_size
 
     filters = []
+    if invoice_number is not None and invoice_number.strip():
+        # Exact match — what the invoice dropdown sends once one is picked.
+        filters.append(SalesLogException.invoice_number == invoice_number.strip())
+    if category is not None and category.strip():
+        # Case-insensitive: the day book spells the same category differently ("TPU"/"Tpu", "OG Finger Print"/"OG FINGER PRINT").
+        filters.append(func.lower(SalesLogException.category_name) == category.strip().lower())
     if kind is not None:
         filters.append(SalesLogException.kind == kind)
     if party_id is not None:

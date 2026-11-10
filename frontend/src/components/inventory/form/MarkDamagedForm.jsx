@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/custom';
 import { buildStockDamageSchema } from '@/validations/inventorySchemas';
 import { useMarkStockLotDamaged } from '@/hooks/inventoryHooks/inventoryMutations';
+import { todayIso } from '@/utils/dateUtils';
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function MarkDamagedForm({ lot, onSuccess }) {
   const schema = buildStockDamageSchema(lot);

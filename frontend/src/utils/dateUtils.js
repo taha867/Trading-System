@@ -43,3 +43,11 @@ export function formatDateTime(isoString) {
   if (!isoString) return '—';
   return new Date(isoString).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 }
+
+// Today as "YYYY-MM-DD" in the browser's LOCAL time — the default for every date field. Not
+// `new Date().toISOString().slice(0, 10)`, which is UTC and gives yesterday's date between midnight
+// and 5 am in Pakistan.
+export function todayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}

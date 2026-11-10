@@ -142,6 +142,9 @@ async def main(apply: bool, rehearse: bool) -> None:
         if len(plan) != EXPECTED_ROWS or total != EXPECTED_AMOUNT:
             raise BackfillError(f"Expected {EXPECTED_ROWS} rows / Rs {EXPECTED_AMOUNT:,.0f}, found {len(plan)} / Rs {total:,.0f}")
         print("Plan matches the approved numbers exactly.")
+        # Stored verbatim from the sheet; the Category filter matches case-insensitively, but differing
+        # spellings would show as separate options, so list them for a last look before --apply.
+        print("category spellings that will be stored:", sorted({str(r.category) for _, r in plan}))
 
         table_exists = await db.scalar(text("select to_regclass('purchase_log_exception') is not null"))
         if not table_exists:

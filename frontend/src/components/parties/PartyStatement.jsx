@@ -21,10 +21,12 @@ export function PartyStatement({ statement }) {
 
   // The statement only knows a sale by id; fetch the invoice numbers for the sales on it in one
   // batched call (a sales-owned endpoint — the parties domain never imports sales).
-  const saleIds = entries.filter((e) => e.reference_type === 'sales_order').map((e) => e.reference_id);
+  // De-duplicated and capped at the backend's lookup limit (500) so a very long statement can't build an oversized URL.
+  const idsOf = (type) => [...new Set(entries.filter((e) => e.reference_type === type).map((e) => e.reference_id))].slice(0, 500);
+  const saleIds = idsOf('sales_order');
   const { data: invoiceNumberBySaleId } = useInvoiceNumbers(saleIds);
   // Same for a vendor's purchase orders (a purchasing-owned endpoint, for the same reason).
-  const purchaseIds = entries.filter((e) => e.reference_type === 'purchase_order').map((e) => e.reference_id);
+  const purchaseIds = idsOf('purchase_order');
   const { data: invoiceNumberByPurchaseId } = usePurchaseInvoiceNumbers(purchaseIds);
 
   return (

@@ -15,7 +15,8 @@ import { useCustomerParties } from '@/hooks/partyHooks/partyQueries';
 import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
 import { monthBounds, formatDateTime } from '@/utils/dateUtils';
 import { salesInvoiceOptionLabel } from '@/utils/invoiceOptionLabels';
-import { SELECT_ALL_VALUE, SORT_OPTIONS, DEFAULT_SORT } from '@/utils/constants';
+import { SELECT_ALL_VALUE, SORT_OPTIONS, SORT_VALUES, DEFAULT_SORT } from '@/utils/constants';
+import { cn } from '@/lib/utils';
 
 const DEFAULT_PAGE_SIZE = 20;
 const FILTER_KEYS = ['invoice', 'party', 'month', 'item'];
@@ -30,16 +31,16 @@ export function SalesOrderList() {
   const filters = useSearchParamFilters();
   const { customers } = useCustomerParties();
 
-  const party = filters.get('party');
-  const month = filters.get('month');
-  const item = filters.get('item');
+  const party = filters.getId('party');
+  const month = filters.getMonth();
+  const item = filters.getId('item');
   const invoice = filters.get('invoice');
-  const sort = filters.get('sort');  // a display choice, not a filter: not in FILTER_KEYS, so Clear filters keeps it
+  const sort = filters.getOneOf('sort', SORT_VALUES);  // a display choice, not a filter: not in FILTER_KEYS, so Clear filters keeps it
   const bounds = monthBounds(month);
   const hasActiveFilter = Boolean(invoice || party || month || item);
 
   // buildQueryString (the service) drops undefined/empty values, so unset filters never reach the URL.
-  const { data, isLoading, isError } = useSalesOrders({
+  const { data, isLoading, isError, isFetching } = useSalesOrders({
     page: filters.page,
     page_size: DEFAULT_PAGE_SIZE,
     invoice_number: invoice || undefined,
@@ -54,6 +55,8 @@ export function SalesOrderList() {
     { value: SELECT_ALL_VALUE, label: 'All customers' },
     ...customers.map((c) => ({ value: String(c.id), label: c.name })),
   ];
+
+  const dim = cn('transition-opacity', isFetching && !isLoading && 'opacity-60');  // old rows stay visible, dimmed, while the next set loads
 
   const orders = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -95,7 +98,7 @@ export function SalesOrderList() {
 
       <CardContent className="flex flex-col gap-4">
         {!isLoading && !isError && data && (
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3">
+          <div className={cn('flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3', dim)}>
             <CurrencyAmount value={data.total_sales_pkr} className="text-2xl font-semibold text-foreground" />
             <span className="text-sm text-muted-foreground">
               in sales{hasActiveFilter ? ' matching the filters below' : ' across every sale'} · {total}{' '}
@@ -189,7 +192,7 @@ export function SalesOrderList() {
         )}
 
         {/* sm and up: table */}
-        <div className="hidden overflow-x-auto rounded-lg border sm:block">
+        <div className={cn('hidden overflow-x-auto rounded-lg border sm:block', dim)}>
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
@@ -263,7 +266,7 @@ export function SalesOrderList() {
         </div>
 
         {/* below sm: one card per sale, invoice number / customer / date / total first (CLAUDE.md §3.7) */}
-        <div className="flex flex-col gap-2 sm:hidden">
+        <div className={cn('flex flex-col gap-2 sm:hidden', dim)}>
           {isLoading && (
             <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
               <Loader2 className="size-5 animate-spin" />

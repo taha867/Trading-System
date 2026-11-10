@@ -1,9 +1,13 @@
 from typing import Literal
 
-# Matches the values scripts/import_daybook_sept2026_* write to SalesLogException.kind
+# Matches EVERY value scripts/import_daybook_sept2026_* write to SalesLogException.kind
 # (a plain str column, same convention as PurchaseOrderStatus / StockMovementType — the
-# Literal is enforced only at the Pydantic layer).
-SalesLogExceptionKind = Literal["cancelled_invoice", "bulk_mixed_models", "blank_model", "correction", "discount"]
+# Literal is enforced only at the Pydantic layer, so a kind missing here can't be filtered on).
+# "insufficient_stock" is a sale line for a real item that had no stock recorded at the time: the
+# money is posted to the customer, but no stock was taken out (the largest group by far).
+SalesLogExceptionKind = Literal[
+    "cancelled_invoice", "bulk_mixed_models", "blank_model", "correction", "discount", "insufficient_stock"
+]
 
 MAX_INVOICE_NUMBER_LOOKUP_IDS = 500  # matches PaginationParams' page_size ceiling — one statement page can't exceed it
 

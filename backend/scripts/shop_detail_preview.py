@@ -39,10 +39,9 @@ from shop_detail_resolve import (
 OUT_CSV = os.environ.get("SHOP_DETAIL_OUT_CSV", "/tmp/shop_detail_preview.csv")
 CATALOG_JSON = os.environ.get("SHOP_DETAIL_CATALOG_JSON")
 
-PROD_DSN = (
-    "postgresql://neondb_owner:npg_EB7tMT1PWRfb@"
-    "ep-hidden-fog-azzrinlv.c-3.ap-southeast-1.aws.neon.tech/neondb"
-)
+# Never hard-code a connection string here: this file is committed. Pass the production DSN in the
+# environment (PROD_DSN=postgresql://user:password@host/db) when running the preview.
+PROD_DSN = os.environ.get("PROD_DSN")
 
 
 def should_skip_row(first_cell) -> bool:

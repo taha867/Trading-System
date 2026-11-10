@@ -14,10 +14,12 @@ import { usePurchaseOrders, usePurchaseInvoiceOptions } from '@/hooks/purchasing
 import { useVendorParties } from '@/hooks/partyHooks/partyQueries';
 import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
 import { monthBounds, formatDateTime } from '@/utils/dateUtils';
+import { cn } from '@/lib/utils';
 import { purchaseInvoiceOptionLabel } from '@/utils/invoiceOptionLabels';
 import {
   SELECT_ALL_VALUE,
   SORT_OPTIONS,
+  SORT_VALUES,
   DEFAULT_SORT,
   PURCHASE_ORDER_SOURCE_OPTIONS,
   PURCHASE_ORDER_SOURCE_BADGE_LABEL,
@@ -49,17 +51,17 @@ export function PurchaseOrderList() {
   const { vendors } = useVendorParties();
 
   const invoice = filters.get('invoice');
-  const sort = filters.get('sort');  // a display choice, not a filter: not in FILTER_KEYS, so Clear filters keeps it
-  const vendor = filters.get('vendor');
-  const source = filters.get('source');
-  const status = filters.get('status');
-  const month = filters.get('month');
-  const item = filters.get('item');
+  const sort = filters.getOneOf('sort', SORT_VALUES);  // a display choice, not a filter: not in FILTER_KEYS, so Clear filters keeps it
+  const vendor = filters.getId('vendor');
+  const source = filters.getOneOf('source', PURCHASE_ORDER_SOURCE_OPTIONS.map((o) => o.value));
+  const status = filters.getOneOf('status', PURCHASE_ORDER_STATUS_OPTIONS.map((o) => o.value));
+  const month = filters.getMonth();
+  const item = filters.getId('item');
   const bounds = monthBounds(month);
   const hasActiveFilter = Boolean(invoice || vendor || source || status || month || item);
 
   // buildQueryString (the service) drops undefined/empty values, so unset filters never reach the URL.
-  const { data, isLoading, isError } = usePurchaseOrders(
+  const { data, isLoading, isError, isFetching } = usePurchaseOrders(
     {
       page: filters.page,
       page_size: DEFAULT_PAGE_SIZE,
@@ -82,6 +84,8 @@ export function PurchaseOrderList() {
   const sourceOptions = [{ value: SELECT_ALL_VALUE, label: 'All sources' }, ...PURCHASE_ORDER_SOURCE_OPTIONS];
   const statusOptions = [{ value: SELECT_ALL_VALUE, label: 'All statuses' }, ...PURCHASE_ORDER_STATUS_OPTIONS];
   const fromAll = (value) => (value === SELECT_ALL_VALUE ? '' : value);
+
+  const dim = cn('transition-opacity', isFetching && !isLoading && 'opacity-60');  // old rows stay visible, dimmed, while the next set loads
 
   const orders = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -113,7 +117,7 @@ export function PurchaseOrderList() {
 
       <CardContent className="flex flex-col gap-4">
         {!isLoading && !isError && data && (
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3">
+          <div className={cn('flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3', dim)}>
             <CurrencyAmount value={data.total_amount_pkr} className="text-2xl font-semibold text-foreground" />
             <span className="text-sm text-muted-foreground">
               purchased{hasActiveFilter ? ' matching the filters below' : ' across every order'} · {total}{' '}
@@ -189,7 +193,7 @@ export function PurchaseOrderList() {
         )}
 
         {/* sm and up: table */}
-        <div className="hidden overflow-x-auto rounded-lg border sm:block">
+        <div className={cn('hidden overflow-x-auto rounded-lg border sm:block', dim)}>
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
@@ -241,7 +245,17 @@ export function PurchaseOrderList() {
                   onClick={() => navigate(`/purchase-orders/${order.id}`)}
                 >
                   <TableCell className="font-medium text-foreground">{order.invoice_number || '—'}</TableCell>
-                  <TableCell className="font-medium text-primary">#{order.id}</TableCell>
+                  <TableCell>
+                    {/* A real link, so the order opens by keyboard, middle-click and "open in new tab";
+                        stopPropagation keeps the row's own click from navigating a second time. */}
+                    <Link
+                      to={`/purchase-orders/${order.id}`}
+                      className="font-medium text-primary hover:underline"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      #{order.id}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     {/* stopPropagation: the row itself opens the order; the vendor name opens the vendor. */}
                     <Link
@@ -271,7 +285,7 @@ export function PurchaseOrderList() {
         </div>
 
         {/* below sm: one card per order, invoice number / vendor / date / total first (CLAUDE.md §3.7) */}
-        <div className="flex flex-col gap-2 sm:hidden">
+        <div className={cn('flex flex-col gap-2 sm:hidden', dim)}>
           {isLoading && (
             <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
               <Loader2 className="size-5 animate-spin" />

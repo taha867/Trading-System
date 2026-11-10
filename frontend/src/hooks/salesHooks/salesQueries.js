@@ -6,6 +6,8 @@ import {
   listSalesLogExceptions,
   getInvoiceNumbers,
   listInvoiceOptions,
+  listSalesLogExceptionInvoiceOptions,
+  listSalesLogExceptionCategories,
 } from '@/services/salesService';
 
 // keepPreviousData: typing in a filter keeps the last results on screen while the next set
@@ -52,4 +54,16 @@ export function useInvoiceOptions(search) {
     queryFn: () => listInvoiceOptions(search),
     placeholderData: keepPreviousData,
   });
+}
+
+export function useSalesLogExceptionInvoiceOptions(search) {
+  return useQuery({
+    queryKey: salesLogExceptionKeys.invoiceOptions(search),
+    queryFn: () => listSalesLogExceptionInvoiceOptions(search),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useSalesLogExceptionCategories() {
+  return useQuery({ queryKey: salesLogExceptionKeys.categories(), queryFn: listSalesLogExceptionCategories });
 }

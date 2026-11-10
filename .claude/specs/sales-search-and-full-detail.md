@@ -1,5 +1,7 @@
 # Sales Search, Filters & Full Detail — Spec (Backend + Frontend)
 
+> **Status update (2026-11-10): built, and extended.** Added since this spec: exact invoice dropdown, cancelled-invoices panel, sort by date, the same filters on the Other entries tab, and the `insufficient_stock` kind. The purchase side was ported (`PurchaseLogException`).
+
 Governed by `PLAN.md` (what) and `CLAUDE.md` (how). This extends the Phase 4 sales screens (`phase-4-backend.md`, `phase-4-frontend.md`) and the September 2026 day-book import work. It has two goals:
 
 1. **Find sales:** search by invoice number, filter by month or date range, customer and item, with a total for whatever you filtered.

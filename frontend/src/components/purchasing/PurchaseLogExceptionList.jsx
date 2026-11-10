@@ -9,31 +9,45 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { FormSelect } from '@/components/custom';
-import { usePurchaseLogExceptions } from '@/hooks/purchasingHooks/purchasingQueries';
+import { InvoiceCombobox } from '@/components/common/InvoiceCombobox';
+import {
+  usePurchaseLogExceptions,
+  usePurchaseLogExceptionInvoiceOptions,
+  usePurchaseLogExceptionCategories,
+} from '@/hooks/purchasingHooks/purchasingQueries';
 import { useVendorParties } from '@/hooks/partyHooks/partyQueries';
 import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
 import { monthBounds, formatDateTime } from '@/utils/dateUtils';
-import { SELECT_ALL_VALUE, SORT_OPTIONS, DEFAULT_SORT } from '@/utils/constants';
+import { logExceptionInvoiceOptionLabel } from '@/utils/invoiceOptionLabels';
+import { SELECT_ALL_VALUE, SORT_OPTIONS, SORT_VALUES, DEFAULT_SORT, PURCHASE_LOG_EXCEPTION_KIND_LABELS } from '@/utils/constants';
+import { cn } from '@/lib/utils';
 
 const DEFAULT_PAGE_SIZE = 20;
-const FILTER_KEYS = ['search', 'party', 'month'];
-const COLUMN_COUNT = 10;
+const FILTER_KEYS = ['search', 'invoice', 'party', 'category', 'month'];
+const COLUMN_COUNT = 11;
+
+const kindLabel = (kind) => PURCHASE_LOG_EXCEPTION_KIND_LABELS[kind] ?? kind;
 
 export function PurchaseLogExceptionList() {
   const filters = useSearchParamFilters();
   const { vendors } = useVendorParties();
+  const { data: categories } = usePurchaseLogExceptionCategories();
 
-  const party = filters.get('party');
-  const sort = filters.get('sort');  // a display choice, not a filter: not in FILTER_KEYS
-  const month = filters.get('month');
+  const party = filters.getId('party');
+  const sort = filters.getOneOf('sort', SORT_VALUES);  // a display choice, not a filter: not in FILTER_KEYS
+  const month = filters.getMonth();
   const search = filters.get('search');
+  const invoice = filters.get('invoice');
+  const category = filters.get('category');
   const bounds = monthBounds(month);
-  const hasActiveFilter = Boolean(search || party || month);
+  const hasActiveFilter = Boolean(search || invoice || party || category || month);
 
-  const { data, isLoading, isError } = usePurchaseLogExceptions({
+  const { data, isLoading, isError, isFetching } = usePurchaseLogExceptions({
     page: filters.page,
     page_size: DEFAULT_PAGE_SIZE,
     search: search || undefined,
+    invoice_number: invoice || undefined,
+    category: category || undefined,
     party_id: party || undefined,
     date_from: bounds?.from,
     date_to: bounds?.to,
@@ -44,6 +58,13 @@ export function PurchaseLogExceptionList() {
     { value: SELECT_ALL_VALUE, label: 'All vendors' },
     ...vendors.map((v) => ({ value: String(v.id), label: v.name })),
   ];
+
+  const categoryOptions = [
+    { value: SELECT_ALL_VALUE, label: 'All categories' },
+    ...(categories ?? []).map((name) => ({ value: name, label: name })),
+  ];
+
+  const dim = cn('transition-opacity', isFetching && !isLoading && 'opacity-60');  // old rows stay visible, dimmed, while the next set loads
 
   const entries = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -67,7 +88,7 @@ export function PurchaseLogExceptionList() {
 
       <CardContent className="flex flex-col gap-4">
         {!isLoading && !isError && data && (
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3">
+          <div className={cn('flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3', dim)}>
             <CurrencyAmount value={data.total_amount_pkr} className="text-2xl font-semibold text-foreground" />
             <span className="text-sm text-muted-foreground">
               owed to suppliers{hasActiveFilter ? ' matching the filters below' : ' across every entry'} · {total}{' '}
@@ -77,16 +98,12 @@ export function PurchaseLogExceptionList() {
         )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="purchase_exceptions_search">Invoice no. or note</Label>
-            <Input
-              id="purchase_exceptions_search"
-              type="search"
-              placeholder="e.g. 444"
-              value={filters.searchInput}
-              onChange={(event) => filters.handleSearchChange(event.target.value)}
-            />
-          </div>
+          <InvoiceCombobox
+            value={invoice}
+            onChange={(value) => filters.setFilters({ invoice: value })}
+            useOptions={usePurchaseLogExceptionInvoiceOptions}
+            optionLabel={logExceptionInvoiceOptionLabel}
+          />
           <FormSelect
             name="purchase_exceptions_vendor_filter"
             label="Vendor"
@@ -101,6 +118,23 @@ export function PurchaseLogExceptionList() {
               type="month"
               value={month}
               onChange={(event) => filters.setFilters({ month: event.target.value })}
+            />
+          </div>
+          <FormSelect
+            name="purchase_exceptions_category_filter"
+            label="Category"
+            options={categoryOptions}
+            value={category || SELECT_ALL_VALUE}
+            onChange={(value) => filters.setFilters({ category: value === SELECT_ALL_VALUE ? '' : value })}
+          />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="purchase_exceptions_search">Search note</Label>
+            <Input
+              id="purchase_exceptions_search"
+              type="search"
+              placeholder="e.g. day-book row"
+              value={filters.searchInput}
+              onChange={(event) => filters.handleSearchChange(event.target.value)}
             />
           </div>
           <FormSelect
@@ -119,11 +153,13 @@ export function PurchaseLogExceptionList() {
           </Button>
         )}
 
-        <div className="overflow-x-auto rounded-lg border">
+        {/* sm and up: table */}
+        <div className={cn('hidden overflow-x-auto rounded-lg border sm:block', dim)}>
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead>Date</TableHead>
+                <TableHead>Kind</TableHead>
                 <TableHead>Invoice no.</TableHead>
                 <TableHead>Vendor</TableHead>
                 <TableHead>Category</TableHead>
@@ -166,6 +202,9 @@ export function PurchaseLogExceptionList() {
               {entries.map((entry) => (
                 <TableRow key={entry.id} className="hover:bg-muted/40">
                   <TableCell>{entry.entry_date}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{kindLabel(entry.kind)}</Badge>
+                  </TableCell>
                   <TableCell>{entry.invoice_number || '—'}</TableCell>
                   <TableCell>
                     <Link to={`/parties/${entry.party_id}`} className="hover:underline">
@@ -193,6 +232,49 @@ export function PurchaseLogExceptionList() {
               ))}
             </TableBody>
           </Table>
+        </div>
+
+        {/* below sm: one card per entry, amount / vendor / date first (CLAUDE.md §3.7) */}
+        <div className={cn('flex flex-col gap-2 sm:hidden', dim)}>
+          {isLoading && (
+            <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
+              <Loader2 className="size-5 animate-spin" />
+              Loading…
+            </div>
+          )}
+          {isError && <div className="flex h-32 items-center justify-center text-destructive">Failed to load.</div>}
+          {!isLoading && !isError && entries.length === 0 && (
+            <div className="flex h-32 flex-col items-center justify-center gap-2 text-center text-muted-foreground">
+              <Inbox className="size-6 text-muted-foreground/60" />
+              {hasActiveFilter ? 'No entries match these filters.' : 'No other purchase entries.'}
+            </div>
+          )}
+          {entries.map((entry) => (
+            <div key={entry.id} className="rounded-lg border p-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="font-medium text-foreground">
+                  {entry.invoice_number ? `Invoice ${entry.invoice_number}` : kindLabel(entry.kind)}
+                </span>
+                <CurrencyAmount value={entry.amount_pkr} className="font-semibold" />
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {entry.party_name} · {entry.entry_date}
+              </p>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <Badge variant="outline">{kindLabel(entry.kind)}</Badge>
+                {entry.category_name && (
+                  <span>
+                    {entry.category_name}
+                    {entry.qty != null ? ` · ${entry.qty} pcs` : ''}
+                  </span>
+                )}
+                <Badge variant={entry.ledger_posted ? 'secondary' : 'outline'}>
+                  {entry.ledger_posted ? 'Posted' : 'Not posted'}
+                </Badge>
+              </p>
+              {entry.note && <p className="mt-1 text-xs text-muted-foreground">{entry.note}</p>}
+            </div>
+          ))}
         </div>
 
         <PaginationControls page={filters.page} pageSize={DEFAULT_PAGE_SIZE} total={total} onPageChange={filters.setPage} />

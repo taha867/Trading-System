@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/custom';
 import { stockLotReceiveSchema } from '@/validations/inventorySchemas';
 import { useReceiveStockLot } from '@/hooks/inventoryHooks/inventoryMutations';
+import { todayIso } from '@/utils/dateUtils';
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function ReceiveStockLotDialog({ open, onOpenChange, line, itemLabel }) {
   const {

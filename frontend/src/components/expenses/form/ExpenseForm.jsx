@@ -7,8 +7,8 @@ import { useCreateExpense, useUpdateExpense } from '@/hooks/expensesHooks/expens
 import { useExpenseCategories } from '@/hooks/expensesHooks/expensesQueries';
 import { usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
+import { todayIso } from '@/utils/dateUtils';
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 // `expense` present -> edit mode: prefilled from that row, submits go through
 // PATCH /expenses/entries/{id} instead of POST. Same fields either way (see

@@ -1,5 +1,7 @@
 # Monthly Profit & Loss Report — Spec (Backend + Frontend)
 
+> **Status update (2026-11-10): built.** The P&L is implemented (`backend/src/reporting`, `ProfitLossStatement.jsx`) with per-line rounding. By default it excludes sales-log lines of kind `insufficient_stock` (231 rows, ₨540,510), so September revenue is understated until they are replayed or treated as revenue.
+
 Governed by `PLAN.md` (what) and `CLAUDE.md` (how). This is a cross-cutting feature on top of Phase 8 (`phase-8-backend.md`, `phase-8-frontend.md`): it adds a **calendar-month profit & loss statement** (revenue − cost of goods − stock losses − expenses = net profit), which the app does not have today. No new transactional tables are needed. The feature reads data phases 1–7 already write.
 
 Status of this document: **proposal, not built.** Every statement under "Where we stand" was checked against the current code (file and function names given). Anything marked **VERIFY** must be checked against real data or code before implementation starts.

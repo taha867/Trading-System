@@ -184,5 +184,10 @@ class InvoiceOptionRead(BaseModel):
     order_count: int  # one supplier invoice can cover several purchase orders
 
 
+class LogExceptionInvoiceOptionRead(BaseModel):
+    invoice_number: str
+    entry_count: int  # how many "other entries" carry this number
+
+
 class PurchaseLogExceptionListRead(PaginatedResponse[PurchaseLogExceptionRead]):
     total_amount_pkr: Decimal  # across every entry matching the filters, not just this page

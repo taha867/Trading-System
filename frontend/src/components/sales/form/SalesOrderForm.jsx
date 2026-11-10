@@ -11,9 +11,9 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useCustomerParties } from '@/hooks/partyHooks/partyQueries';
 import { useStockLots } from '@/hooks/inventoryHooks/inventoryQueries';
 import { toMoney, computeSaleAmount, formatPKR } from '@/utils/currencyUtils';
+import { todayIso } from '@/utils/dateUtils';
 
 const EMPTY_LINE = { item_id: '', qty: '', rate_pkr: '' };
-const todayIso = () => new Date().toISOString().slice(0, 10);
 const INVOICE_HINT_DEBOUNCE_MS = 300;
 
 export function SalesOrderForm({ onSuccess }) {
@@ -48,11 +48,12 @@ export function SalesOrderForm({ onSuccess }) {
   const partyId = watch('party_id');
   const typedInvoice = useDebouncedValue((watch('invoice_number') ?? '').trim(), INVOICE_HINT_DEBOUNCE_MS);
   const { data: invoiceMatches } = useSalesOrders(
-    { search: typedInvoice, party_id: partyId, page_size: 20 },
+    { invoice_number: typedInvoice, party_id: partyId, page_size: 20 },
     { enabled: Boolean(typedInvoice && partyId) },
   );
-  // The search is "contains"; the hint is only for an exact match.
-  const duplicateOrders = typedInvoice ? (invoiceMatches?.items ?? []).filter((o) => o.invoice_number === typedInvoice) : [];
+  // invoice_number is an EXACT match on the server (the contains-style `search` could push a short number's
+  // match out of the first page), so everything returned is a real duplicate.
+  const duplicateOrders = typedInvoice ? (invoiceMatches?.items ?? []) : [];
 
   const lines = watch('lines') ?? [];
   const rows = fields.map((field, index) => ({ ...field, ...(lines[index] ?? {}) }));

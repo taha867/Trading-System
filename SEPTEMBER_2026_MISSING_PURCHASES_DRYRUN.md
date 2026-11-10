@@ -1,5 +1,7 @@
 # September 2026 — Missing Local Purchases: DRY RUN
 
+> **Status (2026-11-10): applied.** This dry run has since been applied to production. Invoice numbers shown here were the carry-down values; the wrong ones were cleared afterwards. See `PRODUCTION_CHANGES_LOG.md`.
+
 Generated 2026-11-04. **Nothing was written to production.** This shows exactly what the apply step would do with the defaults you chose (OG Glass Protector for rows up to ₨52 and for ₨55–80 rows, Dust Plug for the ₨90 rows, missing models/items created, bulk rows payable only). Companion to `SEPTEMBER_2026_MISSING_PURCHASES_REVIEW.md`.
 
 ## Summary

@@ -15,6 +15,9 @@ export function CargoShipmentDetail({ shipment }) {
   // "which PO does this line belong to" (a CargoAllocation only carries
   // purchase_order_line_id) — the item/model/category label itself comes straight
   // off the line (PurchaseOrderLineRead embeds those, same as CargoAllocationRead).
+  // KNOWN LIMIT: this is the newest 500 purchase orders (the list is newest-first). Fine today (~100 orders);
+  // past 500 the oldest drop out and an old shipment's lines would lose their PO link. Before that, fetch only
+  // the orders these allocations point at (the detail endpoint by id) instead of a fixed page.
   const { data: ordersData } = usePurchaseOrders(LOOKUP_PAGE);
 
   const agentNameById = Object.fromEntries((partiesData?.items ?? []).map((p) => [p.id, p.name]));

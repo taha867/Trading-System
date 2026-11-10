@@ -57,3 +57,16 @@ export async function listPurchaseLogExceptions(params) {
   const { data } = await fetchClient.get(`/purchasing/purchase-log-exceptions${buildQueryString(params)}`);
   return data;
 }
+
+// Supplier invoice numbers among the "Other entries", most recent first; `search` narrows them.
+export async function listPurchaseLogExceptionInvoiceOptions(search) {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  const { data } = await fetchClient.get(`/purchasing/purchase-log-exceptions/invoice-options?${params}`);
+  return data; // [{ invoice_number, entry_count }]
+}
+
+export async function listPurchaseLogExceptionCategories() {
+  const { data } = await fetchClient.get('/purchasing/purchase-log-exceptions/categories');
+  return data; // ['TPU', 'Borderless', ...]
+}

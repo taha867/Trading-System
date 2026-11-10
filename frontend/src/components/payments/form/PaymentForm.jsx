@@ -17,8 +17,8 @@ import {
   PAYMENT_REFERENCE_TYPE_OPTIONS,
 } from '@/utils/constants';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
+import { todayIso } from '@/utils/dateUtils';
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function PaymentForm({ onSuccess }) {
   const [hasReference, setHasReference] = useState(false);
@@ -26,6 +26,8 @@ export function PaymentForm({ onSuccess }) {
   const { data: accountsData } = usePaymentAccounts(LOOKUP_PAGE);
   const { data: partiesData } = useParties(LOOKUP_PAGE);
   const { data: salesOrdersData } = useSalesOrders(LOOKUP_PAGE);
+  // KNOWN LIMIT: the reference picker lists the newest 500 purchase orders (the list is newest-first). Fine today
+  // (~100 orders); past 500 the oldest can't be chosen — narrow it by the selected vendor before then.
   const { data: purchaseOrdersData } = usePurchaseOrders(LOOKUP_PAGE);
 
   const partyNameById = Object.fromEntries((partiesData?.items ?? []).map((p) => [p.id, p.name]));

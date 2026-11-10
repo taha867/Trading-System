@@ -111,6 +111,11 @@ class InvoiceOptionRead(BaseModel):
     cancelled_count: int  # day-book entries (sales_log_exception, kind="cancelled_invoice") with this number
 
 
+class LogExceptionInvoiceOptionRead(BaseModel):
+    invoice_number: str
+    entry_count: int  # how many "other entries" carry this number (a sale and its correction can share one)
+
+
 class SalesLogExceptionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

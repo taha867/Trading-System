@@ -38,3 +38,16 @@ export async function listInvoiceOptions(search) {
   const { data } = await fetchClient.get(`/sales/sales-orders/invoice-options?${params}`);
   return data; // [{ invoice_number, sale_count }]
 }
+
+// Invoice numbers among the "Other entries" (any kind), most recent first; `search` narrows them.
+export async function listSalesLogExceptionInvoiceOptions(search) {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  const { data } = await fetchClient.get(`/sales/sales-log-exceptions/invoice-options?${params}`);
+  return data; // [{ invoice_number, entry_count }]
+}
+
+export async function listSalesLogExceptionCategories() {
+  const { data } = await fetchClient.get('/sales/sales-log-exceptions/categories');
+  return data; // ['OG', 'Dust Plug', ...]
+}

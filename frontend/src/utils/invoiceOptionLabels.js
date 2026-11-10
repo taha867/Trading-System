@@ -12,3 +12,9 @@ export function salesInvoiceOptionLabel({ invoice_number: number, sale_count: sa
 export function purchaseInvoiceOptionLabel({ invoice_number: number, order_count: orders }) {
   return orders > 1 ? `${number} (${orders} orders)` : number;
 }
+
+// "Other entries" lists (day-book lines that aren't real orders): a sale and its correction or discount can
+// share one invoice number, so say how many entries carry it.
+export function logExceptionInvoiceOptionLabel({ invoice_number: number, entry_count: entries }) {
+  return entries > 1 ? `${number} (${entries} entries)` : number;
+}

@@ -8,6 +8,8 @@ import {
   listPurchaseInvoiceOptions,
   getPurchaseInvoiceNumbers,
   listPurchaseLogExceptions,
+  listPurchaseLogExceptionInvoiceOptions,
+  listPurchaseLogExceptionCategories,
 } from '@/services/purchasingService';
 
 export function useExchangeRates(params) {
@@ -79,4 +81,16 @@ export function usePurchaseLogExceptions(params) {
     queryFn: () => listPurchaseLogExceptions(params),
     placeholderData: keepPreviousData,
   });
+}
+
+export function usePurchaseLogExceptionInvoiceOptions(search) {
+  return useQuery({
+    queryKey: purchaseLogExceptionKeys.invoiceOptions(search),
+    queryFn: () => listPurchaseLogExceptionInvoiceOptions(search),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function usePurchaseLogExceptionCategories() {
+  return useQuery({ queryKey: purchaseLogExceptionKeys.categories(), queryFn: listPurchaseLogExceptionCategories });
 }

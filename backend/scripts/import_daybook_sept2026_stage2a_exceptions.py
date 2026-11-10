@@ -1,4 +1,11 @@
-"""Day-book catch-up, Stage 2a: September 2026 Credit Sale rows that cannot become
+"""STATUS: ALREADY APPLIED TO PRODUCTION (October 2026). DO NOT RE-RUN WITH --apply.
+The resume checks below compare invoice numbers that were later corrected in production (the carried-down
+invoice numbers were cleared), so a re-run would no longer recognise what it already wrote and would create
+DUPLICATE purchases, stock lots, sales and ledger entries. `--apply` therefore refuses to run unless
+`--i-understand-this-already-ran-in-production` is also passed. A dry run (no --apply) is still safe.
+See PRODUCTION_CHANGES_LOG.md for what was applied and changed afterwards.
+
+Day-book catch-up, Stage 2a: September 2026 Credit Sale rows that cannot become
 a normal SalesOrder -- cancelled invoices, bulk/mixed-model batches, blank-model
 lines, and price corrections/discounts.
 
@@ -261,5 +268,16 @@ async def main(apply: bool) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument(
+        "--i-understand-this-already-ran-in-production",
+        action="store_true",
+        dest="override_already_ran",
+        help="required with --apply: this import was already applied; re-running it can double-write data",
+    )
     args = parser.parse_args()
+    if args.apply and not args.override_already_ran:
+        raise SystemExit(
+            "Refusing to --apply: this import was already applied to production and a re-run can double-write "
+            "purchases, stock, sales and ledger entries. Read the STATUS note at the top of this file."
+        )
     asyncio.run(main(args.apply))

@@ -10,8 +10,8 @@ import { useDraftPurchaseOrders } from '@/hooks/purchasingHooks/purchasingQuerie
 import { CARGO_COST_BASIS_CODE } from '@/utils/constants';
 import { toMoney, computeCargoAllocation, formatPKR } from '@/utils/currencyUtils';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
+import { todayIso } from '@/utils/dateUtils';
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function CargoShipmentForm({ onSuccess }) {
   const { agents } = useCargoAgentParties();

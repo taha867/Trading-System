@@ -195,7 +195,14 @@ def read_missing_rows(wb) -> list[Row]:
         category, model = raw.get("Category"), raw.get("Model")
         if qty and rate is not None and category and model:
             continue  # a complete row: Stage 2 already entered it
-        rows.append(Row(r, ld, sup or "", str(inv) if inv is not None else None, category, model, dec(qty), dec(rate), sold))
+        # Qty and Rate drive the stock and the payable; never guess them. A blank one is a sheet problem
+        # to fix by hand, not something to import as 0 or None.
+        if qty in (None, "") or rate in (None, ""):
+            raise PlanError(f"Sheet row {r}: Qty or Rate is blank (Qty={qty!r}, Rate={rate!r}) -- fix the sheet row first")
+        row = Row(r, ld, sup or "", str(inv) if inv is not None else None, category, model, dec(qty), dec(rate), sold)
+        if row.amount != dec(amount):
+            raise PlanError(f"Sheet row {r}: Qty x Rate = {row.amount} but the sheet's Amount is {dec(amount)}")
+        rows.append(row)
     return rows
 
 

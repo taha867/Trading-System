@@ -1,0 +1,11 @@
+# Secrets and local environment — never commit these (backend/ and frontend/ have their own rules too)
+.env
+.env.*
+!.env.example
+credentials.md
+*.local
+
+# Editor / OS noise
+.DS_Store
+.vscode/
+.idea/

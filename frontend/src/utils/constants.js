@@ -80,6 +80,12 @@ export const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest first' },
   { value: 'oldest', label: 'Oldest first' },
 ];
+export const SORT_VALUES = SORT_OPTIONS.map((option) => option.value);
+
+// Why a purchase is an "other entry" instead of an order (the backend's PurchaseLogExceptionKind).
+export const PURCHASE_LOG_EXCEPTION_KIND_LABELS = {
+  no_model: 'No model given',
+};
 
 // A purchase order stays "draft" until freight is allocated (china orders), then "allocated", then
 // "received" once every line is in stock — see the backend's PurchaseOrderStatus.
@@ -164,6 +170,7 @@ export const SALES_LOG_EXCEPTION_KIND_LABELS = {
   blank_model: 'No model given',
   correction: 'Price correction',
   discount: 'Discount',
+  insufficient_stock: 'No stock at the time',
 };
 
 export const SALES_LOG_EXCEPTION_KIND_OPTIONS = Object.entries(SALES_LOG_EXCEPTION_KIND_LABELS).map(

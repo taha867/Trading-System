@@ -59,6 +59,8 @@ export const purchaseOrderKeys = {
 
 export const purchaseLogExceptionKeys = {
   all: ['purchaseLogExceptions'],
+  invoiceOptions: (search) => [...purchaseLogExceptionKeys.all, 'invoice-options', search],
+  categories: () => [...purchaseLogExceptionKeys.all, 'categories'],
   lists: () => [...purchaseLogExceptionKeys.all, 'list'],
   list: (params) => [...purchaseLogExceptionKeys.lists(), params],
 };
@@ -106,6 +108,8 @@ export const salesOrderKeys = {
 
 export const salesLogExceptionKeys = {
   all: ['salesLogExceptions'],
+  invoiceOptions: (search) => [...salesLogExceptionKeys.all, 'invoice-options', search],
+  categories: () => [...salesLogExceptionKeys.all, 'categories'],
   lists: () => [...salesLogExceptionKeys.all, 'list'],
   list: (params) => [...salesLogExceptionKeys.lists(), params],
 };

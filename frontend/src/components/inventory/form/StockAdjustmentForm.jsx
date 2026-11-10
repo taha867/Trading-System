@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/custom';
 import { buildStockAdjustmentSchema } from '@/validations/inventorySchemas';
 import { useCreateStockMovement } from '@/hooks/inventoryHooks/inventoryMutations';
+import { todayIso } from '@/utils/dateUtils';
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export function StockAdjustmentForm({ lot, onSuccess }) {
   const schema = buildStockAdjustmentSchema(lot);
