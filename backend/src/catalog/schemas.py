@@ -55,7 +55,7 @@ class ModelUpdate(BaseModel):
 class ItemCreate(BaseModel):
     category_id: int
     model_id: int
-    sku: Annotated[str, Field(max_length=64)]
+    sku: Annotated[str | None, Field(max_length=64)] = None  # empty -> created from category + brand + model + colour
     variant: Annotated[str | None, Field(max_length=64)] = None
     compatible_model_ids: list[int] = []
 

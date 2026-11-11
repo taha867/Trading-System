@@ -116,6 +116,7 @@ export function CrudDrawer({ config, open, mode, row, openedAt, onOpenChange, en
                     {...rhfField}
                     type={inputTypeFor(field.component)}
                     step={field.step}
+                    placeholder={field.placeholder}
                     label={field.label}
                     error={errors[field.name]?.message}
                   />

@@ -215,6 +215,18 @@ def canonical_model_name(brand: str, raw: str, line: str | None = None) -> NameR
     return NameResult(name, bool(reasons), tuple(reasons))
 
 
+def check_model_name(brand: str, raw: str) -> tuple[str, str | None]:
+    """(standard name, problem). `problem` is a plain sentence when the text can't be turned into a trustworthy
+    model name, so the caller can refuse it and say why; otherwise None."""
+    result = canonical_model_name(brand, raw)
+    if not result.name:
+        return "", "Enter the phone model, for example 'Y15' or '12 Pro Max'."
+    if result.needs_review:
+        hint = " Xiaomi models start with the line, e.g. 'Redmi 13C' or 'Poco M6 Pro'." if any("Xiaomi line" in r for r in result.reasons) else ""
+        return result.name, f"'{raw}' is not a clear model name ({'; '.join(result.reasons)}).{hint}"
+    return result.name, None
+
+
 def match_key(brand: str, name: str, line: str | None = None) -> str:
     """Two spellings of the same phone share a key (case, spaces, brand words, 4G/5G tags ignored)."""
     result = canonical_model_name(brand, name, line)

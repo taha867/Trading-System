@@ -53,6 +53,8 @@ model_router = build_crud_router(
     tags=["catalog"],
     exact_filters=["brand_id"],
     search_filters=["name"],
+    before_create=service.prepare_model_create,
+    before_update=service.prepare_model_update,
 )
 
 item_router = APIRouter(prefix="/items", tags=["catalog"])

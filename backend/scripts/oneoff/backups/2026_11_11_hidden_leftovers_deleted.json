@@ -1,0 +1,1366 @@
+{
+ "item": [
+  {
+   "id": 144,
+   "category_id": 1,
+   "model_id": 19,
+   "sku": "PROT-APPLE-IP13PROMAX",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 186,
+   "category_id": 1,
+   "model_id": 166,
+   "sku": "PROT-SAMSUNG-S21",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 189,
+   "category_id": 1,
+   "model_id": 170,
+   "sku": "PROT-SAMSUNG-S22-S23",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 196,
+   "category_id": 1,
+   "model_id": 178,
+   "sku": "PROT-SAMSUNG-S26",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 197,
+   "category_id": 1,
+   "model_id": 179,
+   "sku": "PROT-SAMSUNG-S26PLUS",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 199,
+   "category_id": 1,
+   "model_id": 240,
+   "sku": "PROT-VIVO-Y15-Y17",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 222,
+   "category_id": 1,
+   "model_id": 207,
+   "sku": "PROT-OPPO-A80-HOT9S",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 226,
+   "category_id": 1,
+   "model_id": 212,
+   "sku": "PROT-SAMSUNG-A14",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 228,
+   "category_id": 1,
+   "model_id": 232,
+   "sku": "PROT-INFINIX-NOTE50",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 253,
+   "category_id": 1,
+   "model_id": 244,
+   "sku": "PROT-Y31",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 319,
+   "category_id": 5,
+   "model_id": 120,
+   "sku": "DPLUG-IP15PRO",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 333,
+   "category_id": 5,
+   "model_id": 279,
+   "sku": "DP-XIAOMI-REDMINOTE13",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 372,
+   "category_id": 5,
+   "model_id": 162,
+   "sku": "DPLUG-NOTE12",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 405,
+   "category_id": 5,
+   "model_id": 354,
+   "sku": "DPLUG-RENO14",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 418,
+   "category_id": 5,
+   "model_id": 364,
+   "sku": "DPLUG-S23FE-2",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 476,
+   "category_id": 6,
+   "model_id": 394,
+   "sku": "POLGL-Y9PRIME-2",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 668,
+   "category_id": 11,
+   "model_id": 177,
+   "sku": "JUNBL-S25ULTRAGREYTITANIUM",
+   "variant": "Grey",
+   "is_active": false
+  },
+  {
+   "id": 860,
+   "category_id": 5,
+   "model_id": 350,
+   "sku": "DPLUG-A5PRO5G",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2405,
+   "category_id": 1,
+   "model_id": 1451,
+   "sku": "OG G-VIVO-F15",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2410,
+   "category_id": 5,
+   "model_id": 1460,
+   "sku": "DP-VIVO-V40LITE",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2417,
+   "category_id": 3,
+   "model_id": 177,
+   "sku": "OG F-SAMSUNG-GALAXYS25ULTRA",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2418,
+   "category_id": 9,
+   "model_id": 174,
+   "sku": "MEMB-SAMSUNG-GALAXYS24ULTRA",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2420,
+   "category_id": 3,
+   "model_id": 174,
+   "sku": "OG F-SAMSUNG-GALAXYS24ULTRA",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2421,
+   "category_id": 9,
+   "model_id": 129,
+   "sku": "MEMB-IPHONE-IP17PROMAX",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2424,
+   "category_id": 1,
+   "model_id": 226,
+   "sku": "OG G-REDMI-REDMI14C",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2425,
+   "category_id": 1,
+   "model_id": 148,
+   "sku": "OG G-REDMI-REDMI10C",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2426,
+   "category_id": 1,
+   "model_id": 193,
+   "sku": "OG G-REDMI-REDMI13C",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2428,
+   "category_id": 1,
+   "model_id": 100,
+   "sku": "OG G-OPPO-A58(4G)",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2430,
+   "category_id": 1,
+   "model_id": 162,
+   "sku": "OG G-REDMI-REDMINOTE12",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2431,
+   "category_id": 1,
+   "model_id": 190,
+   "sku": "OG G-REDMI-REDMI12",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2432,
+   "category_id": 1,
+   "model_id": 135,
+   "sku": "OG G-OPPO-A54(4G)",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2434,
+   "category_id": 1,
+   "model_id": 129,
+   "sku": "OG G-IPHONE-IP17PROMAX",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2439,
+   "category_id": 4,
+   "model_id": 382,
+   "sku": "TPU -REALME-NOTE70",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2440,
+   "category_id": 5,
+   "model_id": 226,
+   "sku": "DUST-REDMI-REDMI14C",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2441,
+   "category_id": 5,
+   "model_id": 1480,
+   "sku": "DUST-REDMI-REDMI",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2442,
+   "category_id": 5,
+   "model_id": 215,
+   "sku": "DUST-REDMI-REDMI15C",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2444,
+   "category_id": 5,
+   "model_id": 150,
+   "sku": "DUST-GOOGLEPIXEL-6",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2445,
+   "category_id": 5,
+   "model_id": 151,
+   "sku": "DUST-GOOGLEPIXEL-6A",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2446,
+   "category_id": 5,
+   "model_id": 48,
+   "sku": "DUST-GOOGLEPIXEL-7PRO",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2447,
+   "category_id": 5,
+   "model_id": 152,
+   "sku": "DUST-GOOGLEPIXEL-7",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2448,
+   "category_id": 5,
+   "model_id": 153,
+   "sku": "DUST-GOOGLEPIXEL-7A",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2449,
+   "category_id": 5,
+   "model_id": 1464,
+   "sku": "DUST-GOOGLEPIXEL-8A",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2450,
+   "category_id": 5,
+   "model_id": 156,
+   "sku": "DUST-GOOGLEPIXEL-8PRO",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2451,
+   "category_id": 5,
+   "model_id": 157,
+   "sku": "DUST-GOOGLEPIXEL-9",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2452,
+   "category_id": 5,
+   "model_id": 160,
+   "sku": "DUST-GOOGLEPIXEL-9PROXL",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2453,
+   "category_id": 5,
+   "model_id": 384,
+   "sku": "DUST-GOOGLEPIXEL-10",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2454,
+   "category_id": 5,
+   "model_id": 161,
+   "sku": "DUST-GOOGLEPIXEL-10PROXL",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2455,
+   "category_id": 5,
+   "model_id": 1493,
+   "sku": "DUST-REDMI-REDMIC3",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2530,
+   "category_id": 5,
+   "model_id": 445,
+   "sku": "DUST-INFINIX-SMART10+",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2531,
+   "category_id": 5,
+   "model_id": 447,
+   "sku": "DUST-INFINIX-HOT60I",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2532,
+   "category_id": 5,
+   "model_id": 448,
+   "sku": "DUST-VIVO-V50",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2542,
+   "category_id": 1,
+   "model_id": 366,
+   "sku": "OG G-SAMSUNG-A35",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2543,
+   "category_id": 3,
+   "model_id": 1536,
+   "sku": "OG F-GOOGLEPIXEL-9PROXLFINGER",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2544,
+   "category_id": 6,
+   "model_id": 87,
+   "sku": "POLI-INFINIX-SMART9",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2545,
+   "category_id": 6,
+   "model_id": 193,
+   "sku": "POLI-REDMI-REDMI13C",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2547,
+   "category_id": 17,
+   "model_id": 6,
+   "sku": "ITS -TECNO-CAMON50PRO",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2548,
+   "category_id": 4,
+   "model_id": 1459,
+   "sku": "TPU -GOOGLEPIXEL-8",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2550,
+   "category_id": 5,
+   "model_id": 1537,
+   "sku": "DUST-OPPO-F31",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2558,
+   "category_id": 15,
+   "model_id": 19,
+   "sku": "ITS -IPHONE-IP13PROMAX",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2559,
+   "category_id": 15,
+   "model_id": 118,
+   "sku": "ITS -IPHONE-IP14PRO",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2560,
+   "category_id": 15,
+   "model_id": 129,
+   "sku": "ITS -IPHONE-IP17PROMAX",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2561,
+   "category_id": 1,
+   "model_id": 120,
+   "sku": "OG G-IPHONE-IP15PRO",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2567,
+   "category_id": 4,
+   "model_id": 195,
+   "sku": "TPU -IPHONE-IPHONE6",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2569,
+   "category_id": 4,
+   "model_id": 113,
+   "sku": "TPU -IPHONE-IPHONE12PROMAX",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2570,
+   "category_id": 4,
+   "model_id": 120,
+   "sku": "TPU -IPHONE-IP15PRO",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2572,
+   "category_id": 1,
+   "model_id": 123,
+   "sku": "OG G-IPHONE-IPHONE15",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2573,
+   "category_id": 1,
+   "model_id": 118,
+   "sku": "OG G-IPHONE-IP14PRO",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2579,
+   "category_id": 4,
+   "model_id": 129,
+   "sku": "TPU -IPHONE-IP17PROMAX",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2580,
+   "category_id": 4,
+   "model_id": 510,
+   "sku": "TPU -SAMSUNG-J8",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2581,
+   "category_id": 9,
+   "model_id": 118,
+   "sku": "MEMB-IPHONE-IP14PRO",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2584,
+   "category_id": 5,
+   "model_id": 444,
+   "sku": "DUST-TECNO-SPARK30C4G",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2588,
+   "category_id": 5,
+   "model_id": 87,
+   "sku": "DUST-INFINIX-SMART9",
+   "variant": null,
+   "is_active": false
+  },
+  {
+   "id": 2590,
+   "category_id": 5,
+   "model_id": 45,
+   "sku": "DUST-GOOGLEPIXEL-6PRO",
+   "variant": null,
+   "is_active": false
+  }
+ ],
+ "item_compatible_model": [
+  {
+   "item_id": 199,
+   "model_id": 182
+  }
+ ],
+ "model": [
+  {
+   "id": 9,
+   "name": "HOT 60 [merged into #446]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 2
+  },
+  {
+   "id": 17,
+   "name": "IP 12 PRO [merged into #112]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 22,
+   "name": "IP 14 PRO [merged into #118]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 24,
+   "name": "IP 15 PRO [merged into #120]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 28,
+   "name": "IP 17 PRO MAX [merged into #129]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 80,
+   "name": "SAM S26 [merged into #178]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 84,
+   "name": "SAM S26+ [merged into #179]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 116,
+   "name": "iPhone 13 Pro Max [merged into #19]",
+   "priority": 18,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 136,
+   "name": "Galaxy A35 [merged into #366]",
+   "priority": 38,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 137,
+   "name": "Galaxy A55 [merged into #422]",
+   "priority": 39,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 154,
+   "name": "Pixel 8 [merged into #1459]",
+   "priority": 56,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 155,
+   "name": "Pixel 8A [merged into #1464]",
+   "priority": 57,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 181,
+   "name": "Y15 [merged into #240]",
+   "priority": 83,
+   "is_active": false,
+   "brand_id": 9
+  },
+  {
+   "id": 191,
+   "name": "Galaxy A54 [merged into #347]",
+   "priority": 93,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 214,
+   "name": "Note 50 [merged into #232]",
+   "priority": 116,
+   "is_active": false,
+   "brand_id": 2
+  },
+  {
+   "id": 236,
+   "name": "RENO14 [merged into #354]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 4
+  },
+  {
+   "id": 237,
+   "name": "Sam S21 [merged into #166]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 238,
+   "name": "Sam S22 [merged into #170]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 239,
+   "name": "Sam S25 [merged into #175]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 243,
+   "name": "Sam A14 [merged into #212]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 247,
+   "name": "Pixel 9RO [merged into #158]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 250,
+   "name": "Pixel 9ROXL [merged into #160]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 251,
+   "name": "10PROXL [merged into #161]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 252,
+   "name": "S24 U [merged into #174]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 253,
+   "name": "S25 U [merged into #177]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 262,
+   "name": "Vivo V70 [merged into #218]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 9
+  },
+  {
+   "id": 280,
+   "name": "RN NOTE12 [merged into #162]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 282,
+   "name": "RM14C [merged into #226]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 335,
+   "name": "HD5)",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 9
+  },
+  {
+   "id": 340,
+   "name": "V40 Lite (YOUNG [merged into #1460]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 9
+  },
+  {
+   "id": 341,
+   "name": "5G30)",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 9
+  },
+  {
+   "id": 353,
+   "name": "RENO13 [merged into #192]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 4
+  },
+  {
+   "id": 363,
+   "name": "S23FE [merged into #364]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 391,
+   "name": "Y9PRIME [merged into #394]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 13
+  },
+  {
+   "id": 401,
+   "name": "S24U [merged into #174]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 402,
+   "name": "S22U [merged into #59]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 403,
+   "name": "S21U [merged into #57]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 404,
+   "name": "S25U [merged into #177]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 405,
+   "name": "Sam S24 [merged into #172]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 406,
+   "name": "iPhone 13MINNI [merged into #132]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 407,
+   "name": "S25 Ult [merged into #177]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 408,
+   "name": "S26 Ult [merged into #180]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 409,
+   "name": "S23 Ult [merged into #61]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 410,
+   "name": "S25 Ultra Grey Titanium [merged into #177]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 411,
+   "name": "iPhone 14 Plus [merged into #399]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 418,
+   "name": "Sam S24 Ultra [merged into #174]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 442,
+   "name": "15C 4G [merged into #215]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 450,
+   "name": "A5 PRO 5G [merged into #350]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 4
+  },
+  {
+   "id": 451,
+   "name": "Reno 14 5G [merged into #354]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 4
+  },
+  {
+   "id": 453,
+   "name": "A36 5G [merged into #142]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 454,
+   "name": "Smart 9 [merged into #87]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 2
+  },
+  {
+   "id": 459,
+   "name": "Camon 50PRO [merged into #6]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 8
+  },
+  {
+   "id": 466,
+   "name": "8PRO [merged into #482]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 3
+  },
+  {
+   "id": 467,
+   "name": "12PRO [merged into #487]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 3
+  },
+  {
+   "id": 471,
+   "name": "S21 Ultr [merged into #57]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 479,
+   "name": "JACE",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 483,
+   "name": "Camon 50 Pro [merged into #6]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 8
+  },
+  {
+   "id": 491,
+   "name": "Pixel 6 Pro [merged into #45]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 492,
+   "name": "Pixel 7 Pro [merged into #48]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 500,
+   "name": "Galaxy A14 5G [merged into #212]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 539,
+   "name": "Note 14 Pro [merged into #278]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 540,
+   "name": "Note 14 [merged into #290]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 541,
+   "name": "Note 14 Pro+ [merged into #292]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 544,
+   "name": "Note 13 Pro 5G [merged into #288]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 545,
+   "name": "Note 13 [merged into #279]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1463,
+   "name": "7A [merged into #153]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1465,
+   "name": "REDMI14C [merged into #226]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1466,
+   "name": "REDMI10C [merged into #148]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1467,
+   "name": "REDMI12C [merged into #228]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1468,
+   "name": "REDMI13C [merged into #193]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1469,
+   "name": "A58(4G) [merged into #100]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 4
+  },
+  {
+   "id": 1470,
+   "name": "REDMINOTE12 [merged into #162]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1471,
+   "name": "REDMI12 [merged into #190]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1472,
+   "name": "A54(4G) [merged into #135]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 4
+  },
+  {
+   "id": 1476,
+   "name": "GOLDEN",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1477,
+   "name": "BLACKTITANIUM",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1478,
+   "name": "BLUETITANIUM",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1479,
+   "name": "NOTE70 [merged into #382]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 5
+  },
+  {
+   "id": 1480,
+   "name": "REDMI",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1481,
+   "name": "A5 [merged into #443]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1482,
+   "name": "REDMI15C [merged into #215]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1483,
+   "name": "V60 [merged into #327]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 9
+  },
+  {
+   "id": 1484,
+   "name": "6 [merged into #150]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1485,
+   "name": "6A [merged into #151]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1486,
+   "name": "7PRO [merged into #48]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1487,
+   "name": "7 [merged into #152]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1488,
+   "name": "8PRO [merged into #156]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1489,
+   "name": "9 [merged into #157]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1490,
+   "name": "9PRO [merged into #158]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1491,
+   "name": "9PROXL [merged into #160]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1492,
+   "name": "10 [merged into #384]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1494,
+   "name": "REDMIC51 [merged into #220]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 6
+  },
+  {
+   "id": 1495,
+   "name": "4G",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 1529,
+   "name": "SMART10+ [merged into #445]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 2
+  },
+  {
+   "id": 1530,
+   "name": "V50 [merged into #448]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 9
+  },
+  {
+   "id": 1535,
+   "name": "5G",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 9
+  },
+  {
+   "id": 1536,
+   "name": "9PROXLFINGER",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  },
+  {
+   "id": 1540,
+   "name": "V70FE [merged into #559]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 9
+  },
+  {
+   "id": 1543,
+   "name": "BLACK",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 1544,
+   "name": "BLACK",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1545,
+   "name": "BLUE",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1546,
+   "name": "12PRO [merged into #112]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1547,
+   "name": "17 [merged into #125]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1548,
+   "name": "BLACKTITANIUM",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 7
+  },
+  {
+   "id": 1549,
+   "name": "GREY",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1550,
+   "name": "TITANIUM",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1551,
+   "name": "SILVER",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1552,
+   "name": "PURPLE",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 10
+  },
+  {
+   "id": 1554,
+   "name": "SPARK30C4G [merged into #444]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 8
+  },
+  {
+   "id": 1556,
+   "name": "6PRO [merged into #45]",
+   "priority": 0,
+   "is_active": false,
+   "brand_id": 1
+  }
+ ]
+}

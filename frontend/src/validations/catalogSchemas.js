@@ -26,7 +26,8 @@ export const modelUpdateSchema = object({
 export const itemCreateSchema = object({
   category_id: number().typeError('Select a category').required('Select a category'),
   model_id: number().typeError('Select a model').required('Select a model'),
-  sku: string().required('SKU is required').max(64),
+  // Optional: left empty, the server creates it (CATEGORY-BRAND-MODEL[-COLOUR], e.g. OG-VIVO-Y15).
+  sku: string().max(64),
   variant: string().max(64).nullable().default(null),
   compatible_model_ids: array().of(number()).default([]),
 });

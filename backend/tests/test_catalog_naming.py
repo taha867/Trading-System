@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.catalog.naming import build_sku, canonical_model_name, is_standard_sku, match_key, parse_fitment, parse_sheet_phone  # noqa: E402
+from src.catalog.naming import build_sku, canonical_model_name, check_model_name, is_standard_sku, match_key, parse_fitment, parse_sheet_phone  # noqa: E402
 
 # (brand, raw spelling, expected canonical name)
 NAME_CASES = [
@@ -111,6 +111,18 @@ def test_sheet_codes():
     assert match_key("Xiaomi", parse_sheet_phone("RMI-13C").name) == match_key("Redmi", "13C")
     assert build_sku("OG Glass Protector", "Redmi", "13C") == "OG-XIAOMI-REDMI13C"
     assert build_sku("TPU Case", "Honor", "9X") == "TPU-HONOR-9X"
+
+
+def test_check_model_name_accepts_clear_names_and_refuses_unclear_ones():
+    assert check_model_name("Vivo", "Vivo Y15") == ("Y15", None)
+    assert check_model_name("iPhone", "iPhone 12 Pro Max") == ("12 Pro Max", None)
+    assert check_model_name("Xiaomi", "REDMI13C") == ("Redmi 13C", None)
+    assert check_model_name("Xiaomi", "Poco M6 Pro") == ("Poco M6 Pro", None)
+    name, problem = check_model_name("Xiaomi", "13C")
+    assert problem and "Redmi" in problem, (name, problem)  # the Xiaomi line must be written
+    for brand, raw in (("iPhone", "BLACK"), ("Vivo", "V40 Lite (YOUNG"), ("Samsung", "4G"), ("Vivo", "")):
+        assert check_model_name(brand, raw)[1], f"{brand} {raw!r} should be refused"
+    assert check_model_name("Oppo", "Reno Z")[1] is None  # a confirmed real name without a number
 
 
 if __name__ == "__main__":

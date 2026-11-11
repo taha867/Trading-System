@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated, Sequence, Type, TypeVar
+from typing import Annotated, Awaitable, Callable, Sequence, Type, TypeVar
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, create_model
@@ -30,6 +30,8 @@ def build_crud_router(
     exact_filters: Sequence[str] = (),
     search_filters: Sequence[str] = (),
     date_filters: Sequence[str] = (),
+    before_create: Callable[[AsyncSession, CreateT], Awaitable[CreateT]] | None = None,
+    before_update: Callable[[AsyncSession, ModelT, UpdateT], Awaitable[UpdateT]] | None = None,
 ) -> APIRouter:
     assert hasattr(model, "is_active"), (
         f"{model.__name__} must declare `is_active` to be used with the generic CRUD factory"
@@ -105,6 +107,8 @@ def build_crud_router(
         db: Annotated[AsyncSession, Depends(get_db)],
         _current_user: Annotated[User, Depends(get_current_user)],
     ):
+        if before_create is not None:  # a domain's own checks / normalisation (e.g. catalog names), may raise
+            payload = await before_create(db, payload)
         item = model(**payload.model_dump())
         db.add(item)
         try:
@@ -131,6 +135,8 @@ def build_crud_router(
         _current_user: Annotated[User, Depends(get_current_user)],
     ):
         item = await _get_active_or_404(db, item_id)
+        if before_update is not None:
+            payload = await before_update(db, item, payload)
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(item, field, value)
         try:
