@@ -601,8 +601,18 @@ These apply in every domain, front and back, regardless of phase:
 - **Soft delete everywhere.** Every table gets `is_active: Mapped[bool]`; the generic CRUD factory's "delete" endpoint sets it `False`, never `DELETE FROM`. History (an old PO referencing a since-retired vendor) must never break.
 - **Money is `Decimal`/`Numeric`, never `float`**, backend schema through database column through frontend display formatting (`utils/currencyUtils.js`, `components/common/CurrencyAmount.jsx`).
 - **Every ledger-affecting action posts a `LedgerEntry` in the same transaction as its domain write** — a sale, a payment, an expense. If a service function can commit its own table without also committing a ledger row, that's a bug, not a later cleanup task.
-- **FIFO for stock consumption** — a `SalesOrderLine` service must consume `StockLot` rows oldest-received-first, not average across lots.
+- **FIFO for stock consumption** — a `SalesOrderLine` service must consume `StockLot` rows oldest-received-first, not average across lots. The sold item's own lots go first; only when they run out does the sale continue with the lots of the items that also fit the same phone (same category and colour, the item's phone is another item's primary or compatible model), again oldest-received-first across those items (`inventory.service.plan_consumption`, tested in `tests/test_stock_consumption.py`). Each slice costs its own lot's landed cost.
 - **Snapshot, don't recompute, historical rates** — a `PurchaseOrderLine`'s `rate_pkr` is stored at creation time from that day's `ExchangeRate`, never recalculated from "today's" rate later.
+
+### 4.1 Catalog naming
+
+One standard for models, items and item codes. The rules live in code (`backend/src/catalog/naming.py`, tests in `backend/tests/test_catalog_naming.py`); every importer and every catalog write must use it instead of inventing names.
+
+- **Model name:** short, brand kept in the brand column — `Y15`, `A35`, `13C`, `12 Pro Max`, `S24 Ultra`, `14+`, `Note 50`. No `Galaxy` / `iPhone` / `Pixel` / `Vivo` / `Redmi` prefix, no 4G/5G tag, no colour. Letters in model codes are upper case (`Y20I`, `A03S`); words are capitalised (`Pro`, `Max`, `Ultra`, `Lite`). The app displays brand + model together (`Vivo Y15`, `iPhone 12 Pro`).
+- **One Model row per phone.** Two spellings with the same `match_key` (case, spaces, brand words, 4G/5G ignored) are the same phone and must not both exist.
+- **One Item per product:** one `Item` per (category, brand, primary model, variant). Phones that take the same part (Y15 / Y17, A36 / A56) are **not** separate items: the item has one primary model and the others in `item_compatible_model`, and any of those models finds that one item and its stock. Colours and finishes are the item's `variant`, never a model.
+- **Item code (SKU):** `CATEGORY-BRAND-MODEL[-VARIANT]`, upper-case letters and digits only (`OG-VIVO-Y15`, `DP-IPHONE-12PRO`, `TPU-SAMSUNG-S22PLUS`). One code per category (OG Glass `OG`, OG Finger `OGF`, Dust Plug `DP`, TPU Case `TPU`, Membrane `MEMB`, Its Me Privacy `ITSME`, Its Me UV `ITSUV`, Polish Glass `POLGL`, Bolt Lens `BOLT`, Simple Lens `SMPLL`, Camera Glass `CAMGL`, Jun Best Lens `JUNBL`, Matt Privacy `MATTP`, Simple Privacy `SMPPV`, UV Glass `UVGLS`, Dust Proof Privacy `DPPRV`). A code never lists several models; use `build_sku()`.
+- **Reading sheet text:** `parse_fitment("VIVO/Y15/Y17")` gives brand + models + colours; the first model is the primary, the rest are compatible. Text it can't trust (a colour, a cut-off fragment, two brands) comes back with `needs_review` set — flag it, never guess.
 
 ---
 

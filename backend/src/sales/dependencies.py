@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from src.catalog.models import Item
 from src.database import get_db
+from src.inventory.models import StockLot
 from src.sales.exceptions import SalesOrderNotFound
 from src.sales.models import SalesOrder, SalesOrderLine, SalesOrderLineLot
 
@@ -17,7 +18,7 @@ from src.sales.models import SalesOrder, SalesOrderLine, SalesOrderLineLot
 # SalesOrderLineLotRead.lot_received_date.
 SALES_ORDER_LOAD_OPTIONS = (
     joinedload(SalesOrder.party),
-    selectinload(SalesOrder.lines).selectinload(SalesOrderLine.consumptions).joinedload(SalesOrderLineLot.stock_lot),
+    selectinload(SalesOrder.lines).selectinload(SalesOrderLine.consumptions).joinedload(SalesOrderLineLot.stock_lot).joinedload(StockLot.item),
     selectinload(SalesOrder.lines).joinedload(SalesOrderLine.item).joinedload(Item.model),
     selectinload(SalesOrder.lines).joinedload(SalesOrderLine.item).joinedload(Item.category),
 )

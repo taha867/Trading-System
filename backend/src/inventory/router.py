@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.dependencies import get_current_user
@@ -10,6 +10,7 @@ from src.inventory import service
 from src.inventory.dependencies import valid_stock_lot
 from src.inventory.models import StockLot
 from src.inventory.schemas import (
+    ItemAvailabilityRead,
     StockLotDamageCreate,
     StockLotListRead,
     StockLotRead,
@@ -21,6 +22,16 @@ from src.inventory.schemas import (
 from src.pagination import PaginationParams
 
 stock_lot_router = APIRouter(prefix="/stock-lots", tags=["inventory"])
+availability_router = APIRouter(prefix="/availability", tags=["inventory"])
+
+
+@availability_router.get("", response_model=list[ItemAvailabilityRead])
+async def get_item_availability(
+    item_ids: Annotated[list[int], Query(min_length=1, max_length=100)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+):
+    return await service.get_availability(db, item_ids)
 
 
 @stock_lot_router.post("", response_model=StockLotRead, status_code=201)
@@ -106,3 +117,4 @@ async def list_stock_movements(
 router = APIRouter()
 router.include_router(stock_lot_router)
 router.include_router(stock_movement_router)
+router.include_router(availability_router)

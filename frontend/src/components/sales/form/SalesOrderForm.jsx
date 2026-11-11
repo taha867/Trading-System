@@ -9,7 +9,7 @@ import { useCreateSalesOrder } from '@/hooks/salesHooks/salesMutations';
 import { useSalesOrders } from '@/hooks/salesHooks/salesQueries';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useCustomerParties } from '@/hooks/partyHooks/partyQueries';
-import { useStockLots } from '@/hooks/inventoryHooks/inventoryQueries';
+import { useItemAvailability } from '@/hooks/inventoryHooks/inventoryQueries';
 import { toMoney, computeSaleAmount, formatPKR } from '@/utils/currencyUtils';
 import { todayIso } from '@/utils/dateUtils';
 
@@ -22,14 +22,7 @@ export function SalesOrderForm({ onSuccess }) {
   // decision 3): stock is live, shared, external state that can change between
   // typing and submit. The authoritative check is the backend's own InsufficientStock
   // 422, already toasted generically by fetchClient on submit failure.
-  const { data: stockLotsData } = useStockLots({ page: 1, page_size: 100 });
-
   const customerOptions = customers.map((p) => ({ value: String(p.id), label: p.name }));
-  const availableByItemId = (stockLotsData?.items ?? []).reduce((acc, lot) => {
-    const key = String(lot.item_id);
-    acc[key] = (acc[key] ?? 0) + Number(lot.qty_remaining);
-    return acc;
-  }, {});
 
   const {
     control,
@@ -57,6 +50,9 @@ export function SalesOrderForm({ onSuccess }) {
 
   const lines = watch('lines') ?? [];
   const rows = fields.map((field, index) => ({ ...field, ...(lines[index] ?? {}) }));
+  // A sale takes from the chosen item first and then from items that also fit its phone, so "in stock" shows both.
+  const { data: availability } = useItemAvailability(rows.map((row) => row.item_id));
+  const availabilityByItemId = Object.fromEntries((availability ?? []).map((entry) => [String(entry.item_id), entry]));
   const totalPkr = toMoney(rows.reduce((sum, row) => sum + computeSaleAmount(row.qty, row.rate_pkr), 0));
 
   const onSubmit = async (values) => {
@@ -144,7 +140,16 @@ export function SalesOrderForm({ onSuccess }) {
                 )}
               />
               {row.item_id && (
-                <span className="text-xs text-muted-foreground">In stock: {availableByItemId[row.item_id] ?? 0}</span>
+                <span className="text-xs text-muted-foreground">
+                  In stock: {Number(availabilityByItemId[row.item_id]?.own_qty ?? 0)}
+                  {Number(availabilityByItemId[row.item_id]?.fitting_qty ?? 0) > 0 && (
+                    <>
+                      {' '}
+                      + {Number(availabilityByItemId[row.item_id].fitting_qty)} in items that also fit (
+                      {availabilityByItemId[row.item_id].fitting.map((item) => item.sku).join(', ')}) — used after this item runs out
+                    </>
+                  )}
+                </span>
               )}
             </div>
             <Controller

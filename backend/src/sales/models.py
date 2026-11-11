@@ -96,6 +96,15 @@ class SalesOrderLineLot(Base):
     def lot_received_date(self) -> date:
         return self.stock_lot.received_date
 
+    # A sale takes from its own item first and then from items that also fit, so a slice can come from another item.
+    @property
+    def lot_item_id(self) -> int:
+        return self.stock_lot.item_id
+
+    @property
+    def lot_item_sku(self) -> str:
+        return self.stock_lot.item.sku
+
 
 class SalesLogException(Base):
     """A sale-like event that cannot become a real SalesOrder because it has no

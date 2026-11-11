@@ -23,6 +23,13 @@ export async function listStockLots({
   return data;
 }
 
+// What a sale of each item can draw on: its own pieces, and the pieces of other items that also fit its phone.
+export async function getItemAvailability(itemIds) {
+  const qs = `?${itemIds.map((id) => `item_ids=${encodeURIComponent(id)}`).join('&')}`;
+  const { data } = await fetchClient.get(`/inventory/availability${qs}`);
+  return data;
+}
+
 export async function getStockLot(id) {
   const { data } = await fetchClient.get(`/inventory/stock-lots/${id}`);
   return data;

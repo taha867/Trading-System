@@ -89,6 +89,8 @@ export const stockLotKeys = {
   lists: () => [...stockLotKeys.all, 'list'],
   list: (params) => [...stockLotKeys.lists(), params],
   detail: (id) => [...stockLotKeys.all, 'detail', id],
+  // Under the same root on purpose: every stock change that already invalidates stockLotKeys.all refreshes it too.
+  availability: (itemIds) => [...stockLotKeys.all, 'availability', itemIds],
 };
 
 export const stockMovementKeys = {

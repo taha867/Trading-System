@@ -1,0 +1,17 @@
+brand,model,items,why
+Tecno,Pop Lite,1,no model number
+Google Pixel,Pixel 9RO,1,looks like 'Pro' with the P missing
+Google Pixel,Pixel 9ROXL,1,looks like 'Pro' with the P missing
+Xiaomi,R-C15,1,single letter 'R' (abbreviation?)
+Xiaomi,RN13 & Poco C55,1,single letter '&' (abbreviation?); unexpected characters
+Vivo,5G30),0,unbalanced bracket (text cut off)
+Xiaomi,REDMI,1,no model number
+Vivo,Y51(2020,1,unbalanced bracket (text cut off)
+Vivo,V40 Lite (YOUNG,2,unbalanced bracket (text cut off)
+OnePlus,Ace,1,no model number
+Samsung,S25 Ultra Grey Titanium,1,contains a colour word (belongs in the item's variant)
+Oppo,Reno Z,2,single letter 'Z' (abbreviation?); no model number
+Samsung,Galaxy Note Edge,2,no model number
+Infinix,NOTE EDGE,2,no model number
+Tecno,SPARKGO,1,no model number
+Google Pixel,9PROXLFINGER,1,"'Finger' is a category (OG Finger Protector), not part of the model"

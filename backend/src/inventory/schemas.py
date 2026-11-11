@@ -88,3 +88,18 @@ class StockMovementListRead(PaginatedResponse[StockMovementRead]):
     # page's "how many units total" needs the sum of qty magnitudes across
     # every matching row, not just the page being rendered.
     total_qty: Decimal
+
+
+class FittingItemRead(BaseModel):
+    item_id: int
+    sku: str
+    qty: Decimal
+
+
+class ItemAvailabilityRead(BaseModel):
+    """What a sale of this item can draw on: its own pieces first, then the pieces of items that also fit."""
+
+    item_id: int
+    own_qty: Decimal
+    fitting_qty: Decimal
+    fitting: list[FittingItemRead]

@@ -78,6 +78,7 @@ export function SalesOrderDetail({ order }) {
                       <span key={c.stock_lot_id}>
                         Lot #{c.stock_lot_id} (received {c.lot_received_date}): {c.qty_consumed} @{' '}
                         <CurrencyAmount value={c.unit_cost_pkr} />
+                        {c.lot_item_id !== line.item_id && <> — taken from {c.lot_item_sku} (also fits)</>}
                       </span>
                     ))}
                   </div>

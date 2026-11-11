@@ -39,6 +39,8 @@ class SalesOrderLineLotRead(BaseModel):
     qty_consumed: Decimal
     unit_cost_pkr: Decimal
     lot_received_date: date  # when the lot this slice came from was received — shown on the sale's detail
+    lot_item_id: int  # the item the lot belongs to: differs from the line's item when stock of an "also fits" item was used
+    lot_item_sku: str
 
 
 class SalesOrderLineRead(BaseModel):
