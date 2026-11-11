@@ -21,7 +21,7 @@ PurchaseOrderStatus = Literal["draft", "allocated", "received"]
 PurchaseOrderSource = Literal["china", "local", "mohsin"]
 
 MAX_INVOICE_NUMBER_LOOKUP_IDS = 500  # matches PaginationParams' page_size ceiling — one statement page can't exceed it
-MAX_INVOICE_OPTIONS = 30  # how many invoice numbers the Purchase Orders dropdown lists at once (search narrows it)
+MAX_INVOICE_OPTIONS = 500  # how many invoice numbers the Purchase Orders dropdown lists at once (search narrows it)
 
 # Why a PurchaseLogException exists instead of a PurchaseOrder: "no_model" — the day book gave a
 # category (e.g. "TPU", "Borderless") but no phone model, so no specific Item/StockLot can be
