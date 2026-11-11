@@ -12,6 +12,7 @@ from src.expenses.models import Expense, ExpenseCategory, RecurringExpenseTempla
 from src.expenses.schemas import ExpenseCreate, ExpenseListRead, ExpenseUpdate
 from src.ledger.models import LedgerEntry
 from src.pagination import PaginationParams
+from src.sorting import SortDirection, date_ordering
 from src.payments import service as payments_service
 from src.payments.models import PaymentTransaction
 from src.payments.schemas import PaymentTransactionCreate
@@ -133,6 +134,7 @@ async def list_expenses(
     recurring_template_id: int | None = None,
     expense_date_from: date | None = None,
     expense_date_to: date | None = None,
+    sort: SortDirection = "newest",
 ) -> ExpenseListRead:
     offset = (pagination.page - 1) * pagination.page_size
 
@@ -158,7 +160,7 @@ async def list_expenses(
     result = await db.execute(
         select(Expense)
         .where(*filters)
-        .order_by(Expense.expense_date.desc(), Expense.id.desc())
+        .order_by(*date_ordering(Expense.expense_date, Expense.id, sort))
         .offset(offset)
         .limit(pagination.page_size)
     )

@@ -13,7 +13,7 @@ import { ExpenseForm } from '@/components/expenses/form/ExpenseForm';
 import { useExpenses, useExpenseCategories } from '@/hooks/expensesHooks/expensesQueries';
 import { usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
 import { useConfirmExpense, useDiscardExpense } from '@/hooks/expensesHooks/expensesMutations';
-import { EXPENSE_STATUS, EXPENSE_STATUS_OPTIONS } from '@/utils/constants';
+import { DEFAULT_SORT, EXPENSE_STATUS, EXPENSE_STATUS_OPTIONS, SORT_OPTIONS, SORT_VALUES } from '@/utils/constants';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
 import { useDateFilter } from '@/hooks/useDateFilter';
 import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
@@ -24,11 +24,13 @@ const ALL = 'all';
 export function ExpenseList() {
   const [page, setPage] = useState(1);
   // The date filter lives in the URL (?month= / ?from=&to= / ?dates=all); default: the current month.
-  const dates = useDateFilter(useSearchParamFilters());
-  const dateKey = `${dates.dateFrom ?? ''}|${dates.dateTo ?? ''}`;
+  const filters = useSearchParamFilters();
+  const dates = useDateFilter(filters);
+  const sort = filters.getOneOf('sort', SORT_VALUES); // a display choice, not a filter: Date / month changes keep it
+  const dateKey = `${dates.dateFrom ?? ''}|${dates.dateTo ?? ''}|${sort}`; // a new period or sort order starts on page 1
   const [seenDateKey, setSeenDateKey] = useState(dateKey);
   if (seenDateKey !== dateKey) {
-    setSeenDateKey(dateKey); // a new period starts on page 1
+    setSeenDateKey(dateKey);
     setPage(1);
   }
   const [categoryFilter, setCategoryFilter] = useState(ALL);
@@ -51,6 +53,7 @@ export function ExpenseList() {
     ...(statusFilter !== ALL ? { status: statusFilter } : {}),
     expense_date_from: dates.dateFrom,
     expense_date_to: dates.dateTo,
+    sort: sort || undefined,
   });
 
   const confirmMutation = useConfirmExpense();
@@ -117,6 +120,13 @@ export function ExpenseList() {
           <FormSelect name="category_filter" label="Category" options={categoryOptions} value={categoryFilter} onChange={handleCategoryChange} />
           <FormSelect name="account_filter" label="Account" options={accountOptions} value={accountFilter} onChange={handleAccountChange} />
           <FormSelect name="status_filter" label="Status" options={statusOptions} value={statusFilter} onChange={handleStatusChange} />
+          <FormSelect
+            name="sort_filter"
+            label="Sort by date"
+            options={SORT_OPTIONS}
+            value={sort || DEFAULT_SORT}
+            onChange={(value) => filters.setFilters({ sort: value === DEFAULT_SORT ? '' : value })}
+          />
           <DateFilter filter={dates} id="expense_date" className="sm:col-span-2" />
         </div>
 

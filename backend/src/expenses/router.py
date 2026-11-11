@@ -24,6 +24,7 @@ from src.expenses.schemas import (
     RecurringExpenseTemplateUpdate,
 )
 from src.pagination import PaginationParams
+from src.sorting import SortDirection
 
 expense_category_router = build_crud_router(
     model=ExpenseCategory,
@@ -74,6 +75,7 @@ async def list_expenses(
     recurring_template_id: Annotated[int | None, Query()] = None,
     expense_date_from: Annotated[date | None, Query()] = None,
     expense_date_to: Annotated[date | None, Query()] = None,
+    sort: Annotated[SortDirection, Query()] = "newest",
 ):
     # Not Annotated[PaginationParams, Query()] here, unlike every other list route in this
     # codebase — mixing that model-exploding Query() with additional sibling Query() scalar
@@ -91,6 +93,7 @@ async def list_expenses(
         recurring_template_id=recurring_template_id,
         expense_date_from=expense_date_from,
         expense_date_to=expense_date_to,
+        sort=sort,
     )
 
 
