@@ -71,6 +71,7 @@ def _parts_query(order_clauses: list, entry_clauses: list | None):
             PurchaseOrder.order_date.label("d"),
             cast(func.coalesce(line_totals.c.amount, 0), Numeric(14, 2)).label("amount"),
             cast(func.coalesce(line_totals.c.rmb, 0), Numeric(14, 2)).label("rmb"),
+            PurchaseOrder.shown_only.label("shown"),
         )
         .select_from(PurchaseOrder)
         .outerjoin(line_totals, line_totals.c.order_id == PurchaseOrder.id)
@@ -88,6 +89,7 @@ def _parts_query(order_clauses: list, entry_clauses: list | None):
         PurchaseLogException.entry_date.label("d"),
         cast(PurchaseLogException.amount_pkr, Numeric(14, 2)).label("amount"),
         cast(literal(0), Numeric(14, 2)).label("rmb"),
+        PurchaseLogException.shown_only.label("shown"),
     ).where(*entry_clauses)
     return union_all(orders, entries).subquery("parts")
 
@@ -131,6 +133,7 @@ async def list_purchase_groups(
         func.coalesce(func.sum(parts.c.amount).filter(parts.c.src == "P"), 0).label("orders"),
         func.coalesce(func.sum(parts.c.amount).filter(is_entry), 0).label("entries"),
         func.sum(parts.c.rmb).label("rmb"),
+        func.bool_and(parts.c.shown).label("shown_only"),
         func.array_agg(parts.c.ref_id).filter(parts.c.src == "P").label("order_ids"),
         func.array_agg(parts.c.ref_id).filter(is_entry).label("entry_ids"),
     ).group_by(parts.c.gkey, parts.c.party_id)
@@ -140,14 +143,16 @@ async def list_purchase_groups(
         grouped = grouped.having(func.bool_or(is_entry))
     g = grouped.subquery("g")
 
+    # Shown-only rows are listed but never added into the summary numbers (they are not in any balance).
+    counted = not_(g.c.shown_only)
     total_count, total_pkr, orders_pkr, entries_pkr, total_rmb = (
         await db.execute(
             select(
                 func.count(),
-                func.coalesce(func.sum(g.c.total), 0),
-                func.coalesce(func.sum(g.c.orders), 0),
-                func.coalesce(func.sum(g.c.entries), 0),
-                func.coalesce(func.sum(g.c.rmb), 0),
+                func.coalesce(func.sum(g.c.total).filter(counted), 0),
+                func.coalesce(func.sum(g.c.orders).filter(counted), 0),
+                func.coalesce(func.sum(g.c.entries).filter(counted), 0),
+                func.coalesce(func.sum(g.c.rmb).filter(counted), 0),
             ).select_from(g)
         )
     ).one()
@@ -207,7 +212,7 @@ async def list_purchase_groups(
             PurchaseGroupRead(
                 group_key=row.gkey, invoice_number=row.invoice_number or None, party_id=row.party_id, party_name=row.party_name or "",
                 invoice_date=row.d, total_pkr=money(row.total), orders_pkr=money(row.orders), entries_pkr=money(row.entries),
-                total_rmb=money(row.rmb), categories=cats, orders=row_orders, entries=row_entries,
+                total_rmb=money(row.rmb), shown_only=bool(row.shown_only), categories=cats, orders=row_orders, entries=row_entries,
             )
         )
     return PurchaseGroupListRead(

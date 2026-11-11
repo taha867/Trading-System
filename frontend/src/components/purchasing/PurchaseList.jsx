@@ -108,7 +108,15 @@ function PurchaseDetails({ row }) {
   );
 }
 
+// Reference-only (3 Sept 2026): listed, but in no balance, stock or profit figure.
 function RowBadges({ row }) {
+  if (row.shown_only) {
+    return (
+      <Badge variant="outline" className="ml-2 font-normal" title="Shown for reference only — it is not in any balance, stock or profit figure">
+        Shown only
+      </Badge>
+    );
+  }
   return (
     <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
       {row.orders.length > 1 && (

@@ -73,6 +73,7 @@ class PaymentTransactionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    shown_only: bool = False  # reference only: not in any balance, stock or profit figure
     payment_account_id: int
     direction: PaymentDirection
     amount: Decimal

@@ -31,6 +31,8 @@ class PurchaseOrder(Base):
     # against paper records (e.g. the day-book catch-up import); never used as a key.
     # Deliberately NOT unique: one supplier invoice can cover several purchase orders.
     invoice_number: Mapped[str | None] = mapped_column(nullable=True, index=True)
+    # True = recorded for reference only: no ledger rows, ignored by balances, stock and profit reports (see PRODUCTION_CHANGES_LOG #17).
+    shown_only: Mapped[bool] = mapped_column(default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Read-only navigation so PurchaseOrderRead can embed the vendor's name instead of every
@@ -109,6 +111,8 @@ class PurchaseLogException(Base):
     invoice_number: Mapped[str | None] = mapped_column(nullable=True)
     note: Mapped[str | None] = mapped_column(nullable=True)
     ledger_entry_id: Mapped[int | None] = mapped_column(ForeignKey("ledger_entry.id"), nullable=True)
+    # True = recorded for reference only: no ledger rows, ignored by balances, stock and profit reports (see PRODUCTION_CHANGES_LOG #17).
+    shown_only: Mapped[bool] = mapped_column(default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Read-only navigation for the "Other entries" list — joinedload it in every read path.

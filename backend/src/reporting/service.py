@@ -86,7 +86,7 @@ async def _rank_models_by_sell_through(
             func.sum(SalesOrderLine.qty).label("qty_sold"),
         )
         .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
-        .where(SalesOrder.order_date >= start_date, SalesOrder.order_date <= end_date)
+        .where(SalesOrder.order_date >= start_date, SalesOrder.order_date <= end_date, SalesOrder.shown_only.is_(False))
         .group_by(SalesOrderLine.item_id)
         .subquery()
     )
@@ -153,7 +153,7 @@ def _revenue_by_item_subquery(start_date: date, end_date: date):
             func.sum(func.round(SalesOrderLine.qty * SalesOrderLine.rate_pkr, 2)).label("revenue_pkr"),
         )
         .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
-        .where(SalesOrder.order_date >= start_date, SalesOrder.order_date <= end_date)
+        .where(SalesOrder.order_date >= start_date, SalesOrder.order_date <= end_date, SalesOrder.shown_only.is_(False))
         .group_by(SalesOrderLine.item_id)
         .subquery()
     )
@@ -174,7 +174,7 @@ def _cost_by_item_subquery(start_date: date, end_date: date):
         .select_from(SalesOrderLineLot)
         .join(SalesOrderLine, SalesOrderLine.id == SalesOrderLineLot.sales_order_line_id)
         .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
-        .where(SalesOrder.order_date >= start_date, SalesOrder.order_date <= end_date)
+        .where(SalesOrder.order_date >= start_date, SalesOrder.order_date <= end_date, SalesOrder.shown_only.is_(False))
         .group_by(SalesOrderLine.id, SalesOrderLine.item_id)
         .subquery()
     )
@@ -269,7 +269,9 @@ async def _compute_period(
     cogs = await db.scalar(select(func.coalesce(func.sum(cost_by_item.c.cost_pkr), 0)))
 
     order_count = await db.scalar(
-        select(func.count(SalesOrder.id)).where(SalesOrder.order_date >= date_from, SalesOrder.order_date <= date_to)
+        select(func.count(SalesOrder.id)).where(
+            SalesOrder.order_date >= date_from, SalesOrder.order_date <= date_to, SalesOrder.shown_only.is_(False)
+        )
     )
     lines_without_cost = await db.scalar(
         select(func.count(SalesOrderLine.id))
@@ -277,6 +279,7 @@ async def _compute_period(
         .where(
             SalesOrder.order_date >= date_from,
             SalesOrder.order_date <= date_to,
+            SalesOrder.shown_only.is_(False),
             ~select(SalesOrderLineLot.id).where(SalesOrderLineLot.sales_order_line_id == SalesOrderLine.id).exists(),
         )
     )
@@ -302,6 +305,7 @@ async def _compute_period(
             .where(
                 Expense.status == "confirmed",
                 ExpenseCategory.counts_toward_profit.is_(True),
+                Expense.shown_only.is_(False),
                 Expense.expense_date >= date_from,
                 Expense.expense_date <= date_to,
             )
@@ -320,6 +324,7 @@ async def _compute_period(
         .where(
             Expense.status == "confirmed",
             ExpenseCategory.counts_toward_profit.is_(False),
+            Expense.shown_only.is_(False),
             Expense.expense_date >= date_from,
             Expense.expense_date <= date_to,
         )
@@ -327,6 +332,7 @@ async def _compute_period(
     draft_expenses = await db.scalar(
         select(func.coalesce(func.sum(Expense.amount), 0)).where(
             Expense.status == "draft",
+            Expense.shown_only.is_(False),
             Expense.expense_date >= date_from,
             Expense.expense_date <= date_to,
         )

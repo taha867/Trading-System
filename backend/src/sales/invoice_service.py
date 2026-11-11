@@ -81,6 +81,7 @@ def _parts_query(sale_clauses: list, entry_clauses: list | None):
             cast(null(), String).label("kind"),
             cast(func.coalesce(line_amount.c.amount, 0), Numeric(14, 2)).label("amount"),
             cast(func.coalesce(order_cost.c.cost, 0), Numeric(14, 2)).label("cost"),
+            SalesOrder.shown_only.label("shown"),
         )
         .select_from(SalesOrder)
         .outerjoin(line_amount, line_amount.c.order_id == SalesOrder.id)
@@ -100,6 +101,7 @@ def _parts_query(sale_clauses: list, entry_clauses: list | None):
         SalesLogException.kind.label("kind"),
         cast(SalesLogException.amount_pkr, Numeric(14, 2)).label("amount"),
         cast(literal(0), Numeric(14, 2)).label("cost"),
+        SalesLogException.shown_only.label("shown"),
     ).where(*entry_clauses)
     return union_all(sales, entries).subquery("parts")
 
@@ -147,6 +149,7 @@ async def list_invoices(
         sum_where(no_stock).label("no_stock"),
         sum_where(is_other_entry).label("other"),
         func.bool_or(cancelled).label("is_cancelled"),
+        func.bool_and(parts.c.shown).label("shown_only"),
         func.array_agg(parts.c.ref_id).filter(parts.c.src == "S").label("order_ids"),
         func.array_agg(parts.c.ref_id).filter(is_entry).label("entry_ids"),
     ).group_by(parts.c.gkey, parts.c.party_id)
@@ -160,15 +163,17 @@ async def list_invoices(
         grouped = grouped.having(not_(func.bool_or(is_entry)))
     g = grouped.subquery("g")
 
+    # Shown-only invoices are listed but never added into the summary numbers (they are not in any balance).
+    counted = not_(g.c.shown_only)
     totals = (
         await db.execute(
             select(
                 func.count(),
-                func.coalesce(func.sum(g.c.total), 0),
-                func.coalesce(func.sum(g.c.booked), 0),
-                func.coalesce(func.sum(g.c.cost), 0),
-                func.coalesce(func.sum(g.c.no_stock), 0),
-                func.coalesce(func.sum(g.c.other), 0),
+                func.coalesce(func.sum(g.c.total).filter(counted), 0),
+                func.coalesce(func.sum(g.c.booked).filter(counted), 0),
+                func.coalesce(func.sum(g.c.cost).filter(counted), 0),
+                func.coalesce(func.sum(g.c.no_stock).filter(counted), 0),
+                func.coalesce(func.sum(g.c.other).filter(counted), 0),
                 func.count().filter(g.c.is_cancelled),
             ).select_from(g)
         )
@@ -216,6 +221,7 @@ async def list_invoices(
                 no_stock_pkr=money(row.no_stock),
                 other_entries_pkr=money(row.other),
                 is_cancelled=bool(row.is_cancelled),
+                shown_only=bool(row.shown_only),
                 orders=[order_rows[i] for i in sorted(row.order_ids or []) if i in order_rows],
                 entries=[entries_by_id[i] for i in sorted(row.entry_ids or []) if i in entries_by_id],
             )

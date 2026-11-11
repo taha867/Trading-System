@@ -78,6 +78,7 @@ class SalesOrderRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    shown_only: bool = False  # reference only: not in any balance, stock or profit figure
     party_id: int
     party_name: str  # embedded so no screen needs to download the parties list just to show a name
     order_date: date
@@ -122,6 +123,7 @@ class SalesLogExceptionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    shown_only: bool = False  # reference only: not in any balance, stock or profit figure
     entry_date: date
     kind: str
     category_name: str | None
@@ -186,6 +188,7 @@ class InvoiceGroupRead(BaseModel):
     no_stock_pkr: Decimal  # lines that had no stock recorded ("No stock found")
     other_entries_pkr: Decimal  # bulk / no model / correction / discount
     is_cancelled: bool
+    shown_only: bool = False  # every row of the invoice is reference-only (not in the summary totals)
     orders: list[InvoiceOrderRead]
     entries: list[SalesLogExceptionRead]
 

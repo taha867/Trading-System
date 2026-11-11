@@ -72,6 +72,7 @@ class ExpenseRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    shown_only: bool = False  # reference only: not in any balance, stock or profit figure
     category_id: int
     payment_account_id: int
     amount: Decimal

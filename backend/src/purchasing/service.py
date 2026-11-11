@@ -231,7 +231,7 @@ async def list_purchase_orders(
             )
             .select_from(PurchaseOrderLine)
             .join(PurchaseOrder, PurchaseOrder.id == PurchaseOrderLine.purchase_order_id)
-            .where(*clauses)
+            .where(*clauses, PurchaseOrder.shown_only.is_(False))  # reference-only orders are listed, never totalled
         )
     ).one()
 
@@ -427,7 +427,7 @@ async def list_purchase_log_exceptions(
 
     total = await db.scalar(select(func.count()).select_from(PurchaseLogException).where(*filters))
     total_amount = await db.scalar(
-        select(func.coalesce(func.sum(PurchaseLogException.amount_pkr), 0)).where(*filters)
+        select(func.coalesce(func.sum(PurchaseLogException.amount_pkr), 0)).where(*filters, PurchaseLogException.shown_only.is_(False))
     )
     result = await db.execute(
         select(PurchaseLogException)

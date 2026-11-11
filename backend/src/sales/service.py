@@ -238,14 +238,14 @@ async def list_sales_orders(
         select(func.coalesce(func.sum(func.round(SalesOrderLine.qty * SalesOrderLine.rate_pkr, 2)), 0))
         .select_from(SalesOrderLine)
         .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
-        .where(*clauses)
+        .where(*clauses, SalesOrder.shown_only.is_(False))  # reference-only sales are listed, never totalled
     )
     cost_per_line = (
         select(func.round(func.sum(SalesOrderLineLot.qty_consumed * SalesOrderLineLot.unit_cost_pkr), 2).label("cost"))
         .select_from(SalesOrderLineLot)
         .join(SalesOrderLine, SalesOrderLine.id == SalesOrderLineLot.sales_order_line_id)
         .join(SalesOrder, SalesOrder.id == SalesOrderLine.sales_order_id)
-        .where(*clauses)
+        .where(*clauses, SalesOrder.shown_only.is_(False))
         .group_by(SalesOrderLine.id)
         .subquery()
     )
@@ -432,7 +432,7 @@ async def list_sales_log_exceptions(
     kind_rows = (
         await db.execute(
             select(SalesLogException.kind, func.count(), func.coalesce(func.sum(SalesLogException.amount_pkr), 0))
-            .where(*filters)
+            .where(*filters, SalesLogException.shown_only.is_(False))
             .group_by(SalesLogException.kind)
             .order_by(SalesLogException.kind)
         )

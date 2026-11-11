@@ -181,6 +181,11 @@ export function ExpenseList() {
                     <Badge variant={expense.status === EXPENSE_STATUS.DRAFT ? 'outline' : 'secondary'}>
                       {expense.status === EXPENSE_STATUS.DRAFT ? 'Draft' : 'Confirmed'}
                     </Badge>
+                    {expense.shown_only && (
+                      <Badge variant="outline" className="ml-1 font-normal" title="Shown for reference only — not in any balance or profit figure">
+                        Shown only
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
@@ -188,11 +193,12 @@ export function ExpenseList() {
                         variant="ghost"
                         size="icon-sm"
                         aria-label="Edit expense"
+                        disabled={expense.shown_only}
                         onClick={() => setEditingRow(expense)}
                       >
                         <Pencil />
                       </Button>
-                      {expense.status === EXPENSE_STATUS.DRAFT && (
+                      {expense.status === EXPENSE_STATUS.DRAFT && !expense.shown_only && (
                         <>
                           <Button size="sm" onClick={() => setConfirmingRow(expense)}>
                             Confirm

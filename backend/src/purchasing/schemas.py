@@ -101,6 +101,7 @@ class PurchaseOrderRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    shown_only: bool = False  # reference only: not in any balance, stock or profit figure
     party_id: int
     party_name: str  # embedded so no screen needs to download the parties list just to show a name
     order_date: date
@@ -132,6 +133,7 @@ class PurchaseLogExceptionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    shown_only: bool = False  # reference only: not in any balance, stock or profit figure
     entry_date: date
     kind: str
     party_id: int
@@ -219,6 +221,7 @@ class PurchaseGroupRead(BaseModel):
     orders_pkr: Decimal  # purchase orders with items (stock)
     entries_pkr: Decimal  # payable-only: owed to the supplier, no phone model, no stock
     total_rmb: Decimal
+    shown_only: bool = False
     categories: list[str]
     orders: list[PurchaseGroupOrderRead]
     entries: list[PurchaseLogExceptionRead]

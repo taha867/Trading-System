@@ -73,6 +73,8 @@ async def create_expense(db: AsyncSession, payload: ExpenseCreate) -> Expense:
 
 
 async def confirm_expense(db: AsyncSession, expense: Expense) -> Expense:
+    if expense.shown_only:
+        raise ConflictException("This expense is shown for reference only (3 Sept 2026) and cannot be changed")
     if expense.status != "draft":
         raise ConflictException("Expense is not in draft status")
     expense.status = "confirmed"
@@ -150,7 +152,7 @@ async def list_expenses(
     total = await db.scalar(select(func.count()).select_from(Expense).where(*filters))
     # Same filters, no offset/limit — the filter bar's "total spent" has to sum every
     # matching row, not just the page being rendered.
-    total_amount = await db.scalar(select(func.coalesce(func.sum(Expense.amount), 0)).where(*filters))
+    total_amount = await db.scalar(select(func.coalesce(func.sum(Expense.amount), 0)).where(*filters, Expense.shown_only.is_(False)))
     result = await db.execute(
         select(Expense)
         .where(*filters)
@@ -170,6 +172,8 @@ async def list_expenses(
 
 
 async def update_expense(db: AsyncSession, expense: Expense, payload: ExpenseUpdate) -> Expense:
+    if expense.shown_only:
+        raise ConflictException("This expense is shown for reference only (3 Sept 2026) and cannot be changed")
     updates = payload.model_dump(exclude_unset=True)
 
     if "category_id" in updates:

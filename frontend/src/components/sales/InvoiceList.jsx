@@ -38,8 +38,18 @@ function marginPct(invoice) {
   return booked ? `${((Number(invoice.margin_pkr) / booked) * 100).toFixed(1)}%` : '—';
 }
 
+// Reference-only (3 Sept 2026): listed, but in no balance, stock or profit figure.
+function ShownOnlyBadge() {
+  return (
+    <Badge variant="outline" className="ml-2 font-normal" title="Shown for reference only — it is not in any balance, stock or profit figure">
+      Shown only
+    </Badge>
+  );
+}
+
 // The small badges next to an invoice number: how many lines had no stock found, other entries, cancelled.
 function InvoiceBadges({ invoice }) {
+  if (invoice.shown_only) return <ShownOnlyBadge />;
   const counts = {};
   for (const entry of invoice.entries) counts[entry.kind] = (counts[entry.kind] ?? 0) + 1;
   const kinds = Object.keys(counts);
