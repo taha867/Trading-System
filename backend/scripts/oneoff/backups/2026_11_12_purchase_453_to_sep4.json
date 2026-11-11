@@ -1,0 +1,15 @@
+{
+ "id": "27",
+ "entry_date": "2026-09-03",
+ "kind": "no_model",
+ "party_id": "32",
+ "category_name": "Privacy",
+ "qty": "88.00",
+ "rate_pkr": "98.00",
+ "amount_pkr": "8624.00",
+ "invoice_number": "453",
+ "note": "Day-book row 13: category given, no model",
+ "ledger_entry_id": "None",
+ "created_at": "2026-11-11 10:46:39.982643+00:00",
+ "shown_only": "True"
+}
