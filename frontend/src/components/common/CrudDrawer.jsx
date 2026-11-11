@@ -3,7 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { FormField, FormSelect, FormMultiSelect } from '@/components/custom';
+import { FormField, FormSelect, FormMultiSelect, ModelCombobox, ModelMultiSelect } from '@/components/custom';
 
 function visibleFields(fields, mode) {
   return fields.filter((field) => !(mode !== 'edit' && field.hideOnCreate));
@@ -11,9 +11,9 @@ function visibleFields(fields, mode) {
 
 function buildDefaultValues(fields, row, mode) {
   return visibleFields(fields, mode).reduce((acc, field) => {
-    if (field.component === 'multiselect') {
+    if (field.component === 'multiselect' || field.component === 'model-multiselect') {
       acc[field.name] = row?.[field.name] ?? field.defaultValue ?? [];
-    } else if (field.component === 'select') {
+    } else if (field.component === 'select' || field.component === 'model-combobox') {
       acc[field.name] = row?.[field.name] != null ? String(row[field.name]) : (field.defaultValue ?? '');
     } else {
       acc[field.name] = row?.[field.name] ?? field.defaultValue ?? '';
@@ -97,6 +97,30 @@ export function CrudDrawer({ config, open, mode, row, openedAt, onOpenChange, en
                       label={field.label}
                       options={field.options}
                       placeholder={field.placeholder}
+                      error={errors[field.name]?.message}
+                    />
+                  );
+                }
+                if (field.component === 'model-combobox') {
+                  // server-searched model picker (the list is too long for a plain select)
+                  return (
+                    <ModelCombobox
+                      value={rhfField.value}
+                      onChange={rhfField.onChange}
+                      label={field.label}
+                      placeholder={field.placeholder}
+                      emptyLabel={null}
+                      error={errors[field.name]?.message}
+                    />
+                  );
+                }
+                if (field.component === 'model-multiselect') {
+                  return (
+                    <ModelMultiSelect
+                      value={rhfField.value}
+                      onChange={rhfField.onChange}
+                      label={field.label}
+                      selectedModels={isEdit ? (row?.[field.initialFrom] ?? []) : []}
                       error={errors[field.name]?.message}
                     />
                   );

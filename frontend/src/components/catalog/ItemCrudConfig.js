@@ -1,6 +1,4 @@
 import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
-import { useModels } from '@/hooks/catalogHooks/modelQueries';
-import { useBrands } from '@/hooks/catalogHooks/brandQueries';
 import { useItems } from '@/hooks/catalogHooks/itemQueries';
 import { useCreateItem, useUpdateItem, useDeleteItem } from '@/hooks/catalogHooks/itemMutations';
 import { itemCreateSchema, itemUpdateSchema } from '@/validations/catalogSchemas';
@@ -9,14 +7,8 @@ import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 export function useItemCrudConfig() {
   const { data: categoriesData } = useCategories(LOOKUP_PAGE);
-  const { data: modelsData } = useModels(LOOKUP_PAGE);
-
-  const { data: brandsData } = useBrands(LOOKUP_PAGE);
 
   const categories = categoriesData?.items ?? [];
-  // Model names no longer repeat the brand ("Y15", "A35"), so every pick-list shows brand + model: "Vivo Y15".
-  const brandNameById = Object.fromEntries((brandsData?.items ?? []).map((b) => [b.id, b.name]));
-  const models = (modelsData?.items ?? []).map((m) => ({ ...m, label: `${brandNameById[m.brand_id] ?? ''} ${m.name}`.trim() }));
 
   return {
     queryKey: itemKeys,
@@ -45,12 +37,8 @@ export function useItemCrudConfig() {
         component: 'select',
         options: categories.map((c) => ({ value: String(c.id), label: c.name })),
       },
-      {
-        key: 'model_id',
-        label: 'Model',
-        component: 'select',
-        options: models.map((m) => ({ value: String(m.id), label: m.label })),
-      },
+      // The model list is too long for a drop-down, so the list is searched instead (code, phone or colour).
+      { key: 'search', label: 'Search', component: 'search', placeholder: 'Search code, phone or colour…' },
       {
         key: 'variant',
         label: 'Variant',
@@ -69,9 +57,8 @@ export function useItemCrudConfig() {
       {
         name: 'model_id',
         label: 'Model',
-        component: 'select',
+        component: 'model-combobox',
         placeholder: 'Select a model',
-        options: models.map((m) => ({ value: String(m.id), label: m.label })),
       },
       // sku is not present in ItemUpdate on the backend — immutable after create.
       // Left empty on create, the server builds the code from category + brand + model + colour (e.g. OG-VIVO-Y15).
@@ -80,11 +67,10 @@ export function useItemCrudConfig() {
       {
         name: 'compatible_model_ids',
         label: 'Also compatible with',
-        component: 'multiselect',
-        // Raw int value (not String(m.id)) — compatible_model_ids is numeric end-to-end
-        // (backend list[int], ItemRead.compatible_model_ids returns raw ints), unlike
-        // the model_id/category_id selects above which target a string-based control.
-        options: models.map((m) => ({ value: m.id, label: m.label })),
+        component: 'model-multiselect',
+        // Raw int ids (compatible_model_ids is numeric end-to-end: backend list[int]); names for the ids already
+        // saved on the item come from its embedded compatible_models.
+        initialFrom: 'compatible_models',
         defaultValue: [],
       },
     ],
