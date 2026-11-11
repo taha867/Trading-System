@@ -100,7 +100,7 @@ function PurchaseDetails({ row }) {
             </TableBody>
           </Table>
           <p className="border-t px-3 py-2 text-xs text-muted-foreground">
-            Payable-only: money owed to the supplier for goods with no phone model, so nothing was added to stock.
+            Bought locally, no model given: a real purchase from the supplier (counted in what you owe), but the sheet names no phone model, so nothing was added to stock.
           </p>
         </div>
       )}
@@ -126,7 +126,7 @@ function RowBadges({ row }) {
       )}
       {row.entries.length > 0 && (
         <Badge variant="secondary" className="font-normal">
-          Payable-only{row.entries.length > 1 ? ` ×${row.entries.length}` : ''}
+          No model{row.entries.length > 1 ? ` ×${row.entries.length}` : ''}
         </Badge>
       )}
     </span>
@@ -190,7 +190,7 @@ export function PurchaseList() {
           <div>
             <CardTitle className="text-base">Purchases</CardTitle>
             <CardDescription>
-              Every supplier invoice once — purchase orders with items, and payable-only entries (money owed, no phone model) under the same invoice.
+              Every supplier invoice once — purchase orders with items, and purchases with no phone model given (no stock) under the same invoice.
             </CardDescription>
           </div>
         </div>
@@ -221,7 +221,7 @@ export function PurchaseList() {
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Orders with items <CurrencyAmount value={data.orders_pkr} /> · Payable-only entries <CurrencyAmount value={data.entries_pkr} />
+              Orders with items <CurrencyAmount value={data.orders_pkr} /> · No-model purchases <CurrencyAmount value={data.entries_pkr} />
             </p>
           </div>
         )}
@@ -294,7 +294,7 @@ export function PurchaseList() {
                 <TableHead>Date</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead className="text-right">Orders PKR</TableHead>
-                <TableHead className="text-right">Payable-only PKR</TableHead>
+                <TableHead className="text-right">No-model PKR</TableHead>
                 <TableHead className="text-right">Total PKR</TableHead>
               </TableRow>
             </TableHeader>
@@ -416,7 +416,7 @@ export function PurchaseList() {
                     {row.party_name} · {row.invoice_date}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {categoryLabel(row)} · orders <CurrencyAmount value={row.orders_pkr} /> · payable-only <CurrencyAmount value={row.entries_pkr} />
+                    {categoryLabel(row)} · orders <CurrencyAmount value={row.orders_pkr} /> · no model <CurrencyAmount value={row.entries_pkr} />
                   </span>
                   <RowBadges row={row} />
                   <span className="text-xs text-primary">{open ? 'Hide details' : 'Show details'}</span>

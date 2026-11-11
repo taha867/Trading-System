@@ -234,7 +234,7 @@ export const INVOICE_SHOW_VALUES = INVOICE_SHOW_OPTIONS.map((option) => option.v
 export const PURCHASE_SHOW_OPTIONS = [
   { value: SELECT_ALL_VALUE, label: 'All purchases' },
   { value: 'orders_only', label: 'Orders only (with items)' },
-  { value: 'payable_only', label: 'Payable-only entries (no model)' },
+  { value: 'payable_only', label: 'Purchases with no model given' },
 ];
 export const PURCHASE_SHOW_VALUES = PURCHASE_SHOW_OPTIONS.map((option) => option.value).filter((value) => value !== SELECT_ALL_VALUE);
 
