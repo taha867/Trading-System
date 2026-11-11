@@ -301,6 +301,7 @@ async def _compute_period(
             .join(ExpenseCategory, ExpenseCategory.id == Expense.category_id)
             .where(
                 Expense.status == "confirmed",
+                ExpenseCategory.counts_toward_profit.is_(True),
                 Expense.expense_date >= date_from,
                 Expense.expense_date <= date_to,
             )
@@ -313,6 +314,16 @@ async def _compute_period(
         for cid, name, frequency, total in expense_rows
     ]
     expenses_total = sum((e.total_pkr for e in expenses_by_category), Decimal(0))
+    excluded_expenses = await db.scalar(
+        select(func.coalesce(func.sum(Expense.amount), 0))
+        .join(ExpenseCategory, ExpenseCategory.id == Expense.category_id)
+        .where(
+            Expense.status == "confirmed",
+            ExpenseCategory.counts_toward_profit.is_(False),
+            Expense.expense_date >= date_from,
+            Expense.expense_date <= date_to,
+        )
+    )
     draft_expenses = await db.scalar(
         select(func.coalesce(func.sum(Expense.amount), 0)).where(
             Expense.status == "draft",
@@ -359,6 +370,7 @@ async def _compute_period(
         unitemised_sales_pkr=money(unitemised_total),
         unitemised_sales_by_kind=unitemised_by_kind,
         draft_expenses_pkr=money(draft_expenses or Decimal(0)),
+        excluded_expenses_pkr=money(excluded_expenses or Decimal(0)),
         lines_without_cost=lines_without_cost or 0,
     )
 

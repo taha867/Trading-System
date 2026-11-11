@@ -67,7 +67,7 @@ ALREADY_BOOKED_ROW = 21  # A.Power Traders -- booked by Stage 2 as a local_purch
 EXPECTED = {
     "a_rows": 40, "a_amount": Decimal("417840"),
     "b_rows": 16, "b_amount": Decimal("118375"),
-    "resale_rows": 9, "resale_amount": Decimal("8380"),
+    "resale_rows": 0, "resale_amount": Decimal("0"),  # no sales from the Local Purchase tab
 }
 
 CATEGORY_OG, CATEGORY_DUST = "OG Glass Protector", "Dust Plug"
@@ -274,7 +274,7 @@ async def build_plans(db, rows: list[Row]) -> list[Plan]:
 def summarize(plans: list[Plan]) -> dict:
     a = [p for p in plans if p.kind == "A"]
     b = [p for p in plans if p.kind == "B"]
-    resales = [p for p in a if p.row.sold_to]
+    resales = []  # sales come only from the Credit Sale tab, never from "Sold To"
     return {
         "a_rows": len(a), "a_amount": sum((p.row.amount for p in a), Decimal(0)),
         "b_rows": len(b), "b_amount": sum((p.row.amount for p in b), Decimal(0)),
@@ -285,7 +285,7 @@ def summarize(plans: list[Plan]) -> dict:
 def print_plan(plans: list[Plan], totals: dict) -> None:
     print(f"\nClass A (stock):        {totals['a_rows']:>3} rows  Rs {totals['a_amount']:>10,.0f}")
     print(f"Class B (payable only): {totals['b_rows']:>3} rows  Rs {totals['b_amount']:>10,.0f}")
-    print(f"Resales to create:      {totals['resale_rows']:>3} rows  Rs {totals['resale_amount']:>10,.0f}")
+    print("Resales to create:        0 (sales come only from the Credit Sale tab)")
     per_supplier = collections.defaultdict(Decimal)
     for p in plans:
         per_supplier[p.row.supplier] += p.row.amount
@@ -418,25 +418,9 @@ async def apply_plans(db, plans: list[Plan], totals: dict) -> None:
         payable_total += row.amount
         po_count += 1
 
-        if row.sold_to:
-            buyer = await party(row.sold_to, BUYER_NAMES)
-            # No invoice number: row.invoice is the SUPPLIER's invoice for the purchase. The sheet gives this
-            # resale none of its own, and copying the supplier's number made 9 sales show "541" in the app.
-            so = SalesOrder(party_id=buyer.id, order_date=row.date, invoice_number=None)
-            db.add(so)
-            await db.flush()
-            consumptions = await inventory_service.consume_stock_fifo(db, item_id=item.id, qty_needed=row.qty, movement_date=row.date)
-            sale_line = SalesOrderLine(sales_order_id=so.id, item_id=item.id, qty=row.qty, rate_pkr=row.rate)
-            db.add(sale_line)
-            await db.flush()
-            for c in consumptions:
-                db.add(SalesOrderLineLot(sales_order_line_id=sale_line.id, stock_lot_id=c.stock_lot_id, qty_consumed=c.qty_consumed, unit_cost_pkr=c.unit_cost_pkr))
-            await ledger_service.post_entry(
-                db, entry_date=row.date, account="Accounts Receivable", debit=row.amount,
-                reference_type="sales_order", reference_id=so.id, party_id=buyer.id,
-            )
-            receivable_total += row.amount
-            so_count += 1
+        # No sale is created here. "Sold To (Party)" only says who the goods were bought for: the sale itself is a
+        # Credit Sale line (it duplicated one when this script used to create it; those 10 sales were removed
+        # on 2026-11-11, see PRODUCTION_CHANGES_LOG.md). Sales orders come only from the Credit Sale tab.
 
     # Final guard, still inside the transaction: the result must be exactly what was approved.
     expected_payable = totals["a_amount"] + totals["b_amount"]

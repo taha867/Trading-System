@@ -72,6 +72,9 @@ function buildLines(current, previous) {
     line('expenses_total', 'Total expenses', 'expenses_total_pkr', { deduct: true }),
     line('net', 'Net profit', 'net_profit_pkr', { strong: true, signed: true }),
     line('net_pct', 'Net margin', 'net_margin_pct', { pct: true }),
+    line('excluded', 'Not counted in profit', 'excluded_expenses_pkr', {
+      hint: 'Personal and other spending outside the shop — recorded, but not a shop cost',
+    }),
   ];
 }
 

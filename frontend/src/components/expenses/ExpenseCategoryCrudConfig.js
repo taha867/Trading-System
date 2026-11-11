@@ -6,7 +6,7 @@ import {
 } from '@/hooks/expensesHooks/expensesMutations';
 import { expenseCategoryCreateSchema, expenseCategoryUpdateSchema } from '@/validations/expensesSchemas';
 import { expenseCategoryKeys } from '@/utils/queryKeys';
-import { EXPENSE_CATEGORY_FREQUENCY_OPTIONS } from '@/utils/constants';
+import { EXPENSE_CATEGORY_FREQUENCY_OPTIONS, COUNTS_TOWARD_PROFIT_OPTIONS } from '@/utils/constants';
 
 function frequencyLabel(value) {
   return EXPENSE_CATEGORY_FREQUENCY_OPTIONS.find((option) => option.value === value)?.label ?? value;
@@ -21,11 +21,19 @@ export const expenseCategoryCrudConfig = {
   columns: [
     { key: 'name', label: 'Name' },
     { key: 'frequency', label: 'Frequency', render: (row) => frequencyLabel(row.frequency) },
+    { key: 'counts_toward_profit', label: 'Counts toward profit', render: (row) => (row.counts_toward_profit ? 'Yes' : 'No') },
   ],
   createSchema: expenseCategoryCreateSchema,
   updateSchema: expenseCategoryUpdateSchema,
   fields: [
     { name: 'name', label: 'Name', component: 'text' },
     { name: 'frequency', label: 'Frequency', component: 'select', options: EXPENSE_CATEGORY_FREQUENCY_OPTIONS },
+    {
+      name: 'counts_toward_profit',
+      label: 'Counts toward shop profit',
+      component: 'select',
+      options: COUNTS_TOWARD_PROFIT_OPTIONS,
+      defaultValue: 'true',
+    },
   ],
 };

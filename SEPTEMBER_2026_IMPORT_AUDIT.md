@@ -2,6 +2,10 @@
 
 > **Status (2026-11-10): partly out of date.** Written before the Stage 3 import and the invoice clean-ups. Since then: local purchases are 63 POs / ₨853,935 (§1); the 231 `insufficient_stock` lines in §6 are probably explained by the purchases that were missing, and are still not replayed; 9 more resales exist (§7); only ₨2,080 of Dream Mobile's ₨3,580 A.Power resale is booked (§8). The supplier invoice numbers carried down onto the wrong rows were cleared. See `PRODUCTION_CHANGES_LOG.md`.
 
+> **Correction (2026-11-11):** the same-day "resale" sales described in §7 and §8 were duplicates of Credit Sale lines and were removed from production (10 sales, Rs 8,830). Sales orders come only from the Credit Sale tab; the Local Purchase tab is purchases only, and its "Sold To" column just says who the goods were bought for. See `PRODUCTION_CHANGES_LOG.md` (#9).
+
+> **Correction (2026-11-11, supplier payments):** Stage 1 stored every row of the Expenses tab as an expense, but 13 of them (Rs 5,005,801) were payments to suppliers and to the importer (Shoaib Traders / Sunny Glass). They are now supplier payments that reduce the payable, and Personal spending no longer counts toward shop profit. See `PRODUCTION_CHANGES_LOG.md` (#12, #13).
+
 Source file: `Daily Cash Book (Sept 2026).xlsx` (Expenses, Credit Sale, Local Purchase,
 Received Amount sheets), filtered strictly to Ledger Date within September 2026 — the
 file also contains October rows, out of scope for this import.

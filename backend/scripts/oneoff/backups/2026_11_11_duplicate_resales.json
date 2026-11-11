@@ -1,0 +1,586 @@
+{
+  "sales_order": [
+    {
+      "id": 26,
+      "party_id": 30,
+      "order_date": "2026-09-25",
+      "created_at": "2026-10-20 14:21:45.259827+00:00",
+      "invoice_number": null
+    },
+    {
+      "id": 44,
+      "party_id": 7,
+      "order_date": "2026-09-07",
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "invoice_number": null
+    },
+    {
+      "id": 45,
+      "party_id": 30,
+      "order_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "invoice_number": null
+    },
+    {
+      "id": 46,
+      "party_id": 30,
+      "order_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "invoice_number": null
+    },
+    {
+      "id": 47,
+      "party_id": 30,
+      "order_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "invoice_number": null
+    },
+    {
+      "id": 48,
+      "party_id": 30,
+      "order_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "invoice_number": null
+    },
+    {
+      "id": 49,
+      "party_id": 30,
+      "order_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "invoice_number": null
+    },
+    {
+      "id": 50,
+      "party_id": 30,
+      "order_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "invoice_number": null
+    },
+    {
+      "id": 51,
+      "party_id": 30,
+      "order_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "invoice_number": null
+    },
+    {
+      "id": 52,
+      "party_id": 30,
+      "order_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "invoice_number": null
+    }
+  ],
+  "sales_order_line": [
+    {
+      "id": 115,
+      "sales_order_id": 26,
+      "item_id": 2546,
+      "qty": "5.00",
+      "rate_pkr": "90.00"
+    },
+    {
+      "id": 246,
+      "sales_order_id": 44,
+      "item_id": 2419,
+      "qty": "40.00",
+      "rate_pkr": "52.00"
+    },
+    {
+      "id": 247,
+      "sales_order_id": 45,
+      "item_id": 849,
+      "qty": "10.00",
+      "rate_pkr": "90.00"
+    },
+    {
+      "id": 248,
+      "sales_order_id": 46,
+      "item_id": 2598,
+      "qty": "5.00",
+      "rate_pkr": "90.00"
+    },
+    {
+      "id": 249,
+      "sales_order_id": 47,
+      "item_id": 2549,
+      "qty": "10.00",
+      "rate_pkr": "90.00"
+    },
+    {
+      "id": 250,
+      "sales_order_id": 48,
+      "item_id": 2534,
+      "qty": "10.00",
+      "rate_pkr": "90.00"
+    },
+    {
+      "id": 251,
+      "sales_order_id": 49,
+      "item_id": 851,
+      "qty": "10.00",
+      "rate_pkr": "90.00"
+    },
+    {
+      "id": 252,
+      "sales_order_id": 50,
+      "item_id": 2533,
+      "qty": "5.00",
+      "rate_pkr": "90.00"
+    },
+    {
+      "id": 253,
+      "sales_order_id": 51,
+      "item_id": 2554,
+      "qty": "10.00",
+      "rate_pkr": "90.00"
+    },
+    {
+      "id": 254,
+      "sales_order_id": 52,
+      "item_id": 2139,
+      "qty": "10.00",
+      "rate_pkr": "90.00"
+    }
+  ],
+  "sales_order_line_lot": [
+    {
+      "id": 118,
+      "sales_order_line_id": 115,
+      "stock_lot_id": 992,
+      "qty_consumed": "5.00",
+      "unit_cost_pkr": "90.00",
+      "created_at": "2026-10-20 14:21:45.259827+00:00"
+    },
+    {
+      "id": 254,
+      "sales_order_line_id": 246,
+      "stock_lot_id": 1038,
+      "qty_consumed": "40.00",
+      "unit_cost_pkr": "52.00",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 255,
+      "sales_order_line_id": 247,
+      "stock_lot_id": 1070,
+      "qty_consumed": "10.00",
+      "unit_cost_pkr": "90.00",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 256,
+      "sales_order_line_id": 248,
+      "stock_lot_id": 1071,
+      "qty_consumed": "5.00",
+      "unit_cost_pkr": "90.00",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 257,
+      "sales_order_line_id": 249,
+      "stock_lot_id": 1072,
+      "qty_consumed": "10.00",
+      "unit_cost_pkr": "90.00",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 258,
+      "sales_order_line_id": 250,
+      "stock_lot_id": 1073,
+      "qty_consumed": "10.00",
+      "unit_cost_pkr": "90.00",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 259,
+      "sales_order_line_id": 251,
+      "stock_lot_id": 630,
+      "qty_consumed": "10.00",
+      "unit_cost_pkr": "82.51",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 260,
+      "sales_order_line_id": 252,
+      "stock_lot_id": 1075,
+      "qty_consumed": "5.00",
+      "unit_cost_pkr": "90.00",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 261,
+      "sales_order_line_id": 253,
+      "stock_lot_id": 1076,
+      "qty_consumed": "10.00",
+      "unit_cost_pkr": "90.00",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 262,
+      "sales_order_line_id": 254,
+      "stock_lot_id": 1077,
+      "qty_consumed": "10.00",
+      "unit_cost_pkr": "90.00",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    }
+  ],
+  "ledger_entry": [
+    {
+      "id": 1491,
+      "entry_date": "2026-09-25",
+      "account": "Accounts Receivable",
+      "debit": "450.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 26,
+      "party_id": 30,
+      "created_at": "2026-10-20 14:21:45.259827+00:00",
+      "payment_account_id": null
+    },
+    {
+      "id": 1684,
+      "entry_date": "2026-09-07",
+      "account": "Accounts Receivable",
+      "debit": "2080.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 44,
+      "party_id": 7,
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "payment_account_id": null
+    },
+    {
+      "id": 1718,
+      "entry_date": "2026-09-25",
+      "account": "Accounts Receivable",
+      "debit": "900.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 45,
+      "party_id": 30,
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "payment_account_id": null
+    },
+    {
+      "id": 1720,
+      "entry_date": "2026-09-25",
+      "account": "Accounts Receivable",
+      "debit": "450.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 46,
+      "party_id": 30,
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "payment_account_id": null
+    },
+    {
+      "id": 1722,
+      "entry_date": "2026-09-25",
+      "account": "Accounts Receivable",
+      "debit": "900.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 47,
+      "party_id": 30,
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "payment_account_id": null
+    },
+    {
+      "id": 1724,
+      "entry_date": "2026-09-25",
+      "account": "Accounts Receivable",
+      "debit": "900.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 48,
+      "party_id": 30,
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "payment_account_id": null
+    },
+    {
+      "id": 1726,
+      "entry_date": "2026-09-25",
+      "account": "Accounts Receivable",
+      "debit": "900.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 49,
+      "party_id": 30,
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "payment_account_id": null
+    },
+    {
+      "id": 1728,
+      "entry_date": "2026-09-25",
+      "account": "Accounts Receivable",
+      "debit": "450.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 50,
+      "party_id": 30,
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "payment_account_id": null
+    },
+    {
+      "id": 1730,
+      "entry_date": "2026-09-25",
+      "account": "Accounts Receivable",
+      "debit": "900.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 51,
+      "party_id": 30,
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "payment_account_id": null
+    },
+    {
+      "id": 1732,
+      "entry_date": "2026-09-25",
+      "account": "Accounts Receivable",
+      "debit": "900.00",
+      "credit": "0.00",
+      "reference_type": "sales_order",
+      "reference_id": 52,
+      "party_id": 30,
+      "created_at": "2026-11-03 20:11:10.351129+00:00",
+      "payment_account_id": null
+    }
+  ],
+  "stock_movement": [
+    {
+      "id": 1130,
+      "stock_lot_id": 992,
+      "movement_type": "sale",
+      "qty_delta": "-5.00",
+      "reason": null,
+      "movement_date": "2026-09-25",
+      "created_at": "2026-10-20 14:21:45.259827+00:00"
+    },
+    {
+      "id": 1316,
+      "stock_lot_id": 1038,
+      "movement_type": "sale",
+      "qty_delta": "-40.00",
+      "reason": null,
+      "movement_date": "2026-09-07",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1349,
+      "stock_lot_id": 1070,
+      "movement_type": "sale",
+      "qty_delta": "-10.00",
+      "reason": null,
+      "movement_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1351,
+      "stock_lot_id": 1071,
+      "movement_type": "sale",
+      "qty_delta": "-5.00",
+      "reason": null,
+      "movement_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1353,
+      "stock_lot_id": 1072,
+      "movement_type": "sale",
+      "qty_delta": "-10.00",
+      "reason": null,
+      "movement_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1355,
+      "stock_lot_id": 1073,
+      "movement_type": "sale",
+      "qty_delta": "-10.00",
+      "reason": null,
+      "movement_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1357,
+      "stock_lot_id": 630,
+      "movement_type": "sale",
+      "qty_delta": "-10.00",
+      "reason": null,
+      "movement_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1359,
+      "stock_lot_id": 1075,
+      "movement_type": "sale",
+      "qty_delta": "-5.00",
+      "reason": null,
+      "movement_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1361,
+      "stock_lot_id": 1076,
+      "movement_type": "sale",
+      "qty_delta": "-10.00",
+      "reason": null,
+      "movement_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1363,
+      "stock_lot_id": 1077,
+      "movement_type": "sale",
+      "qty_delta": "-10.00",
+      "reason": null,
+      "movement_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    }
+  ],
+  "stock_lot_before": [
+    {
+      "id": 628,
+      "purchase_order_line_id": 713,
+      "item_id": 849,
+      "qty_received": "10.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "82.51",
+      "received_date": "2026-09-10",
+      "created_at": "2026-09-10 09:58:16.909068+00:00"
+    },
+    {
+      "id": 630,
+      "purchase_order_line_id": 715,
+      "item_id": 851,
+      "qty_received": "82.00",
+      "qty_remaining": "62.00",
+      "landed_cost_pkr": "82.51",
+      "received_date": "2026-09-10",
+      "created_at": "2026-09-10 09:58:19.387204+00:00"
+    },
+    {
+      "id": 992,
+      "purchase_order_line_id": 1077,
+      "item_id": 2546,
+      "qty_received": "5.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "90.00",
+      "received_date": "2026-09-25",
+      "created_at": "2026-10-20 14:21:45.259827+00:00"
+    },
+    {
+      "id": 1038,
+      "purchase_order_line_id": 1123,
+      "item_id": 2419,
+      "qty_received": "40.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "52.00",
+      "received_date": "2026-09-07",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1070,
+      "purchase_order_line_id": 1155,
+      "item_id": 849,
+      "qty_received": "10.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "90.00",
+      "received_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1071,
+      "purchase_order_line_id": 1156,
+      "item_id": 2598,
+      "qty_received": "5.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "90.00",
+      "received_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1072,
+      "purchase_order_line_id": 1157,
+      "item_id": 2549,
+      "qty_received": "10.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "90.00",
+      "received_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1073,
+      "purchase_order_line_id": 1158,
+      "item_id": 2534,
+      "qty_received": "10.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "90.00",
+      "received_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1074,
+      "purchase_order_line_id": 1159,
+      "item_id": 851,
+      "qty_received": "10.00",
+      "qty_remaining": "10.00",
+      "landed_cost_pkr": "90.00",
+      "received_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1075,
+      "purchase_order_line_id": 1160,
+      "item_id": 2533,
+      "qty_received": "5.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "90.00",
+      "received_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1076,
+      "purchase_order_line_id": 1161,
+      "item_id": 2554,
+      "qty_received": "10.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "90.00",
+      "received_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    },
+    {
+      "id": 1077,
+      "purchase_order_line_id": 1162,
+      "item_id": 2139,
+      "qty_received": "10.00",
+      "qty_remaining": "0.00",
+      "landed_cost_pkr": "90.00",
+      "received_date": "2026-09-25",
+      "created_at": "2026-11-03 20:11:10.351129+00:00"
+    }
+  ],
+  "invoice29_line_lots_before": [
+    {
+      "id": 133,
+      "sales_order_line_id": 129,
+      "stock_lot_id": 630,
+      "qty_consumed": "10.00",
+      "unit_cost_pkr": "82.51",
+      "created_at": "2026-10-20 14:21:47.753554+00:00",
+      "sku": "DPLUG-IPHONE16PROMAX",
+      "sales_order_id": 27
+    },
+    {
+      "id": 147,
+      "sales_order_line_id": 143,
+      "stock_lot_id": 628,
+      "qty_consumed": "10.00",
+      "unit_cost_pkr": "82.51",
+      "created_at": "2026-10-20 14:21:47.753554+00:00",
+      "sku": "DPLUG-IPHONE15",
+      "sales_order_id": 27
+    }
+  ]
+}

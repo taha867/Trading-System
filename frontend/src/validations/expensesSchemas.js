@@ -4,6 +4,8 @@ import { EXPENSE_CATEGORY_FREQUENCY } from '@/utils/constants';
 export const expenseCategoryCreateSchema = object({
   name: string().required('Name is required').max(120),
   frequency: string().oneOf(Object.values(EXPENSE_CATEGORY_FREQUENCY)).required('Select a frequency'),
+  // Mirrors ExpenseCategoryCreate.counts_toward_profit (a bool; the select sends 'true' / 'false').
+  counts_toward_profit: string().oneOf(['true', 'false']).default('true'),
 });
 
 // ExpenseCategoryUpdate mirrors ExpenseCategoryCreate with every field optional —

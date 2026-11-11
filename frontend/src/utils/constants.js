@@ -152,6 +152,12 @@ export const EXPENSE_CATEGORY_FREQUENCY_OPTIONS = [
   { value: EXPENSE_CATEGORY_FREQUENCY.MONTHLY, label: 'Monthly' },
 ];
 
+// String values on purpose: the CRUD drawer's select field works with strings, and the API accepts "true"/"false".
+export const COUNTS_TOWARD_PROFIT_OPTIONS = [
+  { value: 'true', label: 'Yes — a cost of running the shop' },
+  { value: 'false', label: 'No — personal or outside the shop' },
+];
+
 export const EXPENSE_STATUS = {
   DRAFT: 'draft',
   CONFIRMED: 'confirmed',

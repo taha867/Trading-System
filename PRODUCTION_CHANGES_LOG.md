@@ -14,17 +14,15 @@ connection string from the `PROD_DSN` environment variable; none contains a cred
 | 6 | Nov | Cleared supplier invoice numbers copied onto 10 resale sales (`541` x9, `5` x1) | `sales_order` 26, 45-52, and one Dream Mobile sale | `oneoff/2026_11_04_clear_resale_sale_invoice_numbers.py` |
 | 7 | Nov | Cleared carried-down invoice numbers on 21 purchase orders (488, 506, 518, 532, 541) | `purchase_order` 36-40, 45, 47, 49, 51-55, 104-108, 120-122 | `oneoff/2026_11_04_clear_carried_down_po_invoices.py` |
 | 8 | Nov | Migration `c4e81b7a2d95` - purchase search indexes and `purchase_log_exception` table | table + indexes | `migrations/versions/2026-11-04_add_purchase_search_indexes_and_log_exception.py` |
+| 9 | Nov 11 | Removed 10 duplicate resale sales (Rs 8,830) created earlier from the Local Purchase tab's "Sold To"; stock restored; invoice 29's iPhone 15 / 16 Pro Max lines moved from China lots 628/630 (cost 82.51) to local lots 1070/1074 (cost 90) | `sales_order` 26, 44-52; ledger 1491, 1684, 1718-1732 (even); stock movements 1130, 1316, 1349-1363 (odd); `sales_order_line_lot` 133, 147 re-pointed. Result: 28 sales orders, AR debits Rs 1,142,377, Shoaib Rs 94,600, Dream Rs 13,770 (match the Customer Ledger sheet). Backup of deleted rows in `backend/scripts/oneoff/backups/2026_11_11_duplicate_resales.json` | `oneoff/2026_11_11_remove_duplicate_resale_sales.py` |
+| 10 | Nov 11 | Corrected purchase order #14 (Mohsin, 8 Sep) and lot 562: the iPhone 14 Pro Max Simple Privacy quantity had been corrected from 517 to 47 but the payable ledger rows and receipt movement kept 517 (470 pcs x Rs 71.66 = Rs 33,680.20). 47 confirmed by `Mohsin_Stock_Sent_Comparison.xlsx` (1,965 pcs = Rs 140,811.90) | `ledger_entry` 585 credit and 603 debit 174,492.10 -> 140,811.90; `stock_movement` 562 qty 517 -> 47. Mohsin's net payable and total Inventory unchanged; no purchase order or stock lot mismatches remain. Backup: `backend/scripts/oneoff/backups/2026_11_11_po14_fix.json` | `oneoff/2026_11_11_fix_po14_quantity.py` |
+| 11 | Nov 11 | Backfilled `purchase_log_exception` for the 17 payable-only local purchases so the Purchase "Other entries" tab lists them | 17 rows, Rs 119,875, each linked to its `local_purchase_exception` ledger row; no amounts changed | `backfill_purchase_log_exceptions.py --apply` |
+| 12 | Nov 11 | Migration `d7a2e94b1c60` - `expense_category.counts_toward_profit` (default true). Applied by the owner in the Neon SQL editor (`ALTER TABLE` + `alembic_version` update) | column only | `migrations/versions/2026-11-11_add_expense_category_counts_toward_profit.py` |
+| 13 | Nov 11 | Supplier and import payments that the day book listed under Expenses were recorded as expenses. Converted 13 of them (Rs 5,005,801) to payments to the supplier with an Accounts Payable debit; the Rs 4,338,130 of import payments sit as an advance on the new party "Shoaib Traders / Sunny Glass (Import)" (china_vendor). Personal category set to not count toward shop profit | `expense` 43, 57, 58, 72, 81, 82, 85, 112, 117, 118, 119, 120, 125 deleted; their `payment_transaction` rows (44, 58, 59, 73, 82, 83, 86, 113, 118, 119, 120, 121, 126) now carry the supplier party; 13 new AP debit ledger rows. Result: supplier payables S&A 126,635, AlNafeh 51,250, AMT 8,880, Galaxy 0, A.Power 0, Javed -1, NS -500, Shoaib/Sunny -4,338,130; 118 expenses left (Shop 184,844 counts, Personal 1,161,759 not counted); payments out unchanged (131, Rs 6,352,404); cash/bank, receivable, inventory and Mohsin balances unchanged. Backup: `backend/scripts/oneoff/backups/2026_11_11_reclassify_supplier_payments.json` | `oneoff/2026_11_11_reclassify_supplier_payments.py` |
 
-## Not yet applied
+## Still open
 
-- `backend/scripts/backfill_purchase_log_exceptions.py` - plan matches exactly 17 entries / Rs 119,875. Run `--rehearse`, then `--apply`.
-
-## Known open item
-
-- Purchase order #14 (Mohsin, 2026-09-08): ledger payable Rs 174,492.10 vs lines Rs 140,811.90, difference Rs 33,680.20. It comes from the earlier Mohsin import, not from the changes above. Needs an owner decision before correcting.
-
-## Verification habit
-
-Each script runs in one transaction, asserts the exact rows and current values first, defaults to a dry run
-(rolled back), and checks the result before committing. Re-running an applied script is harmless: its assertions
-fail and nothing is written.
+- 231 `insufficient_stock` sales lines (Rs 540,510): 103 of the 133 items have no stock recorded at all (Rs 333,840), so only about Rs 206,670 can be matched against local lots. Needs an opening-stock list or a decision to count them as revenue without cost.
+- Five invoices (417, 3, 4, 5, 6): ledger date September vs sheet sale date August.
+- Payment account for expenses: all expense payments sit on "Unspecified (to be decided)" although the day book descriptions name FBL / BOP / UBL / Easypaisa; needs a decision per payment for correct account balances.
+- Reset the Neon password (the old one appeared in git history and in chat).

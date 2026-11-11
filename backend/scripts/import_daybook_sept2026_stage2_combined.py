@@ -31,6 +31,7 @@ Exceptions already handled in prior scripts (NOT reprocessed here):
     model and no given resale amount -- logged as a straight Accounts Payable
     entry, no stock effect, no matching sale (the source gives no sale amount).
 
+NOTE (2026-11-11): the resale-sale behaviour described below was WRONG -- those sales duplicate Credit Sale lines and were removed from production. Sales orders come only from the Credit Sale tab.
 Local Purchase's "Sold To (Party)" column means the same physical units were
 immediately resold same-day -- each such row generates both the purchase (stock
 in) and a matching Credit-Sale-equivalent sale (stock out) in this one script.

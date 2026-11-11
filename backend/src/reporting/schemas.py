@@ -104,6 +104,7 @@ class ProfitLossPeriodRead(BaseModel):
     unitemised_sales_pkr: Decimal  # SalesLogException total — in revenue_pkr only when include_unitemised=true
     unitemised_sales_by_kind: list[UnitemisedSalesKindRead]
     draft_expenses_pkr: Decimal  # excluded from profit; returned so nothing is silently hidden
+    excluded_expenses_pkr: Decimal  # confirmed spending in categories that don't count toward shop profit (e.g. Personal)
     lines_without_cost: int  # sale lines in the period with no SalesOrderLineLot rows (cost counted as 0)
 
 

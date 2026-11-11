@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, ForeignKey, Numeric, func
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.models import Base
@@ -14,6 +14,9 @@ class ExpenseCategory(Base):
     name: Mapped[str] = mapped_column(unique=True)
     frequency: Mapped[str]  # "daily" | "monthly" — Literal enforced at the Pydantic layer, see constants.py
     is_active: Mapped[bool] = mapped_column(default=True)
+    # False for spending that is not a cost of running the shop (e.g. Personal): still recorded and listed, but left
+    # out of the monthly profit and loss and shown there as a separate line.
+    counts_toward_profit: Mapped[bool] = mapped_column(default=True, server_default=text("true"))
 
 
 class RecurringExpenseTemplate(Base):

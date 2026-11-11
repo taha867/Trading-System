@@ -33,6 +33,8 @@ Per the user's explicit decisions this session:
 
 Run with the backend's own venv:
     DATABASE_URL=... backend/.venv/bin/python scripts/import_daybook_sept2026_stage1.py [--apply]
+
+NOTE (2026-11-11): rows of the Expenses tab that are payments to suppliers or to the importer (see the day book's Supplier Ledger tab) must NOT be imported as expenses -- they are payments to that party and reduce its payable. 13 such rows were converted in production; see PRODUCTION_CHANGES_LOG.md (#13). Personal-category rows are outside shop profit.
 """
 
 import argparse

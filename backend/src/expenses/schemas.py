@@ -11,6 +11,7 @@ from src.pagination import PaginatedResponse
 class ExpenseCategoryCreate(BaseModel):
     name: Annotated[str, Field(max_length=120)]
     frequency: ExpenseCategoryFrequency
+    counts_toward_profit: bool = True
 
 
 class ExpenseCategoryRead(ExpenseCategoryCreate):
@@ -23,6 +24,7 @@ class ExpenseCategoryRead(ExpenseCategoryCreate):
 class ExpenseCategoryUpdate(BaseModel):
     name: Annotated[str, Field(max_length=120)] | None = None
     frequency: ExpenseCategoryFrequency | None = None
+    counts_toward_profit: bool | None = None
 
 
 class RecurringExpenseTemplateCreate(BaseModel):
