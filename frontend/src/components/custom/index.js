@@ -6,3 +6,4 @@ export { FormCombobox } from './FormCombobox';
 export { ItemCombobox } from './ItemCombobox';
 export { ModelCombobox } from './ModelCombobox';
 export { ModelMultiSelect } from './ModelMultiSelect';
+export { DateFilter } from './DateFilter';

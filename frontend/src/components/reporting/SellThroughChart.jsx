@@ -1,11 +1,8 @@
-import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { TrendingUp, Loader2, Inbox } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { FormSelect } from '@/components/custom';
 import { useSellThrough } from '@/hooks/reportingHooks/reportingQueries';
-import { WINDOW_DAYS_OPTIONS, DEFAULT_WINDOW_DAYS } from '@/utils/constants';
 
 const TOP_N = 10;
 
@@ -13,9 +10,9 @@ const chartConfig = {
   qty_sold: { label: 'Units sold', color: 'var(--chart-1)' },
 };
 
-export function SellThroughChart() {
-  const [windowDays, setWindowDays] = useState(String(DEFAULT_WINDOW_DAYS));
-  const { data, isLoading, isError } = useSellThrough(Number(windowDays));
+// `dates` is the dashboard's shared period (useDateFilter): a month or a From – To range.
+export function SellThroughChart({ dates }) {
+  const { data, isLoading, isError } = useSellThrough({ dateFrom: dates.dateFrom, dateTo: dates.dateTo });
 
   // Every active Model comes back, ranked 1..N — only the top N fastest
   // movers get charted here; the full ranked list, fast AND slow, is already
@@ -35,18 +32,9 @@ export function SellThroughChart() {
           </span>
           <div>
             <CardTitle className="text-base">Fast Movers</CardTitle>
-            <CardDescription>Top {TOP_N} models by units sold in the selected window.</CardDescription>
+            <CardDescription>Top {TOP_N} models by units sold in {dates.label}.</CardDescription>
           </div>
         </div>
-        <CardAction>
-          <FormSelect
-            name="sell_through_window"
-            options={WINDOW_DAYS_OPTIONS}
-            value={windowDays}
-            onChange={setWindowDays}
-            className="w-full sm:w-40"
-          />
-        </CardAction>
       </CardHeader>
 
       <CardContent>
@@ -60,7 +48,7 @@ export function SellThroughChart() {
         {!isLoading && !isError && topEntries.length === 0 && (
           <div className="flex h-72 flex-col items-center justify-center gap-2 text-muted-foreground">
             <Inbox className="size-6 text-muted-foreground/60" />
-            No sales in this window yet.
+            No sales in {dates.label}.
           </div>
         )}
         {!isLoading && !isError && topEntries.length > 0 && (

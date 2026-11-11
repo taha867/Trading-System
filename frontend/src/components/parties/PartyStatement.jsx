@@ -16,7 +16,8 @@ function balanceLabel(value) {
   return 'Settled';
 }
 
-export function PartyStatement({ statement }) {
+export function PartyStatement({ statement, dates }) {
+  const ranged = dates && dates.mode !== 'all';
   const { party, opening_balance, entries, closing_balance } = statement;
 
   // The statement only knows a sale by id; fetch the invoice numbers for the sales on it in one
@@ -46,6 +47,7 @@ export function PartyStatement({ statement }) {
           <p className="mt-1 text-lg font-semibold text-foreground">
             <CurrencyAmount value={Math.abs(Number(closing_balance))} />
           </p>
+          {ranged && <p className="text-xs text-muted-foreground">at the end of {dates.label}</p>}
         </div>
       </div>
 
@@ -64,7 +66,7 @@ export function PartyStatement({ statement }) {
           <TableBody>
             <TableRow className="bg-muted/30">
               <TableCell colSpan={5} className="font-medium text-foreground">
-                Opening balance
+                Opening balance{ranged && dates.dateFrom ? ` (before ${dates.dateFrom})` : ''}
               </TableCell>
               <TableCell className="text-right font-medium text-foreground">
                 <CurrencyAmount value={opening_balance} />
@@ -73,7 +75,7 @@ export function PartyStatement({ statement }) {
             {entries.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                  No ledger activity yet.
+                  {ranged ? `No ledger activity in ${dates.label}.` : 'No ledger activity yet.'}
                 </TableCell>
               </TableRow>
             )}
@@ -94,7 +96,7 @@ export function PartyStatement({ statement }) {
                     </Link>
                   ) : entry.reference_type === 'local_purchase_exception' ? (
                     // reference_id is the day-book sheet row here, not an order id — never link it as one.
-                    <Link to={`/purchase-orders?vendor=${party.id}&show=payable_only`} className="text-primary hover:underline">
+                    <Link to={`/purchase-orders?vendor=${party.id}&show=payable_only&dates=all`} className="text-primary hover:underline">
                       Purchase with no model (day-book row {entry.reference_id})
                     </Link>
                   ) : entry.reference_type ? (

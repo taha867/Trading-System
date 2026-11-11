@@ -45,7 +45,7 @@ export const partyKeys = {
   all: ['parties'],
   lists: () => [...partyKeys.all, 'list'],
   list: (params) => [...partyKeys.lists(), params],
-  statement: (id) => [...partyKeys.all, 'statement', id],
+  statement: (id, range) => (range ? [...partyKeys.all, 'statement', id, range] : [...partyKeys.all, 'statement', id]),
 };
 
 export const purchaseOrderKeys = {
@@ -152,9 +152,9 @@ export const expenseKeys = {
 export const reportingKeys = {
   all: ['reporting'],
   balanceStatement: () => [...reportingKeys.all, 'balance-statement'],
-  sellThrough: (windowDays) => [...reportingKeys.all, 'sell-through', windowDays],
+  sellThrough: (window) => [...reportingKeys.all, 'sell-through', window],
   reorderPriority: (windowDays) => [...reportingKeys.all, 'reorder-priority', windowDays],
-  margin: (windowDays) => [...reportingKeys.all, 'margin', windowDays],
+  margin: (window) => [...reportingKeys.all, 'margin', window],
   profitLoss: (dateFrom, dateTo, comparePrevious, includeUnitemised) => [
     ...reportingKeys.all,
     'profit-loss',

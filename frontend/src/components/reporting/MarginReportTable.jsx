@@ -1,16 +1,13 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PieChart, Loader2, Inbox } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableFooter } from '@/components/ui/table';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
-import { FormSelect } from '@/components/custom';
 import { useMarginReport } from '@/hooks/reportingHooks/reportingQueries';
-import { WINDOW_DAYS_OPTIONS, DEFAULT_WINDOW_DAYS } from '@/utils/constants';
 
-export function MarginReportTable() {
-  const [windowDays, setWindowDays] = useState(String(DEFAULT_WINDOW_DAYS));
-  const { data, isLoading, isError } = useMarginReport(Number(windowDays));
+// `dates` is the dashboard's shared period (useDateFilter): a month or a From – To range.
+export function MarginReportTable({ dates }) {
+  const { data, isLoading, isError } = useMarginReport({ dateFrom: dates.dateFrom, dateTo: dates.dateTo });
   const entries = data?.entries ?? [];
 
   return (
@@ -23,22 +20,13 @@ export function MarginReportTable() {
           <div>
             <CardTitle className="text-base">Margin by Item</CardTitle>
             <CardDescription>
-              Sale rate vs. landed cost, per item, for the last few days — not a calendar month.{' '}
+              Sale rate vs. landed cost, per item, for {dates.label}.{' '}
               <Link to="/reports" className="text-primary hover:underline">
                 See monthly profit
               </Link>
             </CardDescription>
           </div>
         </div>
-        <CardAction>
-          <FormSelect
-            name="margin_window"
-            options={WINDOW_DAYS_OPTIONS}
-            value={windowDays}
-            onChange={setWindowDays}
-            className="w-full sm:w-40"
-          />
-        </CardAction>
       </CardHeader>
 
       <CardContent>
@@ -78,7 +66,7 @@ export function MarginReportTable() {
                   <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Inbox className="size-6 text-muted-foreground/60" />
-                      No items sold in this window.
+                      No items sold in {dates.label}.
                     </div>
                   </TableCell>
                 </TableRow>

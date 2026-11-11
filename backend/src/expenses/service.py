@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.dates import validate_date_range
 from src.exceptions import ConflictException, NotFoundException
 from src.expenses.exceptions import ExpenseNotFound, RecurringExpenseTemplateNotFound
 from src.expenses.models import Expense, ExpenseCategory, RecurringExpenseTemplate
@@ -144,6 +145,7 @@ async def list_expenses(
         filters.append(Expense.status == status)
     if recurring_template_id is not None:
         filters.append(Expense.recurring_template_id == recurring_template_id)
+    validate_date_range(expense_date_from, expense_date_to)
     if expense_date_from is not None:
         filters.append(Expense.expense_date >= expense_date_from)
     if expense_date_to is not None:

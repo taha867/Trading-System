@@ -3,18 +3,16 @@ import { Link } from 'react-router-dom';
 import { Plus, Loader2, Inbox, ShoppingCart, X, ChevronRight, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { InvoiceCombobox } from '@/components/common/InvoiceCombobox';
-import { FormSelect, ItemCombobox } from '@/components/custom';
+import { DateFilter, FormSelect, ItemCombobox } from '@/components/custom';
 import { usePurchaseGroups, usePurchaseInvoiceOptions } from '@/hooks/purchasingHooks/purchasingQueries';
 import { useVendorParties } from '@/hooks/partyHooks/partyQueries';
 import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
-import { monthBounds } from '@/utils/dateUtils';
+import { DATE_FILTER_KEYS, useDateFilter } from '@/hooks/useDateFilter';
 import { purchaseInvoiceOptionLabel } from '@/utils/invoiceOptionLabels';
 import {
   SELECT_ALL_VALUE,
@@ -32,7 +30,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const DEFAULT_PAGE_SIZE = 20;
-const FILTER_KEYS = ['invoice', 'vendor', 'source', 'status', 'month', 'item', 'show'];
+const FILTER_KEYS = ['invoice', 'vendor', 'source', 'status', ...DATE_FILTER_KEYS, 'item', 'show'];
 const rowKey = (row) => `${row.group_key}|${row.party_id}`;
 const categoryLabel = (row) => {
   if (row.categories.length === 0) return '—';
@@ -143,11 +141,11 @@ export function PurchaseList() {
   const vendor = filters.getId('vendor');
   const source = filters.getOneOf('source', PURCHASE_ORDER_SOURCE_OPTIONS.map((o) => o.value));
   const status = filters.getOneOf('status', PURCHASE_ORDER_STATUS_OPTIONS.map((o) => o.value));
-  const month = filters.getMonth();
+  const dates = useDateFilter(filters); // default: the current month; 'All dates' or a From – To range in the URL
   const item = filters.getId('item');
   const show = filters.getOneOf('show', PURCHASE_SHOW_VALUES);
-  const bounds = monthBounds(month);
-  const hasActiveFilter = Boolean(invoice || vendor || source || status || month || item || show);
+  const hasActiveFilter = Boolean(invoice || vendor || source || status || !dates.isDefault || item || show);
+  const narrowed = hasActiveFilter || dates.mode !== 'all'; // wording only: a month / range also narrows the list
 
   const { data, isLoading, isError, isFetching } = usePurchaseGroups({
     page: filters.page,
@@ -156,8 +154,8 @@ export function PurchaseList() {
     party_id: vendor || undefined,
     source: source || undefined,
     status: status || undefined,
-    date_from: bounds?.from,
-    date_to: bounds?.to,
+    date_from: dates.dateFrom,
+    date_to: dates.dateTo,
     item_id: item || undefined,
     show: show || undefined,
     sort: sort || undefined,
@@ -210,7 +208,7 @@ export function PurchaseList() {
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <CurrencyAmount value={data.total_pkr} className="text-2xl font-semibold text-foreground" />
               <span className="text-sm text-muted-foreground">
-                payable to suppliers{hasActiveFilter ? ' for the rows below' : ' across every purchase'} · {total} {total === 1 ? 'row' : 'rows'}
+                payable to suppliers{narrowed ? ' for the rows below' : ' across every purchase'} · {total} {total === 1 ? 'row' : 'rows'}
                 {Number(data.total_rmb) > 0 && (
                   <>
                     {' '}
@@ -229,7 +227,8 @@ export function PurchaseList() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <InvoiceCombobox
             value={invoice}
-            onChange={(value) => filters.setFilters({ invoice: value })}
+            // an invoice picked from the list can be from any month: leave the default month behind
+            onChange={(value) => filters.setFilters(value && dates.isDefault ? { invoice: value, dates: 'all' } : { invoice: value })}
             useOptions={usePurchaseInvoiceOptions}
             optionLabel={purchaseInvoiceOptionLabel}
           />
@@ -254,10 +253,7 @@ export function PurchaseList() {
             value={status || SELECT_ALL_VALUE}
             onChange={(value) => filters.setFilters({ status: fromAll(value) })}
           />
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="purchase_month">Month</Label>
-            <Input id="purchase_month" type="month" value={month} onChange={(event) => filters.setFilters({ month: event.target.value })} />
-          </div>
+          <DateFilter filter={dates} id="purchase_date" className="sm:col-span-2" />
           <ItemCombobox label="Item" placeholder="Any item" value={item} onChange={(value) => filters.setFilters({ item: value })} />
           <FormSelect
             name="show_filter"
@@ -321,7 +317,12 @@ export function PurchaseList() {
                   <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Inbox className="size-6 text-muted-foreground/60" />
-                      {hasActiveFilter ? 'No purchases match these filters.' : 'No purchases yet — create the first order above.'}
+                      {narrowed ? `No purchases match these filters (${dates.label}).` : 'No purchases yet — create the first order above.'}
+                      {dates.mode !== 'all' && (
+                        <Button variant="outline" size="sm" onClick={dates.setAll}>
+                          Show all dates
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -399,7 +400,12 @@ export function PurchaseList() {
           {!isLoading && !isError && rows.length === 0 && (
             <div className="flex h-32 flex-col items-center justify-center gap-2 text-center text-muted-foreground">
               <Inbox className="size-6 text-muted-foreground/60" />
-              {hasActiveFilter ? 'No purchases match these filters.' : 'No purchases yet.'}
+              {narrowed ? `No purchases match these filters (${dates.label}).` : 'No purchases yet.'}
+              {dates.mode !== 'all' && (
+                <Button variant="outline" size="sm" onClick={dates.setAll}>
+                  Show all dates
+                </Button>
+              )}
             </div>
           )}
           {rows.map((row) => {

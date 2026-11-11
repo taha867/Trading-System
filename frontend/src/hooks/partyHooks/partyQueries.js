@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { partyKeys } from '@/utils/queryKeys';
 import { listParties, getPartyStatement } from '@/services/partyService';
 import { PARTY_ROLE } from '@/utils/constants';
@@ -54,10 +54,11 @@ export function useVendorParties() {
   return { ...query, vendors };
 }
 
-export function usePartyStatement(id) {
+export function usePartyStatement(id, { dateFrom, dateTo } = {}) {
   return useQuery({
-    queryKey: partyKeys.statement(id),
-    queryFn: () => getPartyStatement(id),
+    queryKey: partyKeys.statement(id, { dateFrom, dateTo }),
+    queryFn: () => getPartyStatement(id, { dateFrom, dateTo }),
     enabled: Boolean(id),
+    placeholderData: keepPreviousData, // changing the period keeps the old statement on screen while the new one loads
   });
 }

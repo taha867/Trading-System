@@ -10,6 +10,7 @@ from src.inventory.models import StockLot, StockMovement
 from src.ledger.models import LedgerEntry
 from src.parties.models import Party
 from src.payments import service as payments_service
+from src.reporting.exceptions import InvalidReportPeriod
 from src.reporting.schemas import (
     BalanceStatementRead,
     ExpenseCategoryTotalRead,
@@ -74,11 +75,22 @@ async def get_balance_statement(db: AsyncSession) -> BalanceStatementRead:
     )
 
 
+def _resolve_period(window_days: int, date_from: date | None, date_to: date | None) -> tuple[date, date, int]:
+    """The report period: an explicit date_from + date_to (both required together, validated like the
+    profit-loss period), otherwise the last `window_days` days up to today. Returns (start, end, days)."""
+    if date_from is None and date_to is None:
+        end_date = date.today()
+        return end_date - timedelta(days=window_days), end_date, window_days
+    if date_from is None or date_to is None:
+        raise InvalidReportPeriod("Give both date_from and date_to, or neither")
+    validate_period(date_from, date_to)
+    return date_from, date_to, (date_to - date_from).days + 1
+
+
 async def _rank_models_by_sell_through(
-    db: AsyncSession, window_days: int
+    db: AsyncSession, window_days: int, date_from: date | None = None, date_to: date | None = None
 ) -> tuple[date, date, list[tuple[Model, Decimal, int]]]:
-    end_date = date.today()
-    start_date = end_date - timedelta(days=window_days)
+    start_date, end_date, _days = _resolve_period(window_days, date_from, date_to)
 
     qty_by_item = (
         select(
@@ -113,10 +125,12 @@ async def _rank_models_by_sell_through(
     return start_date, end_date, [(model, money(qty), rank) for rank, (model, qty) in enumerate(rows, start=1)]
 
 
-async def get_sell_through(db: AsyncSession, window_days: int) -> SellThroughRead:
-    start_date, end_date, ranked = await _rank_models_by_sell_through(db, window_days)
+async def get_sell_through(
+    db: AsyncSession, window_days: int, date_from: date | None = None, date_to: date | None = None
+) -> SellThroughRead:
+    start_date, end_date, ranked = await _rank_models_by_sell_through(db, window_days, date_from, date_to)
     return SellThroughRead(
-        window_days=window_days,
+        window_days=(end_date - start_date).days + (1 if date_from else 0),
         start_date=start_date,
         end_date=end_date,
         entries=[
@@ -185,9 +199,10 @@ def _cost_by_item_subquery(start_date: date, end_date: date):
     )
 
 
-async def get_margin_report(db: AsyncSession, window_days: int) -> MarginReportRead:
-    end_date = date.today()
-    start_date = end_date - timedelta(days=window_days)
+async def get_margin_report(
+    db: AsyncSession, window_days: int, date_from: date | None = None, date_to: date | None = None
+) -> MarginReportRead:
+    start_date, end_date, window_days = _resolve_period(window_days, date_from, date_to)
 
     revenue_by_item = _revenue_by_item_subquery(start_date, end_date)
     cost_by_item = _cost_by_item_subquery(start_date, end_date)

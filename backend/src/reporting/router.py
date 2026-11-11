@@ -36,8 +36,10 @@ async def sell_through(
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
     window_days: WindowDays = DEFAULT_WINDOW_DAYS,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ):
-    return await service.get_sell_through(db, window_days)
+    return await service.get_sell_through(db, window_days, date_from, date_to)
 
 
 @router.get("/reorder-priority", response_model=ReorderPriorityRead)
@@ -54,8 +56,10 @@ async def margin_report(
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
     window_days: WindowDays = DEFAULT_WINDOW_DAYS,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ):
-    return await service.get_margin_report(db, window_days)
+    return await service.get_margin_report(db, window_days, date_from, date_to)
 
 
 @router.get("/profit-loss", response_model=ProfitLossRead)

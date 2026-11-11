@@ -6,6 +6,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.dates import validate_date_range
 from src.catalog.models import Item, ItemCompatibleModel, Model
 from src.exceptions import ConflictException
 from src.inventory.dependencies import (
@@ -366,10 +367,17 @@ async def list_stock_movements(
     category_id: int | None = None,
     brand_id: int | None = None,
     model_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> StockMovementListRead:
     offset = (pagination.page - 1) * pagination.page_size
+    validate_date_range(date_from, date_to)
 
     filters = []
+    if date_from is not None:
+        filters.append(StockMovement.movement_date >= date_from)
+    if date_to is not None:
+        filters.append(StockMovement.movement_date <= date_to)
     if stock_lot_id is not None:
         filters.append(StockMovement.stock_lot_id == stock_lot_id)
     if movement_type is not None:

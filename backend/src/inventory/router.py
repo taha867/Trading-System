@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -108,9 +109,12 @@ async def list_stock_movements(
     category_id: int | None = None,
     brand_id: int | None = None,
     model_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ):
     return await service.list_stock_movements(
-        db, pagination, stock_lot_id, movement_type=movement_type, category_id=category_id, brand_id=brand_id, model_id=model_id
+        db, pagination, stock_lot_id, movement_type=movement_type, category_id=category_id, brand_id=brand_id, model_id=model_id,
+        date_from=date_from, date_to=date_to,
     )
 
 

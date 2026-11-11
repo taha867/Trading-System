@@ -511,6 +511,8 @@ src/
 4. **`ui/` vs. `custom/`**: `ui/` is shadcn-generated primitives — don't hand-roll logic there, regenerate via the shadcn CLI instead. `custom/` wraps those primitives into form-aware components (`FormField` wired to `react-hook-form`'s `Controller`, etc.) — this is the layer that actually knows about form state.
 5. **One fetch client**: every network call funnels through `middleware/fetchClient.js`, which centralizes auth headers, 401/refresh-token retry, timeouts, and toast notifications. `services/*.js` never call `fetch` directly — if a new service file has a raw `fetch(...)` in it, that's a review flag.
 
+6. **One date filter for every list and report**: `components/custom/DateFilter.jsx` + `hooks/useDateFilter.js` (state in the URL: `?month=2026-10`, `?from=2026-09-03&to=2026-10-05`, `?dates=all`; resolver `resolveDateFilter` in `utils/dateUtils.js`). A list opens on the **current month** unless its screen passes `defaultMode: 'all'` (party statement); never hand-roll another month box. Send `dates.dateFrom` / `dates.dateTo` to the backend as `date_from` / `date_to`; validate with `src/dates.py::validate_date_range`. An empty period shows a "Show all dates" button, and a link into a list from another screen must carry `dates=all` (or `month` / `from` / `to`).
+
 ### 3.5 Forms & validation (react-hook-form + Yup)
 
 Forms use **react-hook-form** for field state and submission, with a **Yup** resolver for validation — not raw `useState`-per-field, and not React 19's `useActionState` for this role (react-hook-form's `formState.isSubmitting`/`errors` already cover what `useActionState` would give you, and running both would just be two sources of truth for the same pending/error state):

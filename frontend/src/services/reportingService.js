@@ -12,8 +12,14 @@ export async function getBalanceStatement() {
   return data; // BalanceStatementRead — no params, always "as of now"
 }
 
-export async function getSellThrough(windowDays) {
-  const { data } = await fetchClient.get(`/reporting/sell-through?window_days=${windowDays}`);
+// A report window is either a number (the last N days) or { dateFrom, dateTo } (a month or From – To range, inclusive).
+function windowQuery(window) {
+  if (typeof window === 'number') return `window_days=${window}`;
+  return `date_from=${window.dateFrom}&date_to=${window.dateTo}`;
+}
+
+export async function getSellThrough(window) {
+  const { data } = await fetchClient.get(`/reporting/sell-through?${windowQuery(window)}`);
   return data; // SellThroughRead
 }
 
@@ -27,8 +33,8 @@ export async function recalculateReorderPriority(windowDays) {
   return data; // ReorderPriorityRead
 }
 
-export async function getMarginReport(windowDays) {
-  const { data } = await fetchClient.get(`/reporting/margin?window_days=${windowDays}`);
+export async function getMarginReport(window) {
+  const { data } = await fetchClient.get(`/reporting/margin?${windowQuery(window)}`);
   return data; // MarginReportRead
 }
 

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.exceptions import ConflictException, NotFoundException
 from src.ledger import service as ledger_service
+from src.dates import validate_date_range
 from src.ledger.models import LedgerEntry
 from src.pagination import PaginatedResponse, PaginationParams
 from src.parties import service as parties_service
@@ -194,13 +195,20 @@ async def create_payment_transaction(db: AsyncSession, payload: PaymentTransacti
 
 
 async def list_payment_transactions(
-    db: AsyncSession, pagination: PaginationParams
+    db: AsyncSession, pagination: PaginationParams, date_from: date | None = None, date_to: date | None = None
 ) -> PaginatedResponse[PaymentTransactionRead]:
     offset = (pagination.page - 1) * pagination.page_size
+    validate_date_range(date_from, date_to)
+    filters = []
+    if date_from is not None:
+        filters.append(PaymentTransaction.transaction_date >= date_from)
+    if date_to is not None:
+        filters.append(PaymentTransaction.transaction_date <= date_to)
 
-    total = await db.scalar(select(func.count()).select_from(PaymentTransaction))
+    total = await db.scalar(select(func.count()).select_from(PaymentTransaction).where(*filters))
     result = await db.execute(
         select(PaymentTransaction)
+        .where(*filters)
         .order_by(PaymentTransaction.transaction_date.desc(), PaymentTransaction.id.desc())
         .offset(offset)
         .limit(pagination.page_size)

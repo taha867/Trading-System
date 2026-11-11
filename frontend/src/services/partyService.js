@@ -20,7 +20,12 @@ export async function deactivateParty(id) {
   await fetchClient.delete(`/parties/${id}`);
 }
 
-export async function getPartyStatement(id) {
-  const { data } = await fetchClient.get(`/parties/${id}/statement`);
+// `dateFrom` / `dateTo` (YYYY-MM-DD, both optional): the statement for that period, with the opening balance as of dateFrom.
+export async function getPartyStatement(id, { dateFrom, dateTo } = {}) {
+  const query = new URLSearchParams();
+  if (dateFrom) query.set('date_from', dateFrom);
+  if (dateTo) query.set('date_to', dateTo);
+  const suffix = query.size ? `?${query}` : '';
+  const { data } = await fetchClient.get(`/parties/${id}/statement${suffix}`);
   return data;
 }

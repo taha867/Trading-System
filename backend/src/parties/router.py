@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -75,5 +76,7 @@ async def get_party_statement(
     party: Annotated[Party, Depends(valid_party)],
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
+    date_from: date | None = None,
+    date_to: date | None = None,
 ):
-    return await service.get_party_statement(db, party)
+    return await service.get_party_statement(db, party, date_from, date_to)

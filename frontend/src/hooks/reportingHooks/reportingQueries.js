@@ -16,17 +16,24 @@ export function useBalanceStatement() {
   });
 }
 
-export function useSellThrough(windowDays) {
+// `window` is a number of days, or { dateFrom, dateTo } (both required, else the query waits).
+const windowReady = (window) => typeof window === 'number' || Boolean(window?.dateFrom && window?.dateTo);
+
+export function useSellThrough(window) {
   return useQuery({
-    queryKey: reportingKeys.sellThrough(windowDays),
-    queryFn: () => getSellThrough(windowDays),
+    queryKey: reportingKeys.sellThrough(window),
+    queryFn: () => getSellThrough(window),
+    enabled: windowReady(window),
+    placeholderData: keepPreviousData,
   });
 }
 
-export function useMarginReport(windowDays) {
+export function useMarginReport(window) {
   return useQuery({
-    queryKey: reportingKeys.margin(windowDays),
-    queryFn: () => getMarginReport(windowDays),
+    queryKey: reportingKeys.margin(window),
+    queryFn: () => getMarginReport(window),
+    enabled: windowReady(window),
+    placeholderData: keepPreviousData,
   });
 }
 

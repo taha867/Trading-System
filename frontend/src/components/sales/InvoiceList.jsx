@@ -3,18 +3,16 @@ import { Link } from 'react-router-dom';
 import { Plus, Loader2, Inbox, Receipt, X, ChevronRight, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent } from '@/components/ui/card';
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
-import { FormSelect, ItemCombobox } from '@/components/custom';
+import { DateFilter, FormSelect, ItemCombobox } from '@/components/custom';
 import { InvoiceCombobox } from '@/components/common/InvoiceCombobox';
 import { useInvoices, useInvoiceOptions } from '@/hooks/salesHooks/salesQueries';
 import { useCustomerParties } from '@/hooks/partyHooks/partyQueries';
 import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
-import { monthBounds } from '@/utils/dateUtils';
+import { DATE_FILTER_KEYS, useDateFilter } from '@/hooks/useDateFilter';
 import { salesInvoiceOptionLabel } from '@/utils/invoiceOptionLabels';
 import {
   SELECT_ALL_VALUE,
@@ -28,7 +26,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const DEFAULT_PAGE_SIZE = 20;
-const FILTER_KEYS = ['invoice', 'party', 'month', 'item', 'show'];
+const FILTER_KEYS = ['invoice', 'party', ...DATE_FILTER_KEYS, 'item', 'show'];
 const kindLabel = (kind) => SALES_LOG_EXCEPTION_KIND_LABELS[kind] ?? kind;
 const rowKey = (invoice) => `${invoice.group_key}|${invoice.party_id ?? ''}`;
 
@@ -137,21 +135,21 @@ export function InvoiceList() {
   const [openKeys, setOpenKeys] = useState(() => new Set());
 
   const party = filters.getId('party');
-  const month = filters.getMonth();
+  const dates = useDateFilter(filters); // default: the current month; 'All dates' or a From – To range in the URL
   const item = filters.getId('item');
   const invoice = filters.get('invoice');
   const show = filters.getOneOf('show', INVOICE_SHOW_VALUES);
   const sort = filters.getOneOf('sort', SORT_VALUES); // a display choice, not a filter: Clear filters keeps it
-  const bounds = monthBounds(month);
-  const hasActiveFilter = Boolean(invoice || party || month || item || show);
+  const hasActiveFilter = Boolean(invoice || party || !dates.isDefault || item || show);
+  const narrowed = hasActiveFilter || dates.mode !== 'all'; // wording only: a month / range also narrows the list
 
   const { data, isLoading, isError, isFetching } = useInvoices({
     page: filters.page,
     page_size: DEFAULT_PAGE_SIZE,
     invoice_number: invoice || undefined,
     party_id: party || undefined,
-    date_from: bounds?.from,
-    date_to: bounds?.to,
+    date_from: dates.dateFrom,
+    date_to: dates.dateTo,
     item_id: item || undefined,
     show: show || undefined,
     sort: sort || undefined,
@@ -203,7 +201,7 @@ export function InvoiceList() {
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <CurrencyAmount value={data.total_pkr} className="text-2xl font-semibold text-foreground" />
               <span className="text-sm text-muted-foreground">
-                owed by customers{hasActiveFilter ? ' for the invoices below' : ' across every invoice'} · {total}{' '}
+                owed by customers{narrowed ? ' for the invoices below' : ' across every invoice'} · {total}{' '}
                 {total === 1 ? 'invoice' : 'invoices'}
                 {item && ' · whole sales that contain the chosen item'}
               </span>
@@ -219,7 +217,8 @@ export function InvoiceList() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <InvoiceCombobox
             value={invoice}
-            onChange={(value) => filters.setFilters({ invoice: value })}
+            // an invoice picked from the list can be from any month: leave the default month behind
+            onChange={(value) => filters.setFilters(value && dates.isDefault ? { invoice: value, dates: 'all' } : { invoice: value })}
             useOptions={useInvoiceOptions}
             optionLabel={salesInvoiceOptionLabel}
           />
@@ -230,15 +229,7 @@ export function InvoiceList() {
             value={party || SELECT_ALL_VALUE}
             onChange={(value) => filters.setFilters({ party: value === SELECT_ALL_VALUE ? '' : value })}
           />
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="invoice_month">Month</Label>
-            <Input
-              id="invoice_month"
-              type="month"
-              value={month}
-              onChange={(event) => filters.setFilters({ month: event.target.value })}
-            />
-          </div>
+          <DateFilter filter={dates} id="invoice_date" className="sm:col-span-2" />
           <ItemCombobox label="Item" placeholder="Any item" value={item} onChange={(value) => filters.setFilters({ item: value })} />
           <FormSelect
             name="show_filter"
@@ -302,7 +293,12 @@ export function InvoiceList() {
                   <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Inbox className="size-6 text-muted-foreground/60" />
-                      {hasActiveFilter ? 'No invoices match these filters.' : 'No invoices yet — create the first sales order above.'}
+                      {narrowed ? `No invoices match these filters (${dates.label}).` : 'No invoices yet — create the first sales order above.'}
+                      {dates.mode !== 'all' && (
+                        <Button variant="outline" size="sm" onClick={dates.setAll}>
+                          Show all dates
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -382,7 +378,12 @@ export function InvoiceList() {
           {!isLoading && !isError && invoices.length === 0 && (
             <div className="flex h-32 flex-col items-center justify-center gap-2 text-center text-muted-foreground">
               <Inbox className="size-6 text-muted-foreground/60" />
-              {hasActiveFilter ? 'No invoices match these filters.' : 'No invoices yet.'}
+              {narrowed ? `No invoices match these filters (${dates.label}).` : 'No invoices yet.'}
+              {dates.mode !== 'all' && (
+                <Button variant="outline" size="sm" onClick={dates.setAll}>
+                  Show all dates
+                </Button>
+              )}
             </div>
           )}
           {invoices.map((entry) => {

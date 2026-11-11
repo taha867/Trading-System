@@ -4,10 +4,13 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PaginationControls } from '@/components/common/PaginationControls';
-import { ModelCombobox } from '@/components/custom';
+import { Button } from '@/components/ui/button';
+import { DateFilter, ModelCombobox } from '@/components/custom';
 import { useStockMovements } from '@/hooks/inventoryHooks/inventoryQueries';
 import { useCategories } from '@/hooks/catalogHooks/categoryQueries';
 import { useBrands } from '@/hooks/catalogHooks/brandQueries';
+import { useDateFilter } from '@/hooks/useDateFilter';
+import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const PAGE_SIZE = 20;
@@ -28,6 +31,14 @@ export function DamagedStockList() {
   const [categoryId, setCategoryId] = useState('');
   const [brandId, setBrandId] = useState('');
   const [modelId, setModelId] = useState('');
+  // The date filter lives in the URL (?month= / ?from=&to= / ?dates=all); default: the current month.
+  const dates = useDateFilter(useSearchParamFilters());
+  const dateKey = `${dates.dateFrom ?? ''}|${dates.dateTo ?? ''}`;
+  const [seenDateKey, setSeenDateKey] = useState(dateKey);
+  if (seenDateKey !== dateKey) {
+    setSeenDateKey(dateKey); // a new period starts on page 1
+    setPage(1);
+  }
 
   const { data: categoriesData } = useCategories(LOOKUP_PAGE);
   const { data: brandsData } = useBrands(LOOKUP_PAGE);
@@ -39,11 +50,13 @@ export function DamagedStockList() {
     category_id: categoryId || undefined,
     brand_id: brandId || undefined,
     model_id: modelId || undefined,
+    date_from: dates.dateFrom,
+    date_to: dates.dateTo,
   });
   const movements = data?.items ?? [];
   const total = data?.total ?? 0;
   const totalQty = data?.total_qty ?? 0;
-  const hasActiveFilter = Boolean(categoryId || brandId || modelId);
+  const hasActiveFilter = Boolean(categoryId || brandId || modelId || dates.mode !== 'all');
 
   const handleCategoryChange = (value) => {
     setCategoryId(value === ALL_VALUE ? '' : value);
@@ -82,6 +95,7 @@ export function DamagedStockList() {
             </span>
           </div>
         )}
+        <DateFilter filter={dates} id="damaged_date" className="max-w-xl" />
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Select value={categoryId || ALL_VALUE} onValueChange={handleCategoryChange}>
             <SelectTrigger className="w-full sm:w-48" aria-label="Category">
@@ -147,7 +161,12 @@ export function DamagedStockList() {
                   <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Inbox className="size-6 text-muted-foreground/60" />
-                      {hasActiveFilter ? 'No damaged stock matches these filters.' : 'No damaged stock recorded yet.'}
+                      {hasActiveFilter ? `No damaged stock matches these filters (${dates.label}).` : 'No damaged stock recorded yet.'}
+                      {dates.mode !== 'all' && (
+                        <Button variant="outline" size="sm" onClick={dates.setAll}>
+                          Show all dates
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

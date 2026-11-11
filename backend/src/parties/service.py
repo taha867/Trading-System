@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.exceptions import ConflictException
 from src.ledger import service as ledger_service
+from src.dates import validate_date_range
 from src.ledger.models import LedgerEntry
 from src.pagination import PaginationParams
 from src.parties.constants import PartyRole
@@ -164,25 +165,23 @@ async def soft_delete_party(db: AsyncSession, party: Party) -> None:
     await db.commit()
 
 
-async def get_party_statement(db: AsyncSession, party: Party) -> PartyStatementRead:
-    # The "party_opening_balance" ledger entry (posted once, at party creation --
-    # see create_party) exists so aggregate reports that sum LedgerEntry rows
-    # (e.g. reporting.get_balance_statement) see the opening balance without any
-    # special-casing. Here it must be excluded from `entries`: `running` already
-    # seeds from party.opening_balance below, so including that same entry too
-    # would double-count it -- the frontend's own separate "Opening balance" row
-    # already represents it.
-    result = await db.execute(
-        select(LedgerEntry)
-        .where(LedgerEntry.party_id == party.id, LedgerEntry.reference_type != "party_opening_balance")
-        .order_by(LedgerEntry.entry_date, LedgerEntry.id)
-    )
-    rows = result.scalars().all()
+def statement_window(opening, rows, date_from, date_to):
+    """The statement for [date_from, date_to] (both optional, inclusive) from every ledger row in order.
 
-    running = party.opening_balance
+    Returns (opening_as_of, entries, closing, full_balance): the opening balance is the party's opening
+    balance plus every row dated before `date_from`, so the running balance of the rows in range is right;
+    `full_balance` is the party's balance across ALL rows (what the party's own balance_pkr shows).
+    Pure function (no database) so it can be tested directly."""
+    running = opening
+    opening_as_of = opening
     entries: list[PartyStatementEntryRead] = []
     for row in rows:
         running += row.debit - row.credit
+        if date_from is not None and row.entry_date < date_from:
+            opening_as_of = running
+            continue
+        if date_to is not None and row.entry_date > date_to:
+            continue
         entries.append(
             PartyStatementEntryRead(
                 id=row.id,
@@ -195,14 +194,37 @@ async def get_party_statement(db: AsyncSession, party: Party) -> PartyStatementR
                 running_balance=running,
             )
         )
+    full_balance = running
+    # `running` was carried through rows after date_to too; the closing balance is as of the last row in range.
+    closing = entries[-1].running_balance if entries else opening_as_of
+    return opening_as_of, entries, closing, full_balance
 
-    # `running` at this point already equals the same figure attach_balance would
-    # compute (opening_balance plus every real ledger entry) -- reuse it instead
-    # of a second query.
-    party.balance_pkr = running
+
+async def get_party_statement(
+    db: AsyncSession, party: Party, date_from: date | None = None, date_to: date | None = None
+) -> PartyStatementRead:
+    validate_date_range(date_from, date_to)
+    # The "party_opening_balance" ledger entry (posted once, at party creation --
+    # see create_party) exists so aggregate reports that sum LedgerEntry rows
+    # (e.g. reporting.get_balance_statement) see the opening balance without any
+    # special-casing. Here it must be excluded from `entries`: the running balance already
+    # seeds from party.opening_balance, so including that same entry too
+    # would double-count it -- the frontend's own separate "Opening balance" row
+    # already represents it.
+    result = await db.execute(
+        select(LedgerEntry)
+        .where(LedgerEntry.party_id == party.id, LedgerEntry.reference_type != "party_opening_balance")
+        .order_by(LedgerEntry.entry_date, LedgerEntry.id)
+    )
+    rows = result.scalars().all()
+
+    opening_as_of, entries, closing, full_balance = statement_window(party.opening_balance, rows, date_from, date_to)
+
+    # The party's own balance is always the full one (every real ledger entry), whatever range is shown.
+    party.balance_pkr = full_balance
     return PartyStatementRead(
         party=PartyRead.model_validate(party),
-        opening_balance=party.opening_balance,
+        opening_balance=opening_as_of,
         entries=entries,
-        closing_balance=running,
+        closing_balance=closing,
     )

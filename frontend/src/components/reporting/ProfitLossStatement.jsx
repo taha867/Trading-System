@@ -7,8 +7,6 @@ import {
   Banknote,
   Scale,
   Printer,
-  ChevronLeft,
-  ChevronRight,
   TriangleAlert,
   Loader2,
 } from 'lucide-react';
@@ -16,12 +14,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent }
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { StatCard } from '@/components/common/StatCard';
 import { useProfitLoss } from '@/hooks/reportingHooks/reportingQueries';
-import { currentMonth, monthBounds, monthLabel, shiftMonth } from '@/utils/dateUtils';
+import { DateFilter } from '@/components/custom';
+import { dateFilterParams, labelForDates } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
 
 // Display-only ratio between two amounts the server already computed — the one place
@@ -91,20 +89,27 @@ function LineValue({ line, value }) {
   );
 }
 
-export function ProfitLossStatement({ month, onMonthChange }) {
+// A profit report needs a bounded period of at most this many days (the backend's MAX_REPORT_RANGE_DAYS).
+const MAX_REPORT_DAYS = 366;
+
+export function ProfitLossStatement({ dates }) {
   const [comparePrevious, setComparePrevious] = useState(true);
-  const bounds = monthBounds(month);
   const { data, isLoading, isError } = useProfitLoss({
-    dateFrom: bounds?.from,
-    dateTo: bounds?.to,
+    dateFrom: dates.dateFrom,
+    dateTo: dates.dateTo,
     comparePrevious,
   });
 
-  const thisMonth = currentMonth();
+  const periodComplete = Boolean(dates.dateFrom && dates.dateTo);
+  const tooLong =
+    periodComplete && (new Date(dates.dateTo) - new Date(dates.dateFrom)) / 86_400_000 + 1 > MAX_REPORT_DAYS;
   const current = data?.current;
   const previous = data?.previous ?? null;
   const lines = current ? buildLines(current, previous) : [];
   const showCompare = Boolean(previous);
+  const currentLabel = current ? labelForDates(current.date_from, current.date_to) : dates.label;
+  const previousLabel = previous ? labelForDates(previous.date_from, previous.date_to) : '';
+  const salesLink = `/sales-orders?${dateFilterParams(dates)}&show=has_other_entries`;
 
   return (
     <Card>
@@ -114,7 +119,7 @@ export function ProfitLossStatement({ month, onMonthChange }) {
             <TrendingUp className="size-4.5" />
           </span>
           <div>
-            <CardTitle className="text-base">Profit &amp; Loss — {monthLabel(month)}</CardTitle>
+            <CardTitle className="text-base">Profit &amp; Loss — {currentLabel}</CardTitle>
             <CardDescription>
               Sales minus what that stock cost you (freight included), minus stock losses and expenses.
             </CardDescription>
@@ -130,54 +135,32 @@ export function ProfitLossStatement({ month, onMonthChange }) {
 
       <CardContent className="flex flex-col gap-6">
         <div className="flex flex-wrap items-end gap-3 print:hidden">
-          <div className="flex items-end gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Previous month"
-              onClick={() => onMonthChange(shiftMonth(month, -1))}
-            >
-              <ChevronLeft />
-            </Button>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="report_month">Month</Label>
-              <Input
-                id="report_month"
-                type="month"
-                value={month}
-                max={thisMonth}
-                onChange={(event) => event.target.value && onMonthChange(event.target.value)}
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Next month"
-              disabled={month >= thisMonth}
-              onClick={() => onMonthChange(shiftMonth(month, 1))}
-            >
-              <ChevronRight />
-            </Button>
-          </div>
+          <DateFilter filter={dates} id="report_date" modes={['month', 'range']} className="w-full sm:w-auto" />
           <div className="flex items-center gap-2 pb-2">
             <Checkbox
               id="compare_previous"
               checked={comparePrevious}
               onCheckedChange={(checked) => setComparePrevious(checked === true)}
             />
-            <Label htmlFor="compare_previous">Compare with previous month</Label>
+            <Label htmlFor="compare_previous">Compare with the previous period</Label>
           </div>
         </div>
 
-        {isLoading && (
+        {!periodComplete && !tooLong && (
+          <p className="text-sm text-muted-foreground">Pick both a From and a To date to see the report.</p>
+        )}
+        {tooLong && (
+          <p className="text-sm text-destructive">A report covers at most {MAX_REPORT_DAYS} days — shorten the range.</p>
+        )}
+        {periodComplete && !tooLong && isLoading && (
           <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
             <Loader2 className="size-5 animate-spin" />
             Loading…
           </div>
         )}
-        {isError && <div className="flex h-32 items-center justify-center text-destructive">Failed to load.</div>}
+        {periodComplete && !tooLong && isError && <div className="flex h-32 items-center justify-center text-destructive">Failed to load.</div>}
 
-        {!isError && current && (
+        {!isError && !tooLong && current && (
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard icon={Receipt} label="Sales revenue" value={current.revenue_pkr} />
@@ -208,8 +191,8 @@ export function ProfitLossStatement({ month, onMonthChange }) {
 
             {Number(current.unitemised_sales_pkr) !== 0 && (
               <p className="text-sm print:hidden">
-                <Link to={`/sales-orders?month=${month}&show=has_other_entries`} className="text-primary hover:underline">
-                  View the sales without item data for {monthLabel(month)}
+                <Link to={salesLink} className="text-primary hover:underline">
+                  View the sales without item data for {currentLabel}
                 </Link>
               </p>
             )}
@@ -220,10 +203,10 @@ export function ProfitLossStatement({ month, onMonthChange }) {
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead>Statement</TableHead>
-                    <TableHead className="text-right">{monthLabel(month)}</TableHead>
+                    <TableHead className="text-right">{currentLabel}</TableHead>
                     {showCompare && (
                       <>
-                        <TableHead className="text-right">{monthLabel(shiftMonth(month, -1))}</TableHead>
+                        <TableHead className="text-right">{previousLabel}</TableHead>
                         <TableHead className="text-right">Change</TableHead>
                       </>
                     )}
@@ -280,7 +263,7 @@ export function ProfitLossStatement({ month, onMonthChange }) {
                     </div>
                     {showCompare && (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {monthLabel(shiftMonth(month, -1))}: <LineValue line={line} value={line.previous} />
+                        {previousLabel}: <LineValue line={line} value={line.previous} />
                         {!line.pct && ` · ${changeLabel(line.current, line.previous)}`}
                       </p>
                     )}

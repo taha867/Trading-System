@@ -5,10 +5,13 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Badge } from '@/components/ui/badge';
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
-import { FormSelect } from '@/components/custom';
+import { Button } from '@/components/ui/button';
+import { DateFilter, FormSelect } from '@/components/custom';
 import { usePaymentTransactions, usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
 import { useParties } from '@/hooks/partyHooks/partyQueries';
 import { PAYMENT_DIRECTION, PAYMENT_REFERENCE_TYPE_LABEL } from '@/utils/constants';
+import { useDateFilter } from '@/hooks/useDateFilter';
+import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -17,8 +20,21 @@ const ALL_ACCOUNTS = 'all';
 export function PaymentTransactionList() {
   const [page, setPage] = useState(1);
   const [accountFilter, setAccountFilter] = useState(ALL_ACCOUNTS);
+  // The date filter lives in the URL (?month= / ?from=&to= / ?dates=all); default: the current month.
+  const dates = useDateFilter(useSearchParamFilters());
+  const dateKey = `${dates.dateFrom ?? ''}|${dates.dateTo ?? ''}`;
+  const [seenDateKey, setSeenDateKey] = useState(dateKey);
+  if (seenDateKey !== dateKey) {
+    setSeenDateKey(dateKey); // a new period starts on page 1
+    setPage(1);
+  }
 
-  const { data, isLoading, isError } = usePaymentTransactions({ page, page_size: DEFAULT_PAGE_SIZE });
+  const { data, isLoading, isError } = usePaymentTransactions({
+    page,
+    page_size: DEFAULT_PAGE_SIZE,
+    date_from: dates.dateFrom,
+    date_to: dates.dateTo,
+  });
   const { data: accountsData } = usePaymentAccounts(LOOKUP_PAGE);
   const { data: partiesData } = useParties(LOOKUP_PAGE);
 
@@ -56,7 +72,7 @@ export function PaymentTransactionList() {
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
-        <div className="max-w-xs">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <FormSelect
             name="account_filter"
             label="Filter by account"
@@ -64,6 +80,7 @@ export function PaymentTransactionList() {
             value={accountFilter}
             onChange={setAccountFilter}
           />
+          <DateFilter filter={dates} id="payment_date" className="sm:col-span-1 lg:col-span-2" />
         </div>
 
         <div className="overflow-x-auto rounded-lg border">
@@ -102,7 +119,12 @@ export function PaymentTransactionList() {
                   <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Inbox className="size-6 text-muted-foreground/60" />
-                      No transactions yet — record the first payment above.
+                      {dates.mode === 'all' ? 'No transactions yet — record the first payment above.' : `No transactions in ${dates.label}.`}
+                      {dates.mode !== 'all' && (
+                        <Button variant="outline" size="sm" onClick={dates.setAll}>
+                          Show all dates
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

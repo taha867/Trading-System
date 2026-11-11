@@ -51,3 +51,66 @@ export function todayIso() {
   const now = new Date();
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
+
+// ---- date filter (month, From / To range, or all dates) ------------------------------------------------
+
+const DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+
+// "YYYY-MM-DD" that is a real calendar day (rejects 2026-02-30).
+export function isValidDate(value) {
+  if (!DATE_PATTERN.test(value ?? '')) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+const formatDay = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+// A human label for a period: "October 2026", "3 Sep 2026 – 5 Oct 2026", "from 3 Sep 2026", "all dates".
+export function periodLabel({ mode, month, dateFrom, dateTo }) {
+  if (mode === 'month' && month) return monthLabel(month);
+  if (dateFrom && dateTo) return `${formatDay(dateFrom)} – ${formatDay(dateTo)}`;
+  if (dateFrom) return `from ${formatDay(dateFrom)}`;
+  if (dateTo) return `up to ${formatDay(dateTo)}`;
+  return 'all dates';
+}
+
+// Turn the URL's date params into the filter in force. `month` = one month, `from` / `to` = a range (either end may
+// be missing = open-ended; `dates=range` keeps the range boxes open while both are still empty), `dates=all` = no
+// date filter. Nothing valid in the URL means the screen's default: the current month, or all dates.
+// Returns { mode: 'month' | 'range' | 'all', month, from, to, dateFrom, dateTo, isDefault }.
+export function resolveDateFilter({ month, from, to, dates }, defaultMode = 'month') {
+  const validFrom = isValidDate(from) ? from : '';
+  const validTo = isValidDate(to) ? to : '';
+  const inverted = validFrom && validTo && validFrom > validTo;
+  // true when the URL holds no date choice at all (the screen is showing its own default)
+  const isDefault = !month && !from && !to && !dates;
+  if (validFrom || validTo || dates === 'range') {
+    // an inverted range stays on screen (so the boxes can show the message) but is not sent to the API
+    return { mode: 'range', month: '', from: validFrom, to: validTo, dateFrom: inverted ? undefined : validFrom || undefined, dateTo: inverted ? undefined : validTo || undefined, isDefault };
+  }
+  if (dates === 'all') return { mode: 'all', month: '', from: '', to: '', dateFrom: undefined, dateTo: undefined, isDefault };
+  const chosen = isValidMonth(month) ? month : defaultMode === 'month' ? currentMonth() : '';
+  if (chosen) {
+    const bounds = monthBounds(chosen);
+    return { mode: 'month', month: chosen, from: '', to: '', dateFrom: bounds.from, dateTo: bounds.to, isDefault };
+  }
+  return { mode: 'all', month: '', from: '', to: '', dateFrom: undefined, dateTo: undefined, isDefault };
+}
+
+// Label for the period a report returned: a whole calendar month reads "September 2026", anything else "3 Sep 2026 – 5 Oct 2026".
+export function labelForDates(dateFrom, dateTo) {
+  const month = dateFrom.slice(0, 7);
+  const bounds = monthBounds(month);
+  if (bounds && bounds.from === dateFrom && bounds.to === dateTo) return monthLabel(month);
+  return periodLabel({ mode: 'range', dateFrom, dateTo });
+}
+
+// The URL params that reproduce a filter on another screen: ?month=2026-09 or ?from=..&to=.. (empty for all dates).
+export function dateFilterParams({ mode, month, dateFrom, dateTo }) {
+  if (mode === 'month' && month) return `month=${month}`;
+  const parts = [];
+  if (dateFrom) parts.push(`from=${dateFrom}`);
+  if (dateTo) parts.push(`to=${dateTo}`);
+  return parts.join('&');
+}

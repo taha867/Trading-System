@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -104,11 +105,14 @@ async def create_payment_transaction(
 
 @payment_transaction_router.get("", response_model=PaginatedResponse[PaymentTransactionRead])
 async def list_payment_transactions(
-    pagination: Annotated[PaginationParams, Query()],
+    # Depends() (not Query()) because of the extra scalar params - see inventory/router.py.
+    pagination: Annotated[PaginationParams, Depends()],
     db: Annotated[AsyncSession, Depends(get_db)],
     _current_user: Annotated[User, Depends(get_current_user)],
+    date_from: date | None = None,
+    date_to: date | None = None,
 ):
-    return await service.list_payment_transactions(db, pagination)
+    return await service.list_payment_transactions(db, pagination, date_from, date_to)
 
 
 @payment_transaction_router.get("/{payment_transaction_id}", response_model=PaymentTransactionRead)

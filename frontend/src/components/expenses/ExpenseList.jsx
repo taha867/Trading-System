@@ -4,36 +4,36 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { CurrencyAmount } from '@/components/common/CurrencyAmount';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { FormSelect } from '@/components/custom';
+import { DateFilter, FormSelect } from '@/components/custom';
 import { ExpenseForm } from '@/components/expenses/form/ExpenseForm';
 import { useExpenses, useExpenseCategories } from '@/hooks/expensesHooks/expensesQueries';
 import { usePaymentAccounts } from '@/hooks/paymentsHooks/paymentsQueries';
 import { useConfirmExpense, useDiscardExpense } from '@/hooks/expensesHooks/expensesMutations';
 import { EXPENSE_STATUS, EXPENSE_STATUS_OPTIONS } from '@/utils/constants';
 import { LOOKUP_PAGE } from '@/utils/queryParams';
-import { monthBounds } from '@/utils/dateUtils';
+import { useDateFilter } from '@/hooks/useDateFilter';
+import { useSearchParamFilters } from '@/hooks/useSearchParamFilters';
 
 const DEFAULT_PAGE_SIZE = 20;
 const ALL = 'all';
 
-// "2026-09" (an <input type="month"> value) -> this endpoint's date-range params.
-function monthToDateRange(monthValue) {
-  const bounds = monthBounds(monthValue);
-  return bounds ? { expense_date_from: bounds.from, expense_date_to: bounds.to } : {};
-}
-
 export function ExpenseList() {
   const [page, setPage] = useState(1);
+  // The date filter lives in the URL (?month= / ?from=&to= / ?dates=all); default: the current month.
+  const dates = useDateFilter(useSearchParamFilters());
+  const dateKey = `${dates.dateFrom ?? ''}|${dates.dateTo ?? ''}`;
+  const [seenDateKey, setSeenDateKey] = useState(dateKey);
+  if (seenDateKey !== dateKey) {
+    setSeenDateKey(dateKey); // a new period starts on page 1
+    setPage(1);
+  }
   const [categoryFilter, setCategoryFilter] = useState(ALL);
   const [accountFilter, setAccountFilter] = useState(ALL);
   const [statusFilter, setStatusFilter] = useState(ALL);
-  const [monthFilter, setMonthFilter] = useState('');
   const [confirmingRow, setConfirmingRow] = useState(null);
   const [discardingRow, setDiscardingRow] = useState(null);
   const [editingRow, setEditingRow] = useState(null);
@@ -49,7 +49,8 @@ export function ExpenseList() {
     ...(categoryFilter !== ALL ? { category_id: categoryFilter } : {}),
     ...(accountFilter !== ALL ? { payment_account_id: accountFilter } : {}),
     ...(statusFilter !== ALL ? { status: statusFilter } : {}),
-    ...monthToDateRange(monthFilter),
+    expense_date_from: dates.dateFrom,
+    expense_date_to: dates.dateTo,
   });
 
   const confirmMutation = useConfirmExpense();
@@ -66,7 +67,8 @@ export function ExpenseList() {
     ...(accountsData?.items ?? []).map((a) => ({ value: String(a.id), label: a.label })),
   ];
   const statusOptions = [{ value: ALL, label: 'All statuses' }, ...EXPENSE_STATUS_OPTIONS];
-  const hasActiveFilter = categoryFilter !== ALL || accountFilter !== ALL || statusFilter !== ALL || Boolean(monthFilter);
+  const hasActiveFilter = categoryFilter !== ALL || accountFilter !== ALL || statusFilter !== ALL || !dates.isDefault;
+  const narrowed = hasActiveFilter || dates.mode !== 'all'; // wording only: a month / range also narrows the list
 
   const expenses = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -82,10 +84,6 @@ export function ExpenseList() {
   const handleCategoryChange = withPageReset(setCategoryFilter);
   const handleAccountChange = withPageReset(setAccountFilter);
   const handleStatusChange = withPageReset(setStatusFilter);
-  const handleMonthChange = (event) => {
-    setMonthFilter(event.target.value);
-    setPage(1);
-  };
 
   return (
     <Card>
@@ -109,7 +107,7 @@ export function ExpenseList() {
             <CurrencyAmount value={totalAmount} className="text-2xl font-semibold text-foreground" />
             <span className="text-sm text-muted-foreground">
               spent{statusFilter === ALL ? ' (drafts included)' : ''}
-              {hasActiveFilter ? ' matching the filters below' : ' across every expense'} · {total}{' '}
+              {narrowed ? ' matching the filters below' : ' across every expense'} · {total}{' '}
               {total === 1 ? 'expense' : 'expenses'}
             </span>
           </div>
@@ -119,10 +117,7 @@ export function ExpenseList() {
           <FormSelect name="category_filter" label="Category" options={categoryOptions} value={categoryFilter} onChange={handleCategoryChange} />
           <FormSelect name="account_filter" label="Account" options={accountOptions} value={accountFilter} onChange={handleAccountChange} />
           <FormSelect name="status_filter" label="Status" options={statusOptions} value={statusFilter} onChange={handleStatusChange} />
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="month_filter">Month</Label>
-            <Input id="month_filter" type="month" value={monthFilter} onChange={handleMonthChange} />
-          </div>
+          <DateFilter filter={dates} id="expense_date" className="sm:col-span-2" />
         </div>
 
         <div className="overflow-x-auto rounded-lg border">
@@ -161,7 +156,12 @@ export function ExpenseList() {
                   <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Inbox className="size-6 text-muted-foreground/60" />
-                      {hasActiveFilter ? 'No expenses match these filters.' : 'No expenses yet — add the first one above.'}
+                      {narrowed ? `No expenses match these filters (${dates.label}).` : 'No expenses yet — add the first one above.'}
+                      {dates.mode !== 'all' && (
+                        <Button variant="outline" size="sm" onClick={dates.setAll}>
+                          Show all dates
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

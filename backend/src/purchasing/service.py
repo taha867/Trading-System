@@ -11,6 +11,7 @@ from src.catalog.models import Item
 from src.exceptions import ConflictException
 from src.inventory.models import StockLot
 from src.ledger import service as ledger_service
+from src.dates import validate_date_range
 from src.ledger.models import LedgerEntry
 from src.pagination import PaginationParams
 from src.sorting import SortDirection, date_ordering
@@ -137,8 +138,7 @@ async def create_purchase_order(db: AsyncSession, payload: PurchaseOrderCreate) 
 
 
 def _validate_date_range(date_from: date | None, date_to: date | None) -> None:
-    if date_from is not None and date_to is not None and date_from > date_to:
-        raise InvalidPurchaseFilter("date_from must be on or before date_to")
+    validate_date_range(date_from, date_to, InvalidPurchaseFilter)
 
 
 def _order_filter_clauses(
