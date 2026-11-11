@@ -4,6 +4,8 @@
 
 > **Update (2026-11-11):** the two tabs this spec describes (Invoices and Other entries) were merged into ONE Invoices list: each invoice once (sale + every day-book entry with its number and customer), with "No stock found" lines, bulk lines, corrections and cancellations under it. Backend: `GET /sales/sales-orders/invoices` (`src/sales/invoice_service.py`); frontend: `components/sales/InvoiceList.jsx`.
 
+> **Update (2026-11-11):** Purchase Orders got the same treatment: one Purchases list (`GET /purchasing/purchase-orders/purchases`, `src/purchasing/invoice_service.py`, `components/purchasing/PurchaseList.jsx`) with the payable-only entries under their supplier invoice instead of an Other entries tab.
+
 Governed by `PLAN.md` (what) and `CLAUDE.md` (how). This extends the Phase 4 sales screens (`phase-4-backend.md`, `phase-4-frontend.md`) and the September 2026 day-book import work. It has two goals:
 
 1. **Find sales:** search by invoice number, filter by month or date range, customer and item, with a total for whatever you filtered.

@@ -35,12 +35,12 @@ export async function createPurchaseOrder(payload) {
   return data;
 }
 
-// Distinct invoice numbers for the Purchase Orders dropdown, most recent first; `search` narrows them.
+// Distinct invoice numbers for the Purchases dropdown (an order or a payable-only entry), most recent first; `search` narrows them.
 export async function listPurchaseInvoiceOptions(search) {
   const params = new URLSearchParams();
   if (search) params.set('search', search);
   const { data } = await fetchClient.get(`/purchasing/purchase-orders/invoice-options?${params}`);
-  return data; // [{ invoice_number, order_count }]
+  return data; // [{ invoice_number, order_count, entry_count }]
 }
 
 // id -> invoice number for a batch of purchase orders (the vendor statement lists orders by id only).
@@ -53,20 +53,8 @@ export async function getPurchaseInvoiceNumbers(ids) {
   return data; // [{ id, invoice_number }]
 }
 
-export async function listPurchaseLogExceptions(params) {
-  const { data } = await fetchClient.get(`/purchasing/purchase-log-exceptions${buildQueryString(params)}`);
+// The Purchases list: one row per supplier invoice (order(s) + payable-only entries), with whole-filter totals.
+export async function listPurchaseGroups(params) {
+  const { data } = await fetchClient.get(`/purchasing/purchase-orders/purchases${buildQueryString(params)}`);
   return data;
-}
-
-// Supplier invoice numbers among the "Other entries", most recent first; `search` narrows them.
-export async function listPurchaseLogExceptionInvoiceOptions(search) {
-  const params = new URLSearchParams();
-  if (search) params.set('search', search);
-  const { data } = await fetchClient.get(`/purchasing/purchase-log-exceptions/invoice-options?${params}`);
-  return data; // [{ invoice_number, entry_count }]
-}
-
-export async function listPurchaseLogExceptionCategories() {
-  const { data } = await fetchClient.get('/purchasing/purchase-log-exceptions/categories');
-  return data; // ['TPU', 'Borderless', ...]
 }

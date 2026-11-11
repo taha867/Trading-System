@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import exists, func, or_, select
+from sqlalchemy import exists, func, literal, or_, select, union_all
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, joinedload
@@ -316,21 +316,45 @@ async def get_invoice_numbers(db: AsyncSession, ids: list[int]) -> list[InvoiceN
 
 
 async def list_invoice_options(db: AsyncSession, search: str | None = None) -> list[InvoiceOptionRead]:
-    """Distinct invoice numbers for the Purchase Orders dropdown — most recently used first, narrowed by
-    what the user types (contains, case-insensitive). Capped: the dropdown is a picker, not a report."""
-    stmt = select(PurchaseOrder.invoice_number, func.count(PurchaseOrder.id)).where(
-        PurchaseOrder.invoice_number.is_not(None), PurchaseOrder.invoice_number != ""
-    )
-    if search is not None and search.strip():
-        stmt = stmt.where(PurchaseOrder.invoice_number.ilike(f"%{escape_like(search.strip())}%", escape="\\"))
+    """Distinct invoice numbers for the Purchases dropdown - every number that has a purchase order OR a payable-only
+    entry, so no supplier invoice is unfindable. Most recently used first, narrowed by what the user types
+    (contains, case-insensitive). Capped: the dropdown is a picker, not a report."""
+    pattern = f"%{escape_like(search.strip())}%" if search is not None and search.strip() else None
+    orders_part = select(
+        PurchaseOrder.invoice_number.label("invoice_number"),
+        func.count(PurchaseOrder.id).label("order_count"),
+        literal(0).label("entry_count"),
+        func.max(PurchaseOrder.order_date).label("last_date"),
+    ).where(PurchaseOrder.invoice_number.is_not(None), PurchaseOrder.invoice_number != "")
+    entries_part = select(
+        PurchaseLogException.invoice_number.label("invoice_number"),
+        literal(0).label("order_count"),
+        func.count(PurchaseLogException.id).label("entry_count"),
+        func.max(PurchaseLogException.entry_date).label("last_date"),
+    ).where(PurchaseLogException.invoice_number.is_not(None), PurchaseLogException.invoice_number != "")
+    if pattern is not None:
+        orders_part = orders_part.where(PurchaseOrder.invoice_number.ilike(pattern, escape="\\"))
+        entries_part = entries_part.where(PurchaseLogException.invoice_number.ilike(pattern, escape="\\"))
+    combined = union_all(
+        orders_part.group_by(PurchaseOrder.invoice_number), entries_part.group_by(PurchaseLogException.invoice_number)
+    ).subquery()
     rows = (
         await db.execute(
-            stmt.group_by(PurchaseOrder.invoice_number)
-            .order_by(func.max(PurchaseOrder.order_date).desc(), PurchaseOrder.invoice_number)
+            select(
+                combined.c.invoice_number,
+                func.sum(combined.c.order_count),
+                func.sum(combined.c.entry_count),
+                func.max(combined.c.last_date),
+            )
+            .group_by(combined.c.invoice_number)
+            .order_by(func.max(combined.c.last_date).desc(), combined.c.invoice_number)
             .limit(MAX_INVOICE_OPTIONS)
         )
     ).all()
-    return [InvoiceOptionRead(invoice_number=number, order_count=count) for number, count in rows]
+    return [
+        InvoiceOptionRead(invoice_number=number, order_count=int(orders), entry_count=int(entries))
+        for number, orders, entries, _last_date in rows
+    ]
 
 
 async def list_log_exception_invoice_options(db: AsyncSession, search: str | None = None) -> list[LogExceptionInvoiceOptionRead]:

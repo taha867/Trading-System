@@ -182,6 +182,7 @@ class InvoiceNumberRead(BaseModel):
 class InvoiceOptionRead(BaseModel):
     invoice_number: str
     order_count: int  # one supplier invoice can cover several purchase orders
+    entry_count: int = 0  # payable-only entries (purchase_log_exception) carrying this number
 
 
 class LogExceptionInvoiceOptionRead(BaseModel):
@@ -191,3 +192,41 @@ class LogExceptionInvoiceOptionRead(BaseModel):
 
 class PurchaseLogExceptionListRead(PaginatedResponse[PurchaseLogExceptionRead]):
     total_amount_pkr: Decimal  # across every entry matching the filters, not just this page
+
+
+class PurchaseGroupOrderRead(BaseModel):
+    """One real purchase order inside a row (the full order, lines, stock lots and ledger are on its own page)."""
+
+    id: int
+    order_date: date
+    source: str
+    status: str
+    total_pkr: Decimal
+    total_rmb: Decimal  # only lines priced in RMB (china orders); 0 for local / mohsin
+    categories: list[str]
+
+
+class PurchaseGroupRead(BaseModel):
+    """One supplier invoice: its purchase order(s) plus every payable-only entry with the same number and vendor.
+    `total_pkr` is what the ledger holds as payable for it (orders + entries)."""
+
+    group_key: str
+    invoice_number: str | None
+    party_id: int
+    party_name: str
+    invoice_date: date
+    total_pkr: Decimal
+    orders_pkr: Decimal  # purchase orders with items (stock)
+    entries_pkr: Decimal  # payable-only: owed to the supplier, no phone model, no stock
+    total_rmb: Decimal
+    categories: list[str]
+    orders: list[PurchaseGroupOrderRead]
+    entries: list[PurchaseLogExceptionRead]
+
+
+class PurchaseGroupListRead(PaginatedResponse[PurchaseGroupRead]):
+    # Across every row matching the filters, not just this page - the summary bar. `total` is the number of rows.
+    total_pkr: Decimal
+    orders_pkr: Decimal
+    entries_pkr: Decimal
+    total_rmb: Decimal

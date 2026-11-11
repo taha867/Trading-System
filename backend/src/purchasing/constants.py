@@ -20,6 +20,10 @@ PurchaseOrderStatus = Literal["draft", "allocated", "received"]
 # though it's priced/received identically.
 PurchaseOrderSource = Literal["china", "local", "mohsin"]
 
+# The "Show" choice on the Purchases list: a row is a supplier invoice (a purchase order with items, and/or
+# payable-only entries - money owed to the supplier with no phone model, so no stock).
+PurchaseShow = Literal["all", "orders_only", "payable_only"]
+
 MAX_INVOICE_NUMBER_LOOKUP_IDS = 500  # matches PaginationParams' page_size ceiling — one statement page can't exceed it
 MAX_INVOICE_OPTIONS = 500  # how many invoice numbers the Purchase Orders dropdown lists at once (search narrows it)
 

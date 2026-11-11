@@ -94,7 +94,7 @@ export function PartyStatement({ statement }) {
                     </Link>
                   ) : entry.reference_type === 'local_purchase_exception' ? (
                     // reference_id is the day-book sheet row here, not an order id — never link it as one.
-                    <Link to={`/purchase-orders?tab=other&party=${party.id}`} className="text-primary hover:underline">
+                    <Link to={`/purchase-orders?vendor=${party.id}&show=payable_only`} className="text-primary hover:underline">
                       Payable-only entry (day-book row {entry.reference_id})
                     </Link>
                   ) : entry.reference_type ? (

@@ -10,8 +10,8 @@ from src.crud import build_crud_router
 from src.database import get_db
 from src.pagination import PaginationParams
 from src.sorting import SortDirection
-from src.purchasing import service
-from src.purchasing.constants import PurchaseOrderSource, PurchaseOrderStatus
+from src.purchasing import invoice_service, service
+from src.purchasing.constants import PurchaseOrderSource, PurchaseOrderStatus, PurchaseShow
 from src.purchasing.dependencies import valid_purchase_order
 from src.purchasing.models import ExchangeRate, PurchaseOrder
 from src.purchasing.schemas import (
@@ -21,6 +21,7 @@ from src.purchasing.schemas import (
     InvoiceNumberRead,
     InvoiceOptionRead,
     LogExceptionInvoiceOptionRead,
+    PurchaseGroupListRead,
     PurchaseLogExceptionListRead,
     PurchaseOrderCreate,
     PurchaseOrderDetailRead,
@@ -81,6 +82,31 @@ async def list_purchase_orders(
         date_to=date_to,
         item_id=item_id,
         sort=sort,
+    )
+
+
+# Declared before "/{purchase_order_id}" so "purchases", "invoice-options" and "invoice-numbers" are never
+# parsed as an order id. The Purchases list: every supplier invoice once, with its payable-only entries under it.
+@purchase_order_router.get("/purchases", response_model=PurchaseGroupListRead)
+async def list_purchase_groups(
+    # Depends() for pagination, plain scalars for the rest: same FastAPI 0.141 limitation as list_purchase_orders above.
+    pagination: Annotated[PaginationParams, Depends()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    search: str | None = None,
+    invoice_number: str | None = None,
+    party_id: int | None = None,
+    source: PurchaseOrderSource | None = None,
+    status: PurchaseOrderStatus | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    item_id: int | None = None,
+    show: PurchaseShow = "all",
+    sort: SortDirection = "newest",
+):
+    return await invoice_service.list_purchase_groups(
+        db, pagination, search=search, invoice_number=invoice_number, party_id=party_id, source=source, status=status,
+        date_from=date_from, date_to=date_to, item_id=item_id, show=show, sort=sort,
     )
 
 

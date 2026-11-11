@@ -1,5 +1,5 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { exchangeRateKeys, purchaseOrderKeys, purchaseLogExceptionKeys } from '@/utils/queryKeys';
+import { exchangeRateKeys, purchaseOrderKeys, purchaseGroupKeys } from '@/utils/queryKeys';
 import { PURCHASE_ORDER_STATUS } from '@/utils/constants';
 import {
   listExchangeRates,
@@ -7,9 +7,7 @@ import {
   getPurchaseOrder,
   listPurchaseInvoiceOptions,
   getPurchaseInvoiceNumbers,
-  listPurchaseLogExceptions,
-  listPurchaseLogExceptionInvoiceOptions,
-  listPurchaseLogExceptionCategories,
+  listPurchaseGroups,
 } from '@/services/purchasingService';
 
 export function useExchangeRates(params) {
@@ -75,22 +73,11 @@ export function usePurchaseInvoiceNumbers(ids) {
   });
 }
 
-export function usePurchaseLogExceptions(params) {
+// One row per supplier invoice with its payable-only entries under it; keepPreviousData like the other lists.
+export function usePurchaseGroups(params) {
   return useQuery({
-    queryKey: purchaseLogExceptionKeys.list(params),
-    queryFn: () => listPurchaseLogExceptions(params),
+    queryKey: purchaseGroupKeys.list(params),
+    queryFn: () => listPurchaseGroups(params),
     placeholderData: keepPreviousData,
   });
-}
-
-export function usePurchaseLogExceptionInvoiceOptions(search) {
-  return useQuery({
-    queryKey: purchaseLogExceptionKeys.invoiceOptions(search),
-    queryFn: () => listPurchaseLogExceptionInvoiceOptions(search),
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function usePurchaseLogExceptionCategories() {
-  return useQuery({ queryKey: purchaseLogExceptionKeys.categories(), queryFn: listPurchaseLogExceptionCategories });
 }

@@ -230,6 +230,14 @@ export const INVOICE_SHOW_OPTIONS = [
 ];
 export const INVOICE_SHOW_VALUES = INVOICE_SHOW_OPTIONS.map((option) => option.value).filter((value) => value !== SELECT_ALL_VALUE);
 
+// The "Show" choice on the Purchases list (the backend's PurchaseShow).
+export const PURCHASE_SHOW_OPTIONS = [
+  { value: SELECT_ALL_VALUE, label: 'All purchases' },
+  { value: 'orders_only', label: 'Orders only (with items)' },
+  { value: 'payable_only', label: 'Payable-only entries (no model)' },
+];
+export const PURCHASE_SHOW_VALUES = PURCHASE_SHOW_OPTIONS.map((option) => option.value).filter((value) => value !== SELECT_ALL_VALUE);
+
 
 // StockListShare.jsx's export page geometry — wide enough for several
 // brand-block "cards" side by side, tall enough that a large multi-brand

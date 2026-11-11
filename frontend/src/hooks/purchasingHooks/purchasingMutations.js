@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { exchangeRateKeys, purchaseOrderKeys } from '@/utils/queryKeys';
+import { exchangeRateKeys, purchaseOrderKeys, purchaseGroupKeys } from '@/utils/queryKeys';
 import * as purchasingService from '@/services/purchasingService';
 
 export function useCreateExchangeRate() {
@@ -30,6 +30,9 @@ export function useCreatePurchaseOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: purchasingService.createPurchaseOrder,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.lists() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: purchaseGroupKeys.all });
+    },
   });
 }

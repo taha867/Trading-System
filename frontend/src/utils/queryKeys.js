@@ -57,12 +57,11 @@ export const purchaseOrderKeys = {
   invoiceOptions: (search) => [...purchaseOrderKeys.all, 'invoice-options', search],
 };
 
-export const purchaseLogExceptionKeys = {
-  all: ['purchaseLogExceptions'],
-  invoiceOptions: (search) => [...purchaseLogExceptionKeys.all, 'invoice-options', search],
-  categories: () => [...purchaseLogExceptionKeys.all, 'categories'],
-  lists: () => [...purchaseLogExceptionKeys.all, 'list'],
-  list: (params) => [...purchaseLogExceptionKeys.lists(), params],
+// The Purchases list: every supplier invoice once, with its payable-only entries under it.
+export const purchaseGroupKeys = {
+  all: ['purchaseGroups'],
+  lists: () => [...purchaseGroupKeys.all, 'list'],
+  list: (params) => [...purchaseGroupKeys.lists(), params],
 };
 
 export const cargoModeKeys = {

@@ -1,15 +1,8 @@
-import { useSearchParams } from 'react-router-dom';
-import { ShoppingCart, FileQuestion } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { PurchaseOrderList } from '@/components/purchasing/PurchaseOrderList';
-import { PurchaseLogExceptionList } from '@/components/purchasing/PurchaseLogExceptionList';
+import { PurchaseList } from '@/components/purchasing/PurchaseList';
 
-const DEFAULT_TAB = 'orders';
-
+// One list: every supplier invoice once, with its payable-only entries (money owed, no phone model) under it.
+// Old links with ?tab=other just open this list; the filters it understands are read from the address.
 export function PurchaseOrdersContainer() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get('tab') || DEFAULT_TAB;
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="mb-6">
@@ -19,29 +12,7 @@ export function PurchaseOrdersContainer() {
           purchases in PKR.
         </p>
       </div>
-
-      {/* Switching tabs replaces the whole query string on purpose: the two lists have different
-          filters, and a stale search/month from one should not leak into the other. */}
-      <Tabs value={tab} onValueChange={(value) => setSearchParams({ tab: value })}>
-        <div className="overflow-x-auto">
-          <TabsList>
-            <TabsTrigger value="orders">
-              <ShoppingCart className="size-4" />
-              Orders
-            </TabsTrigger>
-            <TabsTrigger value="other">
-              <FileQuestion className="size-4" />
-              Other entries
-            </TabsTrigger>
-          </TabsList>
-        </div>
-        <TabsContent value="orders" className="pt-4">
-          <PurchaseOrderList />
-        </TabsContent>
-        <TabsContent value="other" className="pt-4">
-          <PurchaseLogExceptionList />
-        </TabsContent>
-      </Tabs>
+      <PurchaseList />
     </div>
   );
 }
