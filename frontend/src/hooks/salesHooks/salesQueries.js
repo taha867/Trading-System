@@ -1,13 +1,11 @@
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { salesOrderKeys, salesLogExceptionKeys } from '@/utils/queryKeys';
+import { salesOrderKeys, invoiceKeys } from '@/utils/queryKeys';
 import {
   listSalesOrders,
   getSalesOrder,
-  listSalesLogExceptions,
+  listInvoices,
   getInvoiceNumbers,
   listInvoiceOptions,
-  listSalesLogExceptionInvoiceOptions,
-  listSalesLogExceptionCategories,
 } from '@/services/salesService';
 
 // keepPreviousData: typing in a filter keeps the last results on screen while the next set
@@ -29,10 +27,11 @@ export function useSalesOrder(id) {
   });
 }
 
-export function useSalesLogExceptions(params) {
+// One row per invoice with its day-book entries under it; keepPreviousData like the other lists.
+export function useInvoices(params) {
   return useQuery({
-    queryKey: salesLogExceptionKeys.list(params),
-    queryFn: () => listSalesLogExceptions(params),
+    queryKey: invoiceKeys.list(params),
+    queryFn: () => listInvoices(params),
     placeholderData: keepPreviousData,
   });
 }
@@ -54,16 +53,4 @@ export function useInvoiceOptions(search) {
     queryFn: () => listInvoiceOptions(search),
     placeholderData: keepPreviousData,
   });
-}
-
-export function useSalesLogExceptionInvoiceOptions(search) {
-  return useQuery({
-    queryKey: salesLogExceptionKeys.invoiceOptions(search),
-    queryFn: () => listSalesLogExceptionInvoiceOptions(search),
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useSalesLogExceptionCategories() {
-  return useQuery({ queryKey: salesLogExceptionKeys.categories(), queryFn: listSalesLogExceptionCategories });
 }

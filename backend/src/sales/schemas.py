@@ -110,7 +110,7 @@ class InvoiceNumberRead(BaseModel):
 class InvoiceOptionRead(BaseModel):
     invoice_number: str
     sale_count: int  # invoice numbers are not unique — one number can cover several sales
-    cancelled_count: int  # day-book entries (sales_log_exception, kind="cancelled_invoice") with this number
+    entry_count: int  # day-book entries (sales_log_exception, any kind) carrying this number
 
 
 class LogExceptionInvoiceOptionRead(BaseModel):
@@ -159,3 +159,43 @@ class SalesOrderListRead(PaginatedResponse[SalesOrderRead]):
     # real count is cancelled_total. Always empty when an item filter is set (they have no item).
     cancelled_entries: list[SalesLogExceptionRead]
     cancelled_total: int
+
+
+class InvoiceOrderRead(BaseModel):
+    """One real sale inside an invoice (the full sale, its lots and ledger are on its own page)."""
+
+    id: int
+    order_date: date
+    total_pkr: Decimal
+    margin_pkr: Decimal
+
+
+class InvoiceGroupRead(BaseModel):
+    """One invoice: its sale(s) plus every day-book entry with the same number and customer. `total_pkr` is what the
+    customer's ledger holds for it (booked + all entries); `no_stock_pkr` / `other_entries_pkr` are the parts that are
+    not (yet) real sales, so not in profit."""
+
+    group_key: str
+    invoice_number: str | None
+    party_id: int | None
+    party_name: str | None
+    invoice_date: date
+    total_pkr: Decimal
+    booked_pkr: Decimal  # the real sales
+    margin_pkr: Decimal  # on the booked part only
+    no_stock_pkr: Decimal  # lines that had no stock recorded ("No stock found")
+    other_entries_pkr: Decimal  # bulk / no model / correction / discount
+    is_cancelled: bool
+    orders: list[InvoiceOrderRead]
+    entries: list[SalesLogExceptionRead]
+
+
+class InvoiceListRead(PaginatedResponse[InvoiceGroupRead]):
+    # Across every invoice matching the filters, not just this page - the summary bar. `total` (from
+    # PaginatedResponse) is the number of invoices.
+    total_pkr: Decimal
+    booked_pkr: Decimal
+    margin_pkr: Decimal
+    no_stock_pkr: Decimal
+    other_entries_pkr: Decimal
+    cancelled_count: int

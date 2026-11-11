@@ -208,7 +208,7 @@ export function ProfitLossStatement({ month, onMonthChange }) {
 
             {Number(current.unitemised_sales_pkr) !== 0 && (
               <p className="text-sm print:hidden">
-                <Link to={`/sales-orders?tab=other&month=${month}`} className="text-primary hover:underline">
+                <Link to={`/sales-orders?month=${month}&show=has_other_entries`} className="text-primary hover:underline">
                   View the sales without item data for {monthLabel(month)}
                 </Link>
               </p>

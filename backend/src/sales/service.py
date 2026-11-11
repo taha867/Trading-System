@@ -310,25 +310,24 @@ async def get_invoice_numbers(db: AsyncSession, ids: list[int]) -> list[InvoiceN
 
 
 async def list_invoice_options(db: AsyncSession, search: str | None = None) -> list[InvoiceOptionRead]:
-    """Distinct invoice numbers for the Sales Orders dropdown — real sales AND cancelled invoices (a
-    cancelled invoice can't be a sales order, but it must stay findable by its number). Most recently
-    used first, narrowed by what the user types (contains, case-insensitive). Capped: the dropdown is a
-    picker, not a report."""
+    """Distinct invoice numbers for the Invoices dropdown — every number that has a sale OR any day-book entry
+    (no stock found, bulk, correction, discount, cancelled), so no invoice is unfindable. Most recently used
+    first, narrowed by what the user types (contains, case-insensitive). Capped: the dropdown is a picker,
+    not a report."""
     pattern = f"%{escape_like(search.strip())}%" if search is not None and search.strip() else None
 
     sales_part = select(
         SalesOrder.invoice_number.label("invoice_number"),
         func.count(SalesOrder.id).label("sale_count"),
-        literal(0).label("cancelled_count"),
+        literal(0).label("entry_count"),
         func.max(SalesOrder.order_date).label("last_date"),
     ).where(SalesOrder.invoice_number.is_not(None), SalesOrder.invoice_number != "")
     cancelled_part = select(
         SalesLogException.invoice_number.label("invoice_number"),
         literal(0).label("sale_count"),
-        func.count(SalesLogException.id).label("cancelled_count"),
+        func.count(SalesLogException.id).label("entry_count"),
         func.max(SalesLogException.entry_date).label("last_date"),
     ).where(
-        SalesLogException.kind == "cancelled_invoice",
         SalesLogException.invoice_number.is_not(None),
         SalesLogException.invoice_number != "",
     )
@@ -344,7 +343,7 @@ async def list_invoice_options(db: AsyncSession, search: str | None = None) -> l
             select(
                 combined.c.invoice_number,
                 func.sum(combined.c.sale_count),
-                func.sum(combined.c.cancelled_count),
+                func.sum(combined.c.entry_count),
                 func.max(combined.c.last_date),
             )
             .group_by(combined.c.invoice_number)
@@ -353,8 +352,8 @@ async def list_invoice_options(db: AsyncSession, search: str | None = None) -> l
         )
     ).all()
     return [
-        InvoiceOptionRead(invoice_number=number, sale_count=int(sales), cancelled_count=int(cancelled))
-        for number, sales, cancelled, _last_date in rows
+        InvoiceOptionRead(invoice_number=number, sale_count=int(sales), entry_count=int(entries))
+        for number, sales, entries, _last_date in rows
     ]
 
 

@@ -16,8 +16,9 @@ export async function createSalesOrder(payload) {
   return data;
 }
 
-export async function listSalesLogExceptions(params) {
-  const { data } = await fetchClient.get(`/sales/sales-log-exceptions${buildQueryString(params)}`);
+// The Invoices list: one row per invoice (sale + its day-book entries), with whole-filter totals.
+export async function listInvoices(params) {
+  const { data } = await fetchClient.get(`/sales/sales-orders/invoices${buildQueryString(params)}`);
   return data;
 }
 
@@ -31,23 +32,10 @@ export async function getInvoiceNumbers(ids) {
   return data; // [{ id, invoice_number }]
 }
 
-// Distinct invoice numbers for the Sales Orders dropdown, most recent first; `search` narrows them.
+// Distinct invoice numbers for the Invoices dropdown (a sale or any day-book entry), most recent first; `search` narrows them.
 export async function listInvoiceOptions(search) {
   const params = new URLSearchParams();
   if (search) params.set('search', search);
   const { data } = await fetchClient.get(`/sales/sales-orders/invoice-options?${params}`);
-  return data; // [{ invoice_number, sale_count }]
-}
-
-// Invoice numbers among the "Other entries" (any kind), most recent first; `search` narrows them.
-export async function listSalesLogExceptionInvoiceOptions(search) {
-  const params = new URLSearchParams();
-  if (search) params.set('search', search);
-  const { data } = await fetchClient.get(`/sales/sales-log-exceptions/invoice-options?${params}`);
-  return data; // [{ invoice_number, entry_count }]
-}
-
-export async function listSalesLogExceptionCategories() {
-  const { data } = await fetchClient.get('/sales/sales-log-exceptions/categories');
-  return data; // ['OG', 'Dust Plug', ...]
+  return data; // [{ invoice_number, sale_count, entry_count }]
 }

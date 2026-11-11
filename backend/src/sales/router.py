@@ -9,11 +9,12 @@ from src.auth.models import User
 from src.database import get_db
 from src.pagination import PaginationParams
 from src.sorting import SortDirection
-from src.sales import service
-from src.sales.constants import SalesLogExceptionKind
+from src.sales import invoice_service, service
+from src.sales.constants import InvoiceShow, SalesLogExceptionKind
 from src.sales.dependencies import valid_sales_order
 from src.sales.models import SalesOrder
 from src.sales.schemas import (
+    InvoiceListRead,
     InvoiceNumberRead,
     InvoiceOptionRead,
     LogExceptionInvoiceOptionRead,
@@ -62,6 +63,37 @@ async def list_sales_orders(
         date_from=date_from,
         date_to=date_to,
         item_id=item_id,
+        sort=sort,
+    )
+
+
+# Declared before "/{sales_order_id}" (as are "/invoices", "/invoice-options" and "/invoice-numbers") so none is parsed
+# as an order id. The Invoices list: every invoice once, with its day-book entries under it.
+@sales_order_router.get("/invoices", response_model=InvoiceListRead)
+async def list_invoices(
+    # Depends() for pagination, plain scalars for the rest: same FastAPI 0.141 limitation as list_sales_orders above.
+    pagination: Annotated[PaginationParams, Depends()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    search: str | None = None,
+    invoice_number: str | None = None,
+    party_id: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    item_id: int | None = None,
+    show: InvoiceShow = "all",
+    sort: SortDirection = "newest",
+):
+    return await invoice_service.list_invoices(
+        db,
+        pagination,
+        search=search,
+        invoice_number=invoice_number,
+        party_id=party_id,
+        date_from=date_from,
+        date_to=date_to,
+        item_id=item_id,
+        show=show,
         sort=sort,
     )
 

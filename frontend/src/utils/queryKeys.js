@@ -108,12 +108,11 @@ export const salesOrderKeys = {
   invoiceOptions: (search) => [...salesOrderKeys.all, 'invoice-options', search],
 };
 
-export const salesLogExceptionKeys = {
-  all: ['salesLogExceptions'],
-  invoiceOptions: (search) => [...salesLogExceptionKeys.all, 'invoice-options', search],
-  categories: () => [...salesLogExceptionKeys.all, 'categories'],
-  lists: () => [...salesLogExceptionKeys.all, 'list'],
-  list: (params) => [...salesLogExceptionKeys.lists(), params],
+// The Invoices list: every invoice once, with its day-book entries under it.
+export const invoiceKeys = {
+  all: ['invoices'],
+  lists: () => [...invoiceKeys.all, 'list'],
+  list: (params) => [...invoiceKeys.lists(), params],
 };
 
 export const paymentAccountKeys = {

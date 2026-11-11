@@ -14,7 +14,7 @@ export function PaymentAccountList() {
   const methodOptions = (methodsData?.items ?? []).map((m) => ({ value: String(m.id), label: m.name }));
 
   // Balance isn't a column on PaymentAccountRead — joined in here from a second
-  // query by id, the same shape SalesOrderList.jsx uses for customer names.
+  // query by id, the same shape InvoiceList.jsx uses for customer names.
   // payment_method_id's display value and its drawer field options are both
   // injected here too, since the static config can't fetch a hook.
   const config = {

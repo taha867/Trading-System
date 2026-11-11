@@ -176,12 +176,8 @@ export const SALES_LOG_EXCEPTION_KIND_LABELS = {
   blank_model: 'No model given',
   correction: 'Price correction',
   discount: 'Discount',
-  insufficient_stock: 'No stock at the time',
+  insufficient_stock: 'No stock found',
 };
-
-export const SALES_LOG_EXCEPTION_KIND_OPTIONS = Object.entries(SALES_LOG_EXCEPTION_KIND_LABELS).map(
-  ([value, label]) => ({ value, label }),
-);
 
 export const WINDOW_DAYS_OPTIONS = [
   { value: '7', label: 'Last 7 days' },
@@ -223,6 +219,17 @@ export const BOTTOM_NAV_MORE_ICON = Grid2x2;
 // shared sentinel for every "All <something>" filter option in the app
 // (StockListShare.jsx's category filter, etc).
 export const SELECT_ALL_VALUE = '__all__';
+
+// The "Show" choice on the Invoices list (the backend's InvoiceShow).
+export const INVOICE_SHOW_OPTIONS = [
+  { value: SELECT_ALL_VALUE, label: 'All invoices' },
+  { value: 'has_no_stock', label: 'Has "no stock found" lines' },
+  { value: 'has_other_entries', label: 'Has other entries (bulk, correction...)' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'fully_booked', label: 'Fully booked (real sales only)' },
+];
+export const INVOICE_SHOW_VALUES = INVOICE_SHOW_OPTIONS.map((option) => option.value).filter((value) => value !== SELECT_ALL_VALUE);
+
 
 // StockListShare.jsx's export page geometry — wide enough for several
 // brand-block "cards" side by side, tall enough that a large multi-brand
