@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { paymentMethodKeys, paymentAccountKeys, paymentTransactionKeys } from '@/utils/queryKeys';
 import {
   listPaymentMethods,
@@ -32,5 +32,6 @@ export function usePaymentTransactions(params) {
   return useQuery({
     queryKey: paymentTransactionKeys.list(params),
     queryFn: () => listPaymentTransactions(params),
+    placeholderData: keepPreviousData, // filtering / paging keeps the old rows on screen (dimmed) while the next set loads
   });
 }

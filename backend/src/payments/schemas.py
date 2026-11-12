@@ -4,7 +4,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.payments.constants import PaymentDirection, PaymentReferenceType
+from src.pagination import PaginatedResponse
+from src.payments.constants import PaymentDirection, PaymentKind, PaymentReferenceType
 
 
 class PaymentMethodCreate(BaseModel):
@@ -83,3 +84,31 @@ class PaymentTransactionRead(BaseModel):
     reference_id: int | None = None
     note: str | None = None
     created_at: datetime
+
+
+class PaymentTransactionListItem(PaymentTransactionRead):
+    """A row of the Payments list: the payment plus the names the screen needs (no extra lookups)."""
+
+    kind: PaymentKind
+    party_name: str | None = None
+    account_label: str
+    expense_category: str | None = None
+    expense_description: str | None = None
+
+
+class PaymentKindTotalRead(BaseModel):
+    kind: PaymentKind
+    count: int
+    total_in: Decimal
+    total_out: Decimal
+
+
+class PaymentTransactionListRead(PaginatedResponse[PaymentTransactionListItem]):
+    """The page plus totals over EVERY payment matching the filters (not just the page). Shown-only rows are listed
+    but never added into any total."""
+
+    total_in: Decimal
+    total_out: Decimal
+    net: Decimal
+    shown_only_count: int
+    by_kind: list[PaymentKindTotalRead]

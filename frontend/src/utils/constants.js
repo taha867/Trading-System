@@ -287,3 +287,13 @@ export const STOCK_LIST_EXPORT_STYLES = `
   .footer-address { margin: 2px 0 0; font-size: 11px; color: #9ca3af; }
   .footer-page { margin: 4px 0 0; font-size: 10px; color: #9ca3af; }
 `;
+
+// What a payment row is (the backend's PaymentKind): derived from direction, party and reference, not stored.
+export const PAYMENT_KIND_LABELS = {
+  customer_receipt: 'Customer receipt',
+  supplier_payment: 'Supplier payment',
+  expense: 'Expense',
+  other: 'Other',
+};
+export const PAYMENT_KIND_OPTIONS = Object.entries(PAYMENT_KIND_LABELS).map(([value, label]) => ({ value, label }));
+export const PAYMENT_KIND_VALUES = PAYMENT_KIND_OPTIONS.map((option) => option.value);

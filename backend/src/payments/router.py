@@ -21,8 +21,11 @@ from src.payments.schemas import (
     PaymentMethodRead,
     PaymentMethodUpdate,
     PaymentTransactionCreate,
+    PaymentTransactionListRead,
     PaymentTransactionRead,
 )
+from src.payments.constants import PaymentKind
+from src.sorting import SortDirection
 
 payment_method_router = build_crud_router(
     model=PaymentMethod,
@@ -103,7 +106,7 @@ async def create_payment_transaction(
     return await service.create_payment_transaction(db, payload)
 
 
-@payment_transaction_router.get("", response_model=PaginatedResponse[PaymentTransactionRead])
+@payment_transaction_router.get("", response_model=PaymentTransactionListRead)
 async def list_payment_transactions(
     # Depends() (not Query()) because of the extra scalar params - see inventory/router.py.
     pagination: Annotated[PaginationParams, Depends()],
@@ -111,8 +114,15 @@ async def list_payment_transactions(
     _current_user: Annotated[User, Depends(get_current_user)],
     date_from: date | None = None,
     date_to: date | None = None,
+    kind: PaymentKind | None = None,
+    payment_account_id: int | None = None,
+    party_id: int | None = None,
+    search: str | None = None,
+    sort: SortDirection = "newest",
 ):
-    return await service.list_payment_transactions(db, pagination, date_from, date_to)
+    return await service.list_payment_transactions(
+        db, pagination, date_from, date_to, kind=kind, payment_account_id=payment_account_id, party_id=party_id, search=search, sort=sort
+    )
 
 
 @payment_transaction_router.get("/{payment_transaction_id}", response_model=PaymentTransactionRead)
